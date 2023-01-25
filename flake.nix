@@ -1,0 +1,26 @@
+{
+  description = "game gaming";
+
+  inputs = {
+    nixpkgs.url = "nixpkgs/nixos-22.11";
+  };
+
+  outputs = {
+    self,
+    nixpkgs,
+    ...
+  } @ inputs: let
+    system = "x86_64-linux";
+    pkgs = import nixpkgs {inherit system;};
+  in {
+    devShell.${system} =
+      pkgs.mkShell.override {
+        stdenv = pkgs.clangStdenv;
+      } {
+        packages = with pkgs; [
+          bear
+          clang-tools
+        ];
+      };
+  };
+}
