@@ -1,3 +1,6 @@
+# meson
+builddir/
+
 # nix
 result/
 .direnv/
