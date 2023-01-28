@@ -14,10 +14,13 @@
     pkgs = import nixpkgs {inherit system;};
   in {
     devShell.${system} =
-      pkgs.mkShell.override {
+      pkgs.mkShell.override
+      {
         stdenv = pkgs.clangStdenv;
-      } {
+      }
+      {
         packages = with pkgs; [
+          (ninja.override {python3 = python3Minimal;})
           pkg-config
           raylib
           meson
