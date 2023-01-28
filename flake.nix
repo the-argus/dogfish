@@ -18,6 +18,7 @@
         stdenv = pkgs.clangStdenv;
       } {
         packages = with pkgs; [
+          pkg-config
           raylib
           meson
           bear
