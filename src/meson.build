@@ -12,4 +12,6 @@ foreach file : source_file_names
   sources += files(file)
 endforeach
 
-executable('lungfish', sources, dependencies: raylib)
+my_headers = declare_dependency(include_directories : include_directories('include'))
+
+executable('lungfish', sources, dependencies: [ raylib, my_headers ])
