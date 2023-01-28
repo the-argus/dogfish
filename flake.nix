@@ -9,7 +9,7 @@
     self,
     nixpkgs,
     ...
-  } @ inputs: let
+  }: let
     system = "x86_64-linux";
     pkgs = import nixpkgs {inherit system;};
   in {
@@ -18,6 +18,8 @@
         stdenv = pkgs.clangStdenv;
       } {
         packages = with pkgs; [
+          raylib
+          meson
           bear
           clang-tools
         ];
