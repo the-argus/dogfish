@@ -1,5 +1,10 @@
 project('lungfish', 'c', default_options: 'default_library=static')
 
+add_global_arguments('-Wall', language : 'c')
+add_global_arguments('-Werror', language : 'c')
+add_global_arguments('-pedantic', language : 'c')
+add_global_arguments('-O2', language : 'c')
+
 raylib = dependency('raylib')
 
 source_file_names = [
