@@ -9,7 +9,8 @@ raylib = dependency('raylib')
 
 source_file_names = [
   'main.c',
-  'input.c'
+  'input.c',
+  'camera_manager.c'
 ]
 
 sources = []

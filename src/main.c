@@ -5,6 +5,7 @@
 #include "constants.h"
 #include "architecture.h"
 #include "input.h"
+#include "camera_manager.h"
 
 // useful for screen scaling
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
@@ -34,6 +35,7 @@ int main(void)
 
 	// init some of the gamestate values
 	gamestate->input.mouse.virtual_position = (Vector2){0};
+	gamestate_new_fps_camera(gamestate);
 
 	// initialization complete
 	printf("lungfish...\n");
@@ -47,16 +49,16 @@ int main(void)
 		gamestate->input.mouse.position = GetMousePosition();
 		set_virtual_mouse_position(gamestate, scale);
 
-		if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-			gamestate->input.mouse.left_pressed = 1;
-		} else {
-			gamestate->input.mouse.left_pressed = 0;
-		}
-		if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
-			gamestate->input.mouse.right_pressed = 1;
-		} else {
-			gamestate->input.mouse.right_pressed = 0;
-		}
+		gamestate->input.mouse.left_pressed =
+			IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+		gamestate->input.mouse.right_pressed =
+			IsMouseButtonPressed(MOUSE_BUTTON_RIGHT);
+
+		// collect keyboard information
+		gamestate->input.keys.right = IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D);
+		gamestate->input.keys.left = IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A);
+		gamestate->input.keys.up = IsKeyDown(KEY_UP) || IsKeyDown(KEY_W);
+		gamestate->input.keys.down = IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S);
 
 		if (IsKeyPressed(KEY_ESCAPE) || WindowShouldClose()) {
 			window_open = false;
@@ -65,6 +67,7 @@ int main(void)
 		// draw to render texture
 		BeginTextureMode(main_target);
 		ClearBackground(RAYWHITE);
+		BeginMode3D(gamestate->current_camera);
 		EndTextureMode();
 
 		BeginDrawing();

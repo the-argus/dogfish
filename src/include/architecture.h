@@ -9,10 +9,10 @@ struct Mousestate {
 };
 
 struct Keystate {
-    unsigned char w;
-    unsigned char a;
-    unsigned char s;
-    unsigned char d;
+    unsigned char up;
+    unsigned char left;
+    unsigned char right;
+    unsigned char down;
 };
 
 struct Inputstate {
@@ -22,4 +22,5 @@ struct Inputstate {
 
 struct Gamestate {
     struct Inputstate input;
+    Camera current_camera;
 };
