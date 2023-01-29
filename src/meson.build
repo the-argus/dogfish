@@ -8,7 +8,8 @@ add_global_arguments('-O2', language : 'c')
 raylib = dependency('raylib')
 
 source_file_names = [
-  'main.c'
+  'main.c',
+  'input.c'
 ]
 
 sources = []
