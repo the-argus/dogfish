@@ -35,6 +35,10 @@ int main(void)
 			gamestate->input.mouse.right_pressed = 0;
 		}
 
+		if (IsKeyPressed(KEY_ESCAPE) || WindowShouldClose()) {
+			window_open = false;
+		}
+
 		BeginDrawing();
 
 		ClearBackground(RAYWHITE);
