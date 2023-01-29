@@ -50,6 +50,7 @@
       ninja,
       pkg-config,
       raylib,
+      ode,
       meson,
       ...
     }:
@@ -59,6 +60,7 @@
         nativeBuildInputs = [
           pkg-config
           raylib
+          ode
           meson
           ninja
         ];
@@ -89,6 +91,7 @@
           (ninja.override {python3 = python3Minimal;})
           pkg-config
           raylib
+          ode
           meson
           bear
           clang-tools
