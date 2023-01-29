@@ -11,8 +11,7 @@
     ...
   }: let
     system = "x86_64-linux";
-    pkgs = import nixpkgs {localSystem = {inherit system;};};
-    regularPkgs = pkgs;
+    regularPkgs = import nixpkgs {localSystem = {inherit system;};};
     clangMuslPkgs = import nixpkgs {
       localSystem = {
         inherit system;
@@ -26,19 +25,19 @@
       # make lungfish's build system and some deps come from standard packages
       overlays = [
         (_: _: {
-          cmake = pkgs.cmake;
-          pkg-config = pkgs.pkg-config;
-          raylib-games = pkgs.emptyDirectory;
-          gfortran = pkgs.gfortran;
-          libpulseaudio = pkgs.libpulseaudio;
-          mesa = pkgs.mesa;
-          gettext = pkgs.gettext;
+          cmake = regularPkgs.cmake;
+          pkg-config = regularPkgs.pkg-config;
+          raylib-games = regularPkgs.emptyDirectory;
+          gfortran = regularPkgs.gfortran;
+          libpulseaudio = regularPkgs.libpulseaudio;
+          mesa = regularPkgs.mesa;
+          gettext = regularPkgs.gettext;
         })
         (_: _: {
-          ninja = pkgs.ninja.override {python3 = pkgs.python3Minimal;};
+          ninja = regularPkgs.ninja.override {python3 = regularPkgs.python3Minimal;};
         })
         (_: _: {
-          meson = pkgs.meson.override {python3 = pkgs.python3Minimal;};
+          meson = regularPkgs.meson.override {python3 = regularPkgs.python3Minimal;};
         })
         (_: super: {
           raylib = super.raylib.override {sharedLib = false;};
@@ -63,8 +62,10 @@
           meson
           ninja
         ];
-        buildPhase = ''
+        configurePhase = ''
           meson setup builddir
+        '';
+        buildPhase = ''
           meson compile -C builddir
         '';
         installPhase = ''
@@ -75,16 +76,16 @@
   in {
     packages.${system} = {
       lungfishMusl = clangMuslPkgs.callPackage lungfish {};
-      lungfish = pkgs.callPackage lungfish {};
-      default = lungfish;
+      lungfish = regularPkgs.callPackage lungfish {stdenv = regularPkgs.clangStdenv;};
+      default = self.packages.${system}.lungfish;
     };
     devShell.${system} =
-      pkgs.mkShell.override
+      regularPkgs.mkShell.override
       {
-        stdenv = pkgs.clangStdenv;
+        stdenv = regularPkgs.clangStdenv;
       }
       {
-        packages = with pkgs; [
+        packages = with regularPkgs; [
           (ninja.override {python3 = python3Minimal;})
           pkg-config
           raylib

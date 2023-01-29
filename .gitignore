@@ -2,7 +2,7 @@
 builddir/
 
 # nix
-result/
+result
 .direnv/
 
 # clangd
