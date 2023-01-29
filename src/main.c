@@ -64,10 +64,20 @@ int main(void)
 			window_open = false;
 		}
 
+        UpdateCamera(gamestate->current_camera);
+
 		// draw to render texture
 		BeginTextureMode(main_target);
 		ClearBackground(RAYWHITE);
 		BeginMode3D(*gamestate->current_camera);
+        // draw a cube and then look at it
+		DrawCube((Vector3){0}, 0.2f, 0.2f, 0.2f, RED);
+        gamestate->current_camera->target = (Vector3){0};
+        gamestate->current_camera->position = (Vector3){1, 1, 1};
+
+        // grid for visual aid
+        DrawGrid(10, 1.0f);
+		EndMode3D();
 		EndTextureMode();
 
 		BeginDrawing();
@@ -87,7 +97,7 @@ int main(void)
 	}
 
 	// cleanup
-    free(gamestate->current_camera);
+	free(gamestate->current_camera);
 	free(gamestate);
 	CloseWindow();
 

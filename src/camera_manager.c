@@ -18,6 +18,8 @@ void gamestate_new_fps_camera(struct Gamestate *gamestate)
 	camera->up = (Vector3){0.0f, 1.0f, 0.0f};
 	camera->fovy = (float)FOV;
 	camera->projection = CAMERA_PERSPECTIVE;
+    
+    SetCameraMode(*camera, CAMERA_FIRST_PERSON);
 
     gamestate->current_camera = camera;
 }
