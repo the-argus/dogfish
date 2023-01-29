@@ -67,7 +67,7 @@ int main(void)
 		// draw to render texture
 		BeginTextureMode(main_target);
 		ClearBackground(RAYWHITE);
-		BeginMode3D(gamestate->current_camera);
+		BeginMode3D(*gamestate->current_camera);
 		EndTextureMode();
 
 		BeginDrawing();
@@ -87,6 +87,7 @@ int main(void)
 	}
 
 	// cleanup
+    free(gamestate->current_camera);
 	free(gamestate);
 	CloseWindow();
 

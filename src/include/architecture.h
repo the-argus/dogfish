@@ -22,5 +22,5 @@ struct Inputstate {
 
 struct Gamestate {
     struct Inputstate input;
-    Camera current_camera;
+    Camera *current_camera;
 };
