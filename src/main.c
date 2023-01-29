@@ -70,7 +70,7 @@ int main(void)
 		BeginDrawing();
 		// color of the bars around the rendertexture
 		ClearBackground(BLACK);
-        // draw the render texture scaled
+		// draw the render texture scaled
 		DrawTexturePro(
 			main_target.texture,
 			(Rectangle){0.0f, 0.0f, (float)main_target.texture.width,
