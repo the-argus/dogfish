@@ -6,6 +6,7 @@
 #include "architecture.h"
 #include "input.h"
 #include "camera_manager.h"
+#include "fps_camera.h"
 
 // useful for screen scaling
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
@@ -64,7 +65,7 @@ int main(void)
 			window_open = false;
 		}
 
-        UpdateCamera(gamestate->current_camera);
+        FpsCameraUpdate(gamestate->current_camera);
 
 		// draw to render texture
 		BeginTextureMode(main_target);

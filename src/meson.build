@@ -10,7 +10,8 @@ raylib = dependency('raylib')
 source_file_names = [
   'main.c',
   'input.c',
-  'camera_manager.c'
+  'camera_manager.c',
+  'fps_camera.c'
 ]
 
 sources = []
@@ -21,4 +22,4 @@ endforeach
 
 my_headers = declare_dependency(include_directories : include_directories('include', '.'))
 
-executable('lungfish', sources, dependencies: [ raylib, my_headers ])
+executable('lungfish', sources, dependencies: [ raylib, my_headers ], link_args: '-lm')
