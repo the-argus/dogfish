@@ -87,8 +87,6 @@
         stdenv = regularPkgs.clangStdenv;
       }
       {
-        CC = "clang";
-        CXX = "clang++";
         packages = with regularPkgs; [
           (ninja.override {python3 = python3Minimal;})
           pkg-config
