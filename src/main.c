@@ -65,7 +65,7 @@ int main(void)
 			window_open = false;
 		}
 
-        FpsCameraUpdate(gamestate->current_camera);
+        FpsCameraUpdate(gamestate->current_camera, &(gamestate->camera_data));
 
 		// draw to render texture
 		BeginTextureMode(main_target);

@@ -1,5 +1,6 @@
 #pragma once
 #include "raylib.h"
+#include "fps_camera.h"
 
 struct Mousestate {
     unsigned char left_pressed;
@@ -23,4 +24,5 @@ struct Inputstate {
 struct Gamestate {
     struct Inputstate input;
     Camera *current_camera;
+    CameraData camera_data;
 };

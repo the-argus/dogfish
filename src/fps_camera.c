@@ -48,15 +48,7 @@ typedef enum
 // PLAYER (used by camera)
 #define PLAYER_MOVEMENT_SENSITIVITY 2.0f
 
-CameraData camera_data = {
-	// Global CAMERA state context
-	.targetDistance = 0,
-	.playerEyesPosition = PLAYER_EYE_HEIGHT,
-	.angle = {0},
-	.moveControl = CAMERA_CONTROLS,
-};
-
-void FpsCameraUpdate(Camera *camera)
+void FpsCameraUpdate(Camera *camera, CameraData *camera_data)
 {
 	static float swingCounter = 0.0f; // Used for 1st person swinging movement
 
@@ -68,47 +60,45 @@ void FpsCameraUpdate(Camera *camera)
 	// Keys input detection
 	// TODO: Input detection is raylib-dependant, it could be moved outside the
 	// module
-	bool direction[6] = {IsKeyDown(camera_data.moveControl[MOVE_FRONT]),
-						 IsKeyDown(camera_data.moveControl[MOVE_BACK]),
-						 IsKeyDown(camera_data.moveControl[MOVE_RIGHT]),
-						 IsKeyDown(camera_data.moveControl[MOVE_LEFT]),
-						 IsKeyDown(camera_data.moveControl[MOVE_UP]),
-						 IsKeyDown(camera_data.moveControl[MOVE_DOWN])};
-	camera->position.x += (sinf(camera_data.angle.x) * direction[MOVE_BACK] -
-						   sinf(camera_data.angle.x) * direction[MOVE_FRONT] -
-						   cosf(camera_data.angle.x) * direction[MOVE_LEFT] +
-						   cosf(camera_data.angle.x) * direction[MOVE_RIGHT]) *
+	bool direction[6] = {IsKeyDown(camera_data->moveControl[MOVE_FRONT]),
+						 IsKeyDown(camera_data->moveControl[MOVE_BACK]),
+						 IsKeyDown(camera_data->moveControl[MOVE_RIGHT]),
+						 IsKeyDown(camera_data->moveControl[MOVE_LEFT]),
+						 IsKeyDown(camera_data->moveControl[MOVE_UP]),
+						 IsKeyDown(camera_data->moveControl[MOVE_DOWN])};
+	camera->position.x += (sinf(camera_data->angle.x) * direction[MOVE_BACK] -
+						   sinf(camera_data->angle.x) * direction[MOVE_FRONT] -
+						   cosf(camera_data->angle.x) * direction[MOVE_LEFT] +
+						   cosf(camera_data->angle.x) * direction[MOVE_RIGHT]) *
 						  PLAYER_MOVEMENT_SENSITIVITY * GetFrameTime();
 
 	camera->position.y +=
-		(sinf(camera_data.angle.y) * direction[MOVE_FRONT] -
-		 sinf(camera_data.angle.y) * direction[MOVE_BACK] +
+		(sinf(camera_data->angle.y) * direction[MOVE_FRONT] -
+		 sinf(camera_data->angle.y) * direction[MOVE_BACK] +
 		 1.0f * direction[MOVE_UP] - 1.0f * direction[MOVE_DOWN]) *
 		PLAYER_MOVEMENT_SENSITIVITY * GetFrameTime();
 
-	camera->position.z += (cosf(camera_data.angle.x) * direction[MOVE_BACK] -
-						   cosf(camera_data.angle.x) * direction[MOVE_FRONT] +
-						   sinf(camera_data.angle.x) * direction[MOVE_LEFT] -
-						   sinf(camera_data.angle.x) * direction[MOVE_RIGHT]) *
+	camera->position.z += (cosf(camera_data->angle.x) * direction[MOVE_BACK] -
+						   cosf(camera_data->angle.x) * direction[MOVE_FRONT] +
+						   sinf(camera_data->angle.x) * direction[MOVE_LEFT] -
+						   sinf(camera_data->angle.x) * direction[MOVE_RIGHT]) *
 						  PLAYER_MOVEMENT_SENSITIVITY * GetFrameTime();
 
 	// Camera orientation calculation
-	camera_data.angle.x -=
+	camera_data->angle.x -=
 		mousePositionDelta.x * CAMERA_MOUSE_MOVE_SENSITIVITY * GetFrameTime();
-	camera_data.angle.y -=
+	camera_data->angle.y -=
 		mousePositionDelta.y * CAMERA_MOUSE_MOVE_SENSITIVITY * GetFrameTime();
 
 	// Angle clamp
-	if (camera_data.angle.y > CAMERA_FIRST_PERSON_MIN_CLAMP * DEG2RAD)
-		camera_data.angle.y = CAMERA_FIRST_PERSON_MIN_CLAMP * DEG2RAD;
-	else if (camera_data.angle.y < CAMERA_FIRST_PERSON_MAX_CLAMP * DEG2RAD)
-		camera_data.angle.y = CAMERA_FIRST_PERSON_MAX_CLAMP * DEG2RAD;
+	if (camera_data->angle.y > CAMERA_FIRST_PERSON_MIN_CLAMP * DEG2RAD)
+		camera_data->angle.y = CAMERA_FIRST_PERSON_MIN_CLAMP * DEG2RAD;
+	else if (camera_data->angle.y < CAMERA_FIRST_PERSON_MAX_CLAMP * DEG2RAD)
+		camera_data->angle.y = CAMERA_FIRST_PERSON_MAX_CLAMP * DEG2RAD;
 
 	// Calculate translation matrix
-	Matrix matTranslation = {1.0f, 0.0f, 0.0f, 0.0f,
-							 0.0f, 1.0f, 0.0f, 0.0f,
-							 0.0f, 0.0f, 1.0f, 1,
-							 0.0f, 0.0f, 0.0f, 1.0f};
+	Matrix matTranslation = {1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+							 0.0f, 0.0f, 1.0f, 1,	 0.0f, 0.0f, 0.0f, 1.0f};
 
 	// Calculate rotation matrix
 	Matrix matRotation = {1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
@@ -116,10 +106,10 @@ void FpsCameraUpdate(Camera *camera)
 
 	float cosz = cosf(0.0f);
 	float sinz = sinf(0.0f);
-	float cosy = cosf(-(PI * 2 - camera_data.angle.x));
-	float siny = sinf(-(PI * 2 - camera_data.angle.x));
-	float cosx = cosf(-(PI * 2 - camera_data.angle.y));
-	float sinx = sinf(-(PI * 2 - camera_data.angle.y));
+	float cosy = cosf(-(PI * 2 - camera_data->angle.x));
+	float siny = sinf(-(PI * 2 - camera_data->angle.x));
+	float cosx = cosf(-(PI * 2 - camera_data->angle.y));
+	float sinx = sinf(-(PI * 2 - camera_data->angle.y));
 
 	matRotation.m0 = cosz * cosy;
 	matRotation.m4 = (cosz * siny * sinx) - (sinz * cosx);
@@ -205,7 +195,7 @@ void FpsCameraUpdate(Camera *camera)
 	// Camera position update
 	// NOTE: On CAMERA_FIRST_PERSON player Y-movement is limited to player 'eyes
 	// position'
-	camera->position.y = camera_data.playerEyesPosition;
+	camera->position.y = camera_data->playerEyesPosition;
 
 	// Camera swinging (y-movement), only when walking (some key pressed)
 	for (int i = 0; i < 6; i++)

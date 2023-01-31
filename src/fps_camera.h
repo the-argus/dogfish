@@ -11,4 +11,4 @@ typedef struct
 	int moveControl[6];	   // Move controls (CAMERA_FIRST_PERSON)
 } CameraData;
 
-void FpsCameraUpdate(Camera *camera);
+void FpsCameraUpdate(Camera *camera, CameraData *camera_data);
