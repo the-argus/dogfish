@@ -87,8 +87,8 @@ void FpsCameraUpdate(Camera *camera, CameraData *camera_data)
 	else if (camera_data->angle.y < CAMERA_FIRST_PERSON_MAX_CLAMP * DEG2RAD)
 		camera_data->angle.y = CAMERA_FIRST_PERSON_MAX_CLAMP * DEG2RAD;
 
-    // clamp X
-    camera_data->angle.x -= ((int)(camera_data->angle.x / (2 * PI))) * (2 * PI);
+	// clamp X
+	camera_data->angle.x -= ((int)(camera_data->angle.x / (2 * PI))) * (2 * PI);
 
 	printf("Angle X: %f\tAngle Y: %f\n", RAD2DEG * camera_data->angle.x,
 		   RAD2DEG * camera_data->angle.y);
@@ -102,8 +102,7 @@ void FpsCameraUpdate(Camera *camera, CameraData *camera_data)
         0.0f, 0.0f, 0.0f, 1.0f
     };
 
-	// Calculate rotation matrix
-	Matrix matRotation = {
+    Matrix matRotation = {
         1.0f, 0.0f, 0.0f, 0.0f,
         0.0f, 1.0f, 0.0f, 0.0f,
 		0.0f, 0.0f, 1.0f, 0.0f,
@@ -129,71 +128,7 @@ void FpsCameraUpdate(Camera *camera, CameraData *camera_data)
 	matRotation.m10 = cosy * cosx;
 
 	// Multiply translation and rotation matrices
-	Matrix matTransform = {0};
-	matTransform.m0 = matTranslation.m0 * matRotation.m0 +
-					  matTranslation.m1 * matRotation.m4 +
-					  matTranslation.m2 * matRotation.m8 +
-					  matTranslation.m3 * matRotation.m12;
-	matTransform.m1 = matTranslation.m0 * matRotation.m1 +
-					  matTranslation.m1 * matRotation.m5 +
-					  matTranslation.m2 * matRotation.m9 +
-					  matTranslation.m3 * matRotation.m13;
-	matTransform.m2 = matTranslation.m0 * matRotation.m2 +
-					  matTranslation.m1 * matRotation.m6 +
-					  matTranslation.m2 * matRotation.m10 +
-					  matTranslation.m3 * matRotation.m14;
-	matTransform.m3 = matTranslation.m0 * matRotation.m3 +
-					  matTranslation.m1 * matRotation.m7 +
-					  matTranslation.m2 * matRotation.m11 +
-					  matTranslation.m3 * matRotation.m15;
-	matTransform.m4 = matTranslation.m4 * matRotation.m0 +
-					  matTranslation.m5 * matRotation.m4 +
-					  matTranslation.m6 * matRotation.m8 +
-					  matTranslation.m7 * matRotation.m12;
-	matTransform.m5 = matTranslation.m4 * matRotation.m1 +
-					  matTranslation.m5 * matRotation.m5 +
-					  matTranslation.m6 * matRotation.m9 +
-					  matTranslation.m7 * matRotation.m13;
-	matTransform.m6 = matTranslation.m4 * matRotation.m2 +
-					  matTranslation.m5 * matRotation.m6 +
-					  matTranslation.m6 * matRotation.m10 +
-					  matTranslation.m7 * matRotation.m14;
-	matTransform.m7 = matTranslation.m4 * matRotation.m3 +
-					  matTranslation.m5 * matRotation.m7 +
-					  matTranslation.m6 * matRotation.m11 +
-					  matTranslation.m7 * matRotation.m15;
-	matTransform.m8 = matTranslation.m8 * matRotation.m0 +
-					  matTranslation.m9 * matRotation.m4 +
-					  matTranslation.m10 * matRotation.m8 +
-					  matTranslation.m11 * matRotation.m12;
-	matTransform.m9 = matTranslation.m8 * matRotation.m1 +
-					  matTranslation.m9 * matRotation.m5 +
-					  matTranslation.m10 * matRotation.m9 +
-					  matTranslation.m11 * matRotation.m13;
-	matTransform.m10 = matTranslation.m8 * matRotation.m2 +
-					   matTranslation.m9 * matRotation.m6 +
-					   matTranslation.m10 * matRotation.m10 +
-					   matTranslation.m11 * matRotation.m14;
-	matTransform.m11 = matTranslation.m8 * matRotation.m3 +
-					   matTranslation.m9 * matRotation.m7 +
-					   matTranslation.m10 * matRotation.m11 +
-					   matTranslation.m11 * matRotation.m15;
-	matTransform.m12 = matTranslation.m12 * matRotation.m0 +
-					   matTranslation.m13 * matRotation.m4 +
-					   matTranslation.m14 * matRotation.m8 +
-					   matTranslation.m15 * matRotation.m12;
-	matTransform.m13 = matTranslation.m12 * matRotation.m1 +
-					   matTranslation.m13 * matRotation.m5 +
-					   matTranslation.m14 * matRotation.m9 +
-					   matTranslation.m15 * matRotation.m13;
-	matTransform.m14 = matTranslation.m12 * matRotation.m2 +
-					   matTranslation.m13 * matRotation.m6 +
-					   matTranslation.m14 * matRotation.m10 +
-					   matTranslation.m15 * matRotation.m14;
-	matTransform.m15 = matTranslation.m12 * matRotation.m3 +
-					   matTranslation.m13 * matRotation.m7 +
-					   matTranslation.m14 * matRotation.m11 +
-					   matTranslation.m15 * matRotation.m15;
+	Matrix matTransform = MatrixMultiply(matTranslation, matRotation);
 
 	camera->target.x = camera->position.x - matTransform.m12;
 	camera->target.y = camera->position.y - matTransform.m13;
