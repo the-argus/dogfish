@@ -48,6 +48,8 @@ void FpsCameraUpdate(Camera *camera, CameraData *camera_data)
 	// Mouse movement detection
 	Vector2 mousePositionDelta = GetMouseDelta();
 
+	camera->position.y = camera_data->playerEyesPosition;
+
 	// Keys input detection
 	// TODO: Input detection is raylib-dependant, it could be moved outside the
 	// module
@@ -90,9 +92,6 @@ void FpsCameraUpdate(Camera *camera, CameraData *camera_data)
 	// clamp X
 	camera_data->angle.x -= ((int)(camera_data->angle.x / (2 * PI))) * (2 * PI);
 
-	printf("Angle X: %f\tAngle Y: %f\n", RAD2DEG * camera_data->angle.x,
-		   RAD2DEG * camera_data->angle.y);
-
 	// Calculate translation matrix
 	// clang-format off
 	Matrix matTranslation = {
@@ -133,11 +132,6 @@ void FpsCameraUpdate(Camera *camera, CameraData *camera_data)
 	camera->target.x = camera->position.x - matTransform.m12;
 	camera->target.y = camera->position.y - matTransform.m13;
 	camera->target.z = camera->position.z - matTransform.m14;
-
-	// Camera position update
-	// NOTE: On CAMERA_FIRST_PERSON player Y-movement is limited to player 'eyes
-	// position'
-	camera->position.y = camera_data->playerEyesPosition;
 
 	// Camera swinging (y-movement), only when walking (some key pressed)
 	for (int i = 0; i < 6; i++)
