@@ -1,7 +1,9 @@
 #include "fps_camera.h"
 #include "constants.h"
 #include "raylib.h"
+#include "raymath.h"
 #include <math.h>
+#include <stdio.h>
 
 typedef enum
 {
@@ -12,17 +14,6 @@ typedef enum
 	MOVE_UP,
 	MOVE_DOWN
 } CameraMove;
-
-#ifndef PI
-#define PI 3.14159265358979323846
-#endif
-#ifndef DEG2RAD
-#define DEG2RAD (PI / 180.0f)
-#endif
-// unused atm
-#ifndef RAD2DEG
-#define RAD2DEG (180.0f / PI)
-#endif
 
 // Camera mouse movement sensitivity
 // TODO: it should be independent of framerate
@@ -96,12 +87,18 @@ void FpsCameraUpdate(Camera *camera, CameraData *camera_data)
 	else if (camera_data->angle.y < CAMERA_FIRST_PERSON_MAX_CLAMP * DEG2RAD)
 		camera_data->angle.y = CAMERA_FIRST_PERSON_MAX_CLAMP * DEG2RAD;
 
+    // clamp X
+    camera_data->angle.x -= ((int)(camera_data->angle.x / (2 * PI))) * (2 * PI);
+
+	printf("Angle X: %f\tAngle Y: %f\n", RAD2DEG * camera_data->angle.x,
+		   RAD2DEG * camera_data->angle.y);
+
 	// Calculate translation matrix
 	// clang-format off
 	Matrix matTranslation = {
         1.0f, 0.0f, 0.0f, 0.0f,
         0.0f, 1.0f, 0.0f, 0.0f,
-		0.0f, 0.0f, 1.0f, 1,
+		0.0f, 0.0f, 1.0f, 1.0f,
         0.0f, 0.0f, 0.0f, 1.0f
     };
 
