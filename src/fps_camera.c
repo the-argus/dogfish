@@ -97,12 +97,22 @@ void FpsCameraUpdate(Camera *camera, CameraData *camera_data)
 		camera_data->angle.y = CAMERA_FIRST_PERSON_MAX_CLAMP * DEG2RAD;
 
 	// Calculate translation matrix
-	Matrix matTranslation = {1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
-							 0.0f, 0.0f, 1.0f, 1,	 0.0f, 0.0f, 0.0f, 1.0f};
+	// clang-format off
+	Matrix matTranslation = {
+        1.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f, 1,
+        0.0f, 0.0f, 0.0f, 1.0f
+    };
 
 	// Calculate rotation matrix
-	Matrix matRotation = {1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
-						  0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
+	Matrix matRotation = {
+        1.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f
+    };
+	// clang-format on
 
 	float cosz = cosf(0.0f);
 	float sinz = sinf(0.0f);
