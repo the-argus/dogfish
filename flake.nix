@@ -19,8 +19,8 @@
             src = super.fetchFromGitHub {
               owner = "the-argus";
               repo = "raylib";
-              rev = "4.2.0";
-              sha256 = "sha256-aMIjywcQxki0cKlNznPAMfvrtGj3qcR95D4/BDuPZZM=";
+              rev = "ae1097878185ec89348122b0eb202997ff166f7c";
+              sha256 = "sha256-ofrPuayY95GgEOzVyx3ev9K+NgQKUzbdUM2SJDpDelo=";
             };
           });
         })
