@@ -11,7 +11,21 @@
     ...
   }: let
     system = "x86_64-linux";
-    regularPkgs = import nixpkgs {localSystem = {inherit system;};};
+    regularPkgs = import nixpkgs {
+      localSystem = {inherit system;};
+      overlays = [
+        (_: super: {
+          raylib = super.raylib.overrideAttrs (_: {
+            src = super.fetchFromGitHub {
+              owner = "the-argus";
+              repo = "raylib";
+              rev = "4.2.0";
+              sha256 = "sha256-aMIjywcQxki0cKlNznPAMfvrtGj3qcR95D4/BDuPZZM=";
+            };
+          });
+        })
+      ];
+    };
     clangMuslPkgs = import nixpkgs {
       localSystem = {
         inherit system;
@@ -44,41 +58,10 @@
         })
       ];
     };
-
-    lungfish = {
-      stdenv,
-      ninja,
-      pkg-config,
-      raylib,
-      ode,
-      meson,
-      ...
-    }:
-      stdenv.mkDerivation {
-        name = "lungfish";
-        src = ./src;
-        nativeBuildInputs = [
-          pkg-config
-          raylib
-          ode
-          meson
-          ninja
-        ];
-        configurePhase = ''
-          meson setup builddir
-        '';
-        buildPhase = ''
-          meson compile -C builddir
-        '';
-        installPhase = ''
-          mkdir -p $out/bin
-          mv builddir/lungfish $out/bin/lungfish
-        '';
-      };
   in {
     packages.${system} = {
-      lungfishMusl = clangMuslPkgs.callPackage lungfish {};
-      lungfish = regularPkgs.callPackage lungfish {stdenv = regularPkgs.clangStdenv;};
+      lungfishMusl = clangMuslPkgs.callPackage ./default.nix {};
+      lungfish = regularPkgs.callPackage ./default.nix {stdenv = regularPkgs.clangStdenv;};
       default = self.packages.${system}.lungfish;
     };
     devShell.${system} =
