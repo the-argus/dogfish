@@ -18,6 +18,7 @@
 static Gamestate gamestate;
 static float scale;
 static RenderTexture2D main_target;
+static void (*update_function)();
 
 void window_settings();
 void init_rendertexture();
@@ -25,16 +26,18 @@ void gather_input();
 void update();
 void main_draw();
 void window_draw();
+void defer_update_once() { update_function = &update; }
 
 int main(void)
 {
+    update_function = &defer_update_once;
 	// set windowing backend vars like title and size
 	window_settings();
 	// initialize main_texture to the correct size
 	init_rendertexture();
 
-    // initialize physics system
-    init_physics();
+	// initialize physics system
+	init_physics();
 
 	// inialize gamestate struct
 	gamestate.input.mouse.virtual_position = (Vector2){0};
@@ -60,7 +63,7 @@ int main(void)
 		gather_input();
 
 		// update in-game elements before drawing
-		update();
+		update_function();
 
 		// set draw target to the rendertexture, dont actually draw to window
 		BeginTextureMode(main_target);
@@ -82,7 +85,7 @@ int main(void)
 
 	// cleanup
 	free(gamestate.current_camera);
-    close_physics();
+	close_physics();
 	CloseWindow();
 
 	return 0;
@@ -92,6 +95,7 @@ int main(void)
 void update()
 {
 	FpsCameraUpdate(gamestate.current_camera, &(gamestate.camera_data));
+	update_physics(GetFrameTime());
 }
 
 /// Draw the in-game objects to a consistently sized rendertexture.
