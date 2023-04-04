@@ -11,3 +11,6 @@
 // FPS camera related constants
 #define PLAYER_EYE_HEIGHT 1.85f
 #define CAMERA_CONTROLS {'W', 'S', 'D', 'A', 'E', 'Q'}
+
+// physics constants
+#define GRAVITY 0.5

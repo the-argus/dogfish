@@ -7,11 +7,14 @@ add_global_arguments('-O2', language : 'c')
 
 raylib = dependency('raylib')
 
+ode = dependency('ode')
+
 source_file_names = [
   'main.c',
   'input.c',
   'camera_manager.c',
-  'fps_camera.c'
+  'fps_camera.c',
+  'physics.c'
 ]
 
 sources = []
@@ -22,4 +25,4 @@ endforeach
 
 my_headers = declare_dependency(include_directories : include_directories('include', '.'))
 
-executable('lungfish', sources, dependencies: [ raylib, my_headers ], link_args: '-lm')
+executable('lungfish', sources, dependencies: [ ode, raylib, my_headers ], link_args: '-lm')

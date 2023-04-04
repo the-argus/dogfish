@@ -1,12 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
+
 #include "raylib.h"
 #include "raymath.h"
+
 #include "constants.h"
 #include "architecture.h"
 #include "input.h"
 #include "camera_manager.h"
 #include "fps_camera.h"
+#include "physics.h"
 
 // useful for screen scaling
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
@@ -30,9 +33,12 @@ int main(void)
 	// initialize main_texture to the correct size
 	init_rendertexture();
 
+    // initialize physics system
+    init_physics();
+
 	// inialize gamestate struct
 	gamestate.input.mouse.virtual_position = (Vector2){0};
-    // this initializes current_camera, which involves a malloc
+	// this initializes current_camera, which involves a malloc
 	gamestate_new_fps_camera(&gamestate);
 
 	// initialization complete
@@ -67,8 +73,8 @@ int main(void)
             EndMode3D();
 		// clang-format on
 		EndTextureMode();
-        
-        // draw the game to the window at the correct size
+
+		// draw the game to the window at the correct size
 		BeginDrawing();
 		window_draw();
 		EndDrawing();
@@ -76,6 +82,7 @@ int main(void)
 
 	// cleanup
 	free(gamestate.current_camera);
+    close_physics();
 	CloseWindow();
 
 	return 0;
