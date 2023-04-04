@@ -81,11 +81,13 @@ int main(void)
 	return 0;
 }
 
+/// Perform per-frame game logic.
 void update()
 {
 	FpsCameraUpdate(gamestate.current_camera, &(gamestate.camera_data));
 }
 
+/// Draw the in-game objects to a consistently sized rendertexture.
 void main_draw()
 {
 	// draw a cube and then look at it
@@ -97,6 +99,7 @@ void main_draw()
 	DrawGrid(10, 1.0f);
 }
 
+/// Resize the game's main render texture and draw it to the window.
 void window_draw()
 {
 	// color of the bars around the rendertexture
@@ -112,6 +115,7 @@ void window_draw()
 		(Vector2){0, 0}, 0.0f, WHITE);
 }
 
+/// Set windowing backend settings like window title and size.
 void window_settings()
 {
 	SetTargetFPS(60);
@@ -120,6 +124,8 @@ void window_settings()
 	SetWindowMinSize(WINDOW_WIDTH, WINDOW_HEIGHT);
 }
 
+/// Initialize the main rendertexture to which the actual game elements are
+/// drawn. Determines the universal texture filter for scaling.
 void init_rendertexture()
 {
 	// variable width screen
@@ -127,6 +133,7 @@ void init_rendertexture()
 	SetTextureFilter(main_target.texture, TEXTURE_FILTER_BILINEAR);
 }
 
+/// Make the gamestate reflect the actual system IO state.
 void gather_input()
 {
 	// collect mouse information
