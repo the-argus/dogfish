@@ -25,4 +25,4 @@ endforeach
 
 my_headers = declare_dependency(include_directories : include_directories('include', '.'))
 
-executable('lungfish', sources, dependencies: [ ode, raylib, my_headers ], link_args: '-lm')
+executable('lungfish', sources, dependencies: [ ode, raylib, my_headers ], link_args: [ '-lm', '-lstdc++' ])
