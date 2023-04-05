@@ -1,6 +1,11 @@
 #pragma once
 #include "raylib.h"
-#include "fps_camera.h"
+
+typedef struct
+{
+	Vector2 angle;			  // Camera angle in plane XZ
+	int moveControl[6];	   // Move controls (CAMERA_FIRST_PERSON)
+} CameraData;
 
 typedef struct Mousestate {
     unsigned char left_pressed;
@@ -17,12 +22,12 @@ typedef struct Keystate {
 } Keystate;
 
 typedef struct Inputstate {
-    struct Mousestate mouse;
-    struct Keystate keys;
+    Mousestate mouse;
+    Keystate keys;
 } Inputstate;
 
 typedef struct Gamestate {
-    struct Inputstate input;
+    Inputstate input;
     Camera *current_camera;
     CameraData camera_data;
 } Gamestate;

@@ -96,7 +96,7 @@ int main(void)
 void update()
 {
 	fps_camera_update(gamestate.current_camera, &(gamestate.camera_data));
-	update_camera_tilt(gamestate.current_camera, &(gamestate.camera_data));
+	update_camera_tilt(gamestate.current_camera, gamestate.input);
 	update_physics(GetFrameTime());
     
     Vector3 pos = to_raylib(get_test_cube_position());

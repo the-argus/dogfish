@@ -2,6 +2,7 @@
 #include "constants.h"
 #include "raylib.h"
 #include "raymath.h"
+#include "architecture.h"
 #include <math.h>
 #include <stdio.h>
 
@@ -88,19 +89,15 @@ void fps_camera_update(Camera *camera, CameraData *camera_data)
 	camera->target.z = camera->position.z - matTransform.m14;
 }
 
-void update_camera_tilt(Camera *camera, CameraData *camera_data)
+void update_camera_tilt(Camera *camera, Inputstate input)
 {
 	static float swingCounter = 0.0f; // Used for 1st person swinging movement
 
-	bool direction[6] = {IsKeyDown(camera_data->moveControl[MOVE_FRONT]),
-						 IsKeyDown(camera_data->moveControl[MOVE_BACK]),
-						 IsKeyDown(camera_data->moveControl[MOVE_RIGHT]),
-						 IsKeyDown(camera_data->moveControl[MOVE_LEFT]),
-						 IsKeyDown(camera_data->moveControl[MOVE_UP]),
-						 IsKeyDown(camera_data->moveControl[MOVE_DOWN])};
+	bool direction[4] = {input.keys.up, input.keys.down, input.keys.left,
+						 input.keys.right};
 
 	// Camera swinging (y-movement), only when walking (some key pressed)
-	for (int i = 0; i < 6; i++)
+	for (int i = 0; i < 4; i++)
 		if (direction[i]) {
 			swingCounter += GetFrameTime();
 			break;
