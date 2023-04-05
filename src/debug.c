@@ -1,6 +1,13 @@
 #include "debug.h"
 #include "raylib.h"
 
+void Vector3Print(Vector3 vector, const char *name)
+{
+	char vec[80];
+	Vector3ToString(vec, 80, vector);
+	printf("%s: \t%s\n", name, vec);
+}
+
 void Vector3ToString(char *buffer, uint size, Vector3 vector)
 {
 	const char xprefix[] = "X: ";

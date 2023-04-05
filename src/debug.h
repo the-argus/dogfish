@@ -7,3 +7,4 @@
 #include <assert.h>
 
 void Vector3ToString(char *buffer, uint size, Vector3 vector);
+void Vector3Print(Vector3 vector, const char *name);
