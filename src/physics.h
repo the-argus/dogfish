@@ -2,6 +2,8 @@
 #include "ode/ode.h"
 #include "raylib.h"
 
+Vector3 to_raylib(const dVector3 v3);
+
 void init_physics();
 void update_physics(float delta_time);
 void close_physics();
