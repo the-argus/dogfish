@@ -42,6 +42,7 @@ int main(void)
 
 	// inialize gamestate struct
 	gamestate.input.mouse.virtual_position = (Vector2){0};
+    gamestate.next_camera_position = (Vector3){1, 1, 1};
 	// this initializes current_camera, which involves a malloc
 	gamestate_new_fps_camera(&gamestate);
 
@@ -98,18 +99,19 @@ void update()
 	FpsCameraUpdate(gamestate.current_camera, &(gamestate.camera_data));
 	update_physics(GetFrameTime());
     
-    Vector3 cam_pos = to_raylib(get_test_cube_position());
+    gamestate.next_camera_position = to_raylib(get_test_cube_position());
     char vecstring[80];
-    Vector3ToString(vecstring, 80, cam_pos);
+    Vector3ToString(vecstring, 80, gamestate.next_camera_position);
     printf("Camera Position according to test_cube: %s\n", vecstring);
-    gamestate.current_camera->position = cam_pos;
-	gamestate.current_camera->target = (Vector3){0};
-	// gamestate.current_camera->position = (Vector3){1, 1, 1};
 }
 
 /// Draw the in-game objects to a consistently sized rendertexture.
 void main_draw()
 {
+    // set camera info during draw
+	gamestate.current_camera->target = (Vector3){0};
+	gamestate.current_camera->position = gamestate.next_camera_position;
+
 	// draw a cube
     Vector3 pos = to_raylib(get_test_cube_position());
     Vector3 size = get_test_cube_size();
