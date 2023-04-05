@@ -98,6 +98,8 @@ void update()
 	fps_camera_update(gamestate.current_camera, &(gamestate.camera_data));
 	update_camera_tilt(gamestate.current_camera, gamestate.input);
 	update_physics(GetFrameTime());
+
+    apply_player_input_impulses(gamestate.input, gamestate.camera_data.angle.x);
     
     Vector3 pos = to_raylib(get_test_cube_position());
     gamestate.current_camera->position = pos;

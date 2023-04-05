@@ -14,7 +14,8 @@ source_file_names = [
   'input.c',
   'camera_manager.c',
   'fps_camera.c',
-  'physics.c'
+  'physics.c',
+  'debug.c'
 ]
 
 sources = []

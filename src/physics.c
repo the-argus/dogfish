@@ -1,7 +1,11 @@
 #include "ode/ode.h"
 #include "constants.h"
+#include "architecture.h"
 #include "physics.h"
 #include "raylib.h"
+#include "raymath.h"
+
+#include "debug.h"
 
 static dWorldID world;
 static dSpaceID space;
@@ -18,6 +22,31 @@ const Vector3 get_test_cube_size()
 {
 	const Vector3 size = {1, 1, 1};
 	return size;
+}
+
+void apply_player_input_impulses(Inputstate input, float angle_x)
+{
+    Vector3 impulse = {0};
+    
+    // calculate forward/backwards input
+    int vertical_input = input.keys.down - input.keys.up;
+
+    impulse.x = sin(angle_x) * PLAYER_MOVE_IMPULSE * vertical_input;
+    impulse.z = cos(angle_x) * PLAYER_MOVE_IMPULSE * vertical_input;
+    
+    // also grab left/right input
+    Vector3 h_impulse = Vector3CrossProduct(impulse, (Vector3){0, 1, 0});
+    int horizontal_input = input.keys.left - input.keys.right;
+    h_impulse = Vector3Scale(h_impulse, horizontal_input);
+    
+    char vec[80];
+    Vector3ToString(vec, 80, h_impulse);
+    printf("%s\n", vec);
+    
+    impulse = Vector3Add(impulse, h_impulse);
+
+
+    dBodyAddRelForce(test_cube, impulse.x, impulse.y, impulse.z);
 }
 
 static void nearCallback(void *unused, dGeomID o1, dGeomID o2)

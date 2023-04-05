@@ -1,3 +1,4 @@
+#pragma once
 #define voidptr void *
 typedef unsigned int uint;
 
