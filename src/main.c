@@ -109,7 +109,6 @@ void update()
 void main_draw()
 {
     // set camera info during draw
-	gamestate.current_camera->target = (Vector3){0};
 	gamestate.current_camera->position = gamestate.next_camera_position;
 
 	// draw a cube
