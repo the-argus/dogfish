@@ -102,7 +102,9 @@ void update()
 void main_draw()
 {
 	// draw a cube and then look at it
-	DrawCube((Vector3){0}, 0.2f, 0.2f, 0.2f, RED);
+    const dReal* pos = get_test_cube_position();
+    Vector3 size = get_test_cube_size();
+	DrawCube((Vector3){pos[0], pos[2], pos[1]}, size.x, size.y, size.z, RED);
 	gamestate.current_camera->target = (Vector3){0};
 	gamestate.current_camera->position = (Vector3){1, 1, 1};
 
