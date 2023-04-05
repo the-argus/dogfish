@@ -101,9 +101,6 @@ void update()
     
     Vector3 pos = to_raylib(get_test_cube_position());
     gamestate.current_camera->position = pos;
-    char vecstring[80];
-    Vector3ToString(vecstring, 80, pos);
-    printf("Camera Position according to test_cube: %s\n", vecstring);
 }
 
 /// Draw the in-game objects to a consistently sized rendertexture.
