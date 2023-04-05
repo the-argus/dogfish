@@ -99,18 +99,17 @@ void update()
 	FpsCameraUpdate(gamestate.current_camera, &(gamestate.camera_data));
 	update_physics(GetFrameTime());
     
-    gamestate.next_camera_position = to_raylib(get_test_cube_position());
+    Vector3 pos = to_raylib(get_test_cube_position());
+    pos.y += 2;
+    gamestate.current_camera->position = pos;
     char vecstring[80];
-    Vector3ToString(vecstring, 80, gamestate.next_camera_position);
+    Vector3ToString(vecstring, 80, pos);
     printf("Camera Position according to test_cube: %s\n", vecstring);
 }
 
 /// Draw the in-game objects to a consistently sized rendertexture.
 void main_draw()
 {
-    // set camera info during draw
-	gamestate.current_camera->position = gamestate.next_camera_position;
-
 	// draw a cube
     Vector3 pos = to_raylib(get_test_cube_position());
     Vector3 size = get_test_cube_size();
