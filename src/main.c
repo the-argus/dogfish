@@ -10,6 +10,7 @@
 #include "camera_manager.h"
 #include "fps_camera.h"
 #include "physics.h"
+#include "debug.h"
 
 // useful for screen scaling
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
@@ -96,17 +97,23 @@ void update()
 {
 	FpsCameraUpdate(gamestate.current_camera, &(gamestate.camera_data));
 	update_physics(GetFrameTime());
+    
+    Vector3 cam_pos = to_raylib(get_test_cube_position());
+    char vecstring[80];
+    Vector3ToString(vecstring, 80, cam_pos);
+    printf("Camera Position according to test_cube: %s\n", vecstring);
+    gamestate.current_camera->position = cam_pos;
+	gamestate.current_camera->target = (Vector3){0};
+	// gamestate.current_camera->position = (Vector3){1, 1, 1};
 }
 
 /// Draw the in-game objects to a consistently sized rendertexture.
 void main_draw()
 {
-	// draw a cube and then look at it
+	// draw a cube
     Vector3 pos = to_raylib(get_test_cube_position());
     Vector3 size = get_test_cube_size();
 	DrawCube(pos, size.x, size.y, size.z, RED);
-	gamestate.current_camera->target = (Vector3){0};
-	gamestate.current_camera->position = (Vector3){1, 1, 1};
 
 	// grid for visual aid
 	DrawGrid(10, 1.0f);
