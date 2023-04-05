@@ -31,18 +31,16 @@ void apply_player_input_impulses(Inputstate input, float angle_x)
     // calculate forward/backwards input
     int vertical_input = input.keys.down - input.keys.up;
 
-    impulse.x = sin(angle_x) * PLAYER_MOVE_IMPULSE * vertical_input;
-    impulse.z = cos(angle_x) * PLAYER_MOVE_IMPULSE * vertical_input;
+    impulse.x = sin(angle_x) * PLAYER_MOVE_IMPULSE;
+    impulse.z = cos(angle_x) * PLAYER_MOVE_IMPULSE;
+    Vector3 h_impulse = Vector3CrossProduct(Vector3Normalize(impulse), (Vector3){0, 1, 0});
     
+    impulse = Vector3Scale(impulse, vertical_input);
+
     // also grab left/right input
-    Vector3 h_impulse = Vector3CrossProduct(impulse, (Vector3){0, 1, 0});
     int horizontal_input = input.keys.left - input.keys.right;
     h_impulse = Vector3Scale(h_impulse, horizontal_input);
-    
-    char vec[80];
-    Vector3ToString(vec, 80, h_impulse);
-    printf("%s\n", vec);
-    
+     
     impulse = Vector3Add(impulse, h_impulse);
 
 
