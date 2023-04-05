@@ -25,5 +25,4 @@ typedef struct Gamestate {
     struct Inputstate input;
     Camera *current_camera;
     CameraData camera_data;
-    Vector3 next_camera_position;
 } Gamestate;

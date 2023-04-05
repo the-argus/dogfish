@@ -5,16 +5,6 @@
 #include <math.h>
 #include <stdio.h>
 
-typedef enum
-{
-	MOVE_FRONT = 0,
-	MOVE_BACK,
-	MOVE_RIGHT,
-	MOVE_LEFT,
-	MOVE_UP,
-	MOVE_DOWN
-} CameraMove;
-
 // Camera mouse movement sensitivity
 // TODO: it should be independent of framerate
 #define CAMERA_MOUSE_MOVE_SENSITIVITY 0.5f
@@ -36,46 +26,10 @@ typedef enum
 // Maximum left-right tilting distance when walking
 #define CAMERA_FIRST_PERSON_TILTING_DELTA 0.005f
 
-// PLAYER (used by camera)
-#define PLAYER_MOVEMENT_SENSITIVITY 2.0f
-
-void FpsCameraUpdate(Camera *camera, CameraData *camera_data)
+void fps_camera_update(Camera *camera, CameraData *camera_data)
 {
-	static float swingCounter = 0.0f; // Used for 1st person swinging movement
-
-	// TODO: Compute CAMERA.targetDistance and CAMERA.angle here (?)
-
 	// Mouse movement detection
 	Vector2 mousePositionDelta = GetMouseDelta();
-
-	camera->position.y = camera_data->playerEyesPosition;
-
-	// Keys input detection
-	// TODO: Input detection is raylib-dependant, it could be moved outside the
-	// module
-	bool direction[6] = {IsKeyDown(camera_data->moveControl[MOVE_FRONT]),
-						 IsKeyDown(camera_data->moveControl[MOVE_BACK]),
-						 IsKeyDown(camera_data->moveControl[MOVE_RIGHT]),
-						 IsKeyDown(camera_data->moveControl[MOVE_LEFT]),
-						 IsKeyDown(camera_data->moveControl[MOVE_UP]),
-						 IsKeyDown(camera_data->moveControl[MOVE_DOWN])};
-	camera->position.x += (sinf(camera_data->angle.x) * direction[MOVE_BACK] -
-						   sinf(camera_data->angle.x) * direction[MOVE_FRONT] -
-						   cosf(camera_data->angle.x) * direction[MOVE_LEFT] +
-						   cosf(camera_data->angle.x) * direction[MOVE_RIGHT]) *
-						  PLAYER_MOVEMENT_SENSITIVITY * GetFrameTime();
-
-	camera->position.y +=
-		(sinf(camera_data->angle.y) * direction[MOVE_FRONT] -
-		 sinf(camera_data->angle.y) * direction[MOVE_BACK] +
-		 1.0f * direction[MOVE_UP] - 1.0f * direction[MOVE_DOWN]) *
-		PLAYER_MOVEMENT_SENSITIVITY * GetFrameTime();
-
-	camera->position.z += (cosf(camera_data->angle.x) * direction[MOVE_BACK] -
-						   cosf(camera_data->angle.x) * direction[MOVE_FRONT] +
-						   sinf(camera_data->angle.x) * direction[MOVE_LEFT] -
-						   sinf(camera_data->angle.x) * direction[MOVE_RIGHT]) *
-						  PLAYER_MOVEMENT_SENSITIVITY * GetFrameTime();
 
 	// Camera orientation calculation
 	camera_data->angle.x -=
@@ -132,6 +86,18 @@ void FpsCameraUpdate(Camera *camera, CameraData *camera_data)
 	camera->target.x = camera->position.x - matTransform.m12;
 	camera->target.y = camera->position.y - matTransform.m13;
 	camera->target.z = camera->position.z - matTransform.m14;
+}
+
+void update_camera_tilt(Camera *camera, CameraData *camera_data)
+{
+	static float swingCounter = 0.0f; // Used for 1st person swinging movement
+
+	bool direction[6] = {IsKeyDown(camera_data->moveControl[MOVE_FRONT]),
+						 IsKeyDown(camera_data->moveControl[MOVE_BACK]),
+						 IsKeyDown(camera_data->moveControl[MOVE_RIGHT]),
+						 IsKeyDown(camera_data->moveControl[MOVE_LEFT]),
+						 IsKeyDown(camera_data->moveControl[MOVE_UP]),
+						 IsKeyDown(camera_data->moveControl[MOVE_DOWN])};
 
 	// Camera swinging (y-movement), only when walking (some key pressed)
 	for (int i = 0; i < 6; i++)
@@ -139,6 +105,7 @@ void FpsCameraUpdate(Camera *camera, CameraData *camera_data)
 			swingCounter += GetFrameTime();
 			break;
 		}
+
 	camera->position.y -=
 		sinf(2 * PI * CAMERA_FIRST_PERSON_STEP_FREQUENCY * swingCounter) *
 		CAMERA_FIRST_PERSON_SWINGING_DELTA;

@@ -23,8 +23,6 @@ void gamestate_new_fps_camera(struct Gamestate *gamestate)
 
 	CameraData camera_data = {
 		// Global CAMERA state context
-		.targetDistance = 0,
-		.playerEyesPosition = camera->position.y,
 		.angle = {0},
 		.moveControl = CAMERA_CONTROLS,
 	};
@@ -35,9 +33,6 @@ void gamestate_new_fps_camera(struct Gamestate *gamestate)
 	float dx = v2.x - v1.x;
 	float dy = v2.y - v1.y;
 	float dz = v2.z - v1.z;
-
-	// Distance to target
-	camera_data.targetDistance = sqrtf(dx * dx + dy * dy + dz * dz);
 
 	// Camera angle calculation
 	// Camera angle in plane XZ (0 aligned with Z, move positive CCW)

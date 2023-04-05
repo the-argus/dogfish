@@ -11,6 +11,15 @@
 // FPS camera related constants
 #define PLAYER_EYE_HEIGHT 1.85f
 #define CAMERA_CONTROLS {'W', 'S', 'D', 'A', 'E', 'Q'}
+typedef enum
+{
+	MOVE_FRONT = 0,
+	MOVE_BACK,
+	MOVE_RIGHT,
+	MOVE_LEFT,
+	MOVE_UP,
+	MOVE_DOWN
+} MovementKeys;
 
 // physics constants
 #define GRAVITY 0.5
