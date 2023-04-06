@@ -23,5 +23,9 @@ typedef enum
 #define PLAYER_MOVE_IMPULSE 1
 #define PLAYER_JUMP_FORCE 30
 
+// how up-facing a collision must be to count as the "ground". 1 is perfectly up
+// and 0 is any collision
+#define ON_GROUND_THRESHHOLD 0.7f
+
 // physics constants
 #define GRAVITY 0.5

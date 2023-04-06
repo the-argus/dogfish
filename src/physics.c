@@ -24,11 +24,28 @@ const Vector3 get_test_cube_size()
 	return size;
 }
 
+static void init_contact(dContact *contact)
+{
+	contact->surface.mode = dContactSoftCFM | dContactApprox1;
+	contact->surface.mu = 0.5;
+	contact->surface.soft_cfm = 0.01;
+}
+
 static int on_ground(dBodyID body)
 {
 	dGeomID geom = dBodyGetFirstGeom(body);
-	dContact contact[3];
-	return dCollide(geom, ground, 3, &contact[0].geom, sizeof(dContact));
+	dContact contact;
+	init_contact(&contact);
+	int num_collisions =
+		dCollide(geom, ground, 3, &contact.geom, sizeof(dContact));
+
+	if (num_collisions > 0) {
+		// ensure the collision was with a face which is pointing up
+		float upness = Vector3DotProduct(to_raylib(contact.geom.normal),
+										 (Vector3){0, 1, 0});
+		return upness > ON_GROUND_THRESHHOLD;
+	}
+	return 0;
 }
 
 void apply_player_input_impulses(Inputstate input, float angle_x)
@@ -52,7 +69,7 @@ void apply_player_input_impulses(Inputstate input, float angle_x)
 	impulse = Vector3Add(impulse, h_impulse);
 
 	if (on_ground(test_cube)) {
-		impulse = Vector3Add(impulse, (Vector3){0, PLAYER_JUMP_FORCE, 0});
+		impulse.y += PLAYER_JUMP_FORCE;
 	}
 
 	dBodyAddRelForce(test_cube, impulse.x, impulse.y, impulse.z);
@@ -73,9 +90,7 @@ static void nearCallback(void *unused, dGeomID o1, dGeomID o2)
 
 	dContact contact[3]; // up to 3 contacts per box
 	for (i = 0; i < 3; i++) {
-		contact[i].surface.mode = dContactSoftCFM | dContactApprox1;
-		contact[i].surface.mu = 0.5;
-		contact[i].surface.soft_cfm = 0.01;
+		init_contact(&contact[i]);
 	}
 	int numc = dCollide(o1, o2, 3, &contact[0].geom, sizeof(dContact));
 	for (i = 0; i < numc; i++) {
