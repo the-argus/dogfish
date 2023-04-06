@@ -19,7 +19,6 @@
 static Gamestate gamestate;
 static float scale;
 static RenderTexture2D main_target;
-static void (*update_function)();
 
 void window_settings();
 void init_rendertexture();
@@ -27,11 +26,9 @@ void gather_input();
 void update();
 void main_draw();
 void window_draw();
-void defer_update_once() { update_function = &update; }
 
 int main(void)
 {
-    update_function = &defer_update_once;
 	// set windowing backend vars like title and size
 	window_settings();
 	// initialize main_texture to the correct size
@@ -64,7 +61,7 @@ int main(void)
 		gather_input();
 
 		// update in-game elements before drawing
-		update_function();
+		update();
 
 		// set draw target to the rendertexture, dont actually draw to window
 		BeginTextureMode(main_target);
@@ -95,6 +92,9 @@ int main(void)
 /// Perform per-frame game logic.
 void update()
 {
+    // if literally no time has passed since previous update then don't change
+    // anything. also ODE will throw an error if delta is 0
+    if (GetFrameTime() == 0) {return;}
 	fps_camera_update(gamestate.current_camera, &(gamestate.camera_data));
 	update_camera_tilt(gamestate.current_camera, gamestate.input);
 	update_physics(GetFrameTime());
