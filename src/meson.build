@@ -1,9 +1,5 @@
-project('lungfish', 'c', default_options: 'default_library=static')
-
-add_global_arguments('-Wall', language : 'c')
-add_global_arguments('-Werror', language : 'c')
-add_global_arguments('-pedantic', language : 'c')
-add_global_arguments('-O2', language : 'c')
+# see https://mesonbuild.com/Builtin-options.html#details-for-buildtype
+project('lungfish', 'c', default_options: ['default_library=static', 'buildtype=debugoptimized', 'warning_level=0'])
 
 raylib = dependency('raylib')
 
