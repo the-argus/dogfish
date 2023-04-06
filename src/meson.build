@@ -5,6 +5,9 @@ raylib = dependency('raylib')
 
 ode = dependency('ode')
 
+# add_global_arguments('-fsanitize=address', language : 'c')
+# add_global_arguments('-fno-omit-frame-pointer', language : 'c')
+
 source_file_names = [
   'main.c',
   'input.c',
@@ -22,4 +25,12 @@ endforeach
 
 my_headers = declare_dependency(include_directories : include_directories('include', '.'))
 
-executable('lungfish', sources, dependencies: [ ode, raylib, my_headers ], link_args: [ '-lm', '-lstdc++' ])
+link_args = [ '-lm', '-lstdc++' ]
+
+# additional_flags = [ '-fsanitize=address', '-fno-omit-frame-pointer' ]
+additional_flags = [ ]
+foreach flag : additional_flags
+  link_args += flag
+endforeach
+
+executable('lungfish', sources, dependencies: [ ode, raylib, my_headers ], link_args: link_args)
