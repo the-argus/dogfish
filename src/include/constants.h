@@ -21,6 +21,7 @@ typedef enum
 } MovementKeys;
 
 #define PLAYER_MOVE_IMPULSE 1
+#define PLAYER_JUMP_FORCE 30
 
 // physics constants
 #define GRAVITY 0.5

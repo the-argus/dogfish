@@ -24,27 +24,38 @@ const Vector3 get_test_cube_size()
 	return size;
 }
 
+static int on_ground(dBodyID body)
+{
+	dGeomID geom = dBodyGetFirstGeom(body);
+	dContact contact[3];
+	return dCollide(geom, ground, 3, &contact[0].geom, sizeof(dContact));
+}
+
 void apply_player_input_impulses(Inputstate input, float angle_x)
 {
-    Vector3 impulse = {0};
-    
-    // calculate forward/backwards input
-    int vertical_input = input.keys.down - input.keys.up;
+	Vector3 impulse = {0};
 
-    impulse.x = sin(angle_x) * PLAYER_MOVE_IMPULSE;
-    impulse.z = cos(angle_x) * PLAYER_MOVE_IMPULSE;
-    Vector3 h_impulse = Vector3CrossProduct(Vector3Normalize(impulse), (Vector3){0, 1, 0});
-    
-    impulse = Vector3Scale(impulse, vertical_input);
+	// calculate forward/backwards input
+	int vertical_input = input.keys.down - input.keys.up;
 
-    // also grab left/right input
-    int horizontal_input = input.keys.left - input.keys.right;
-    h_impulse = Vector3Scale(h_impulse, horizontal_input);
-     
-    impulse = Vector3Add(impulse, h_impulse);
+	impulse.x = sin(angle_x) * PLAYER_MOVE_IMPULSE;
+	impulse.z = cos(angle_x) * PLAYER_MOVE_IMPULSE;
+	Vector3 h_impulse =
+		Vector3CrossProduct(Vector3Normalize(impulse), (Vector3){0, 1, 0});
 
+	impulse = Vector3Scale(impulse, vertical_input);
 
-    dBodyAddRelForce(test_cube, impulse.x, impulse.y, impulse.z);
+	// also grab left/right input
+	int horizontal_input = input.keys.left - input.keys.right;
+	h_impulse = Vector3Scale(h_impulse, horizontal_input);
+
+	impulse = Vector3Add(impulse, h_impulse);
+
+	if (on_ground(test_cube)) {
+		impulse = Vector3Add(impulse, (Vector3){0, PLAYER_JUMP_FORCE, 0});
+	}
+
+	dBodyAddRelForce(test_cube, impulse.x, impulse.y, impulse.z);
 }
 
 static void nearCallback(void *unused, dGeomID o1, dGeomID o2)
