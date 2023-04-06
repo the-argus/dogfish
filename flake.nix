@@ -11,21 +11,7 @@
     ...
   }: let
     system = "x86_64-linux";
-    regularPkgs = import nixpkgs {
-      localSystem = {inherit system;};
-      overlays = [
-        (_: super: {
-          raylib = super.raylib.overrideAttrs (_: {
-            src = super.fetchFromGitHub {
-              owner = "the-argus";
-              repo = "raylib";
-              rev = "ae1097878185ec89348122b0eb202997ff166f7c";
-              sha256 = "sha256-ofrPuayY95GgEOzVyx3ev9K+NgQKUzbdUM2SJDpDelo=";
-            };
-          });
-        })
-      ];
-    };
+    regularPkgs = import nixpkgs {localSystem = {inherit system;};};
     clangMuslPkgs = import nixpkgs {
       localSystem = {
         inherit system;
