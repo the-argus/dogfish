@@ -164,6 +164,7 @@ void gather_input()
 		IsMouseButtonPressed(MOUSE_BUTTON_RIGHT);
 
 	// collect keyboard information
+    gamestate.input.keys.jump = IsKeyDown(KEY_SPACE);
 	gamestate.input.keys.right = IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D);
 	gamestate.input.keys.left = IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A);
 	gamestate.input.keys.up = IsKeyDown(KEY_UP) || IsKeyDown(KEY_W);

@@ -68,7 +68,7 @@ void apply_player_input_impulses(Inputstate input, float angle_x)
 
 	impulse = Vector3Add(impulse, h_impulse);
 
-	if (on_ground(test_cube)) {
+	if (input.keys.jump && on_ground(test_cube)) {
 		impulse.y += PLAYER_JUMP_FORCE;
 	}
 
@@ -130,8 +130,8 @@ void init_physics()
 	// apply the mass to the cube
 	dBodySetMass(test_cube, &cube_mass);
 
-    // infinite moment of inertia, basically
-    dBodySetAngularDamping(test_cube, 1);
+	// infinite moment of inertia, basically
+	dBodySetAngularDamping(test_cube, 1);
 
 	// make geometry and apply it to the cube body
 	test_cube_geom = dCreateBox(space, cube_size.x, cube_size.y, cube_size.z);

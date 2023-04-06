@@ -19,6 +19,7 @@ typedef struct Keystate {
     unsigned char left;
     unsigned char right;
     unsigned char down;
+    unsigned char jump;
 } Keystate;
 
 typedef struct Inputstate {
