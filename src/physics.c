@@ -130,6 +130,9 @@ void init_physics()
 	// apply the mass to the cube
 	dBodySetMass(test_cube, &cube_mass);
 
+    // infinite moment of inertia, basically
+    dBodySetAngularDamping(test_cube, 1);
+
 	// make geometry and apply it to the cube body
 	test_cube_geom = dCreateBox(space, cube_size.x, cube_size.y, cube_size.z);
 	dGeomSetBody(test_cube_geom, test_cube);
