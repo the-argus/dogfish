@@ -40,7 +40,13 @@ foreach file : source_file_names
   sources += files(file)
 endforeach
 
-my_headers = declare_dependency(include_directories : include_directories('include', '.', windows_include))
+includes = ['include', '.']
+
+if build_machine.system() == 'windows' or build_machine.system() == 'cygwsn'
+  includes += windows_include
+endif
+
+my_headers = declare_dependency(include_directories : include_directories(includes))
 
 link_args = [ '-lm', '-lstdc++', '-L../lib' ]
 
