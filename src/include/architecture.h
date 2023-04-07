@@ -5,7 +5,7 @@
 #define OPTIONAL(type) \
 typedef struct Opt_##type { \
     unsigned char has; \
-    type func; \
+    type value; \
 } Opt_##type;
 
 typedef struct
@@ -42,19 +42,37 @@ typedef struct Gamestate {
 
 struct GameObject;
 
-typedef void (*UpdateFunction)(Gamestate *gamestate, float delta_time);
-typedef void (*DrawFunction)(Gamestate *gamestate);
+typedef void (*UpdateFunction)(struct GameObject *self, Gamestate *gamestate, float delta_time);
+typedef void (*DrawFunction)(struct GameObject *self, Gamestate *gamestate);
+typedef void (*CollisionHandler)(dGeomID self, dGeomID other);
 
 // versions of types but they have a true/false for whether or not they
 // are valid/populated
 typedef dBodyID PhysicsBody;
+typedef dGeomID PhysicsGeometry;
+
+OPTIONAL(PhysicsBody)
+OPTIONAL(CollisionHandler)
+
+// a physics component always has a geom but not necessarily a body
+typedef struct PhysicsComponent {
+    unsigned short mask; // 8 bits
+    PhysicsGeometry geom;
+    Opt_CollisionHandler collision_handler;
+    Opt_PhysicsBody body; // this body's UserData should be a pointer to the parent gameobject
+} PhysicsComponent;
+
 OPTIONAL(UpdateFunction)
 OPTIONAL(DrawFunction)
-OPTIONAL(PhysicsBody)
+OPTIONAL(PhysicsComponent)
 
 // THE game object!!!!
+// Possible implementations that will use game object:
+//  - player/enemies (physics body determines in-world location, needs update and draw)
+//  - wall (has a physics GEOM, but no physics body)
+//  - particle generator, effect, decorative model (no physics, no update, only draw)
 typedef struct GameObject {
-    Opt_PhysicsBody body;
+    Opt_PhysicsComponent physics;
     Opt_DrawFunction draw;
     Opt_UpdateFunction update;
 } GameObject;
