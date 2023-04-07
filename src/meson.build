@@ -41,14 +41,15 @@ foreach file : source_file_names
 endforeach
 
 includes = ['include', '.']
+link_args = [ '-lm', '-L../lib' ]
 
 if build_machine.system() == 'windows' or build_machine.system() == 'cygwsn'
   includes += windows_include
+else
+  link_args += '-lstdc++'
 endif
 
 my_headers = declare_dependency(include_directories : include_directories(includes))
-
-link_args = [ '-lm', '-lstdc++', '-L../lib' ]
 
 # additional_flags = [ '-fsanitize=address', '-fno-omit-frame-pointer' ]
 additional_flags = [ ]
