@@ -1,6 +1,7 @@
 # windows people
 lib/
 ode-0.16.3/
+windows/
 
 # meson
 builddir/
