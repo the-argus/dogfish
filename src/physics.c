@@ -26,9 +26,9 @@ Vector3 get_test_cube_size()
 
 static void init_contact(dContact *contact)
 {
-	contact->surface.mode = dContactSoftCFM | dContactApprox1;
+	contact->surface.mode = 0;
 	contact->surface.mu = 0.5;
-	contact->surface.soft_cfm = 0.01;
+	contact->surface.mu2 = 0;
 }
 
 static int on_ground(dBodyID body)
@@ -36,10 +36,8 @@ static int on_ground(dBodyID body)
 	dGeomID geom = dBodyGetFirstGeom(body);
 	dContact contact;
 	init_contact(&contact);
-	int num_collisions =
-		dCollide(geom, ground, 3, &contact.geom, sizeof(dContact));
 
-	if (num_collisions > 0) {
+	if (dCollide(geom, ground, 1, &contact.geom, sizeof(dContactGeom))) {
 		// ensure the collision was with a face which is pointing up
 		float upness = Vector3DotProduct(to_raylib(contact.geom.normal),
 										 (Vector3){0, 1, 0});
@@ -111,10 +109,8 @@ void init_physics()
 	dInitODE2(0);
 	world = dWorldCreate();
 	space = dHashSpaceCreate(0);
-	dWorldSetGravity(world, 0, -GRAVITY, 0);
-
 	contactgroup = dJointGroupCreate(0);
-
+	dWorldSetGravity(world, 0, -GRAVITY, 0);
 	ground = dCreatePlane(space, 0, 1, 0, 0);
 
 	// create a cube which raylib can draw later
@@ -136,14 +132,14 @@ void init_physics()
 	// make geometry and apply it to the cube body
 	test_cube_geom = dCreateBox(space, cube_size.x, cube_size.y, cube_size.z);
 	dGeomSetBody(test_cube_geom, test_cube);
-    
-    // allocate the data for this thread to access ODE
+
+	// allocate the data for this thread to access ODE
 	assert(dAllocateODEDataForThread(dAllocateMaskAll));
 }
 
 void close_physics()
 {
-    dCleanupODEAllDataForThread();
+	dCleanupODEAllDataForThread();
 	dJointGroupDestroy(contactgroup);
 	dSpaceDestroy(space);
 	dWorldDestroy(world);
