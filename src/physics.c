@@ -75,10 +75,9 @@ void apply_player_input_impulses(Inputstate input, float angle_x)
 	dBodyAddRelForce(test_cube, impulse.x, impulse.y, impulse.z);
 }
 
-static void nearCallback(void *unused, dGeomID o1, dGeomID o2)
+static void nearCallback(void *data, dGeomID o1, dGeomID o2)
 {
-    UNUSED(unused);
-	int i;
+	UNUSED(data);
 
 	// only collide things with the ground
 	int g1 = (o1 == ground);
@@ -89,13 +88,13 @@ static void nearCallback(void *unused, dGeomID o1, dGeomID o2)
 	dBodyID b1 = dGeomGetBody(o1);
 	dBodyID b2 = dGeomGetBody(o2);
 
-	dContact contact[3]; // up to 3 contacts per box
-	for (i = 0; i < 3; i++) {
-		init_contact(&contact[i]);
-	}
-	int numc = dCollide(o1, o2, 3, &contact[0].geom, sizeof(dContact));
-	for (i = 0; i < numc; i++) {
-		dJointID c = dJointCreateContact(world, contactgroup, contact + i);
+	if (b1 && b2 && dAreConnected(b1, b2))
+		return;
+
+	dContact contact;
+	init_contact(&contact);
+	if (dCollide(o1, o2, 1, &contact.geom, sizeof(contact.geom))) {
+		dJointID c = dJointCreateContact(world, contactgroup, &contact);
 		dJointAttach(c, b1, b2);
 	}
 }
