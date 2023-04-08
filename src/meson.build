@@ -6,16 +6,12 @@ cc = meson.get_compiler('c')
 ode = dependency('ode', required: false)
 raylib = dependency('raylib', required: false)
 
-# backup library locations
-
-windows_lib = meson.source_root() + '/windows/lib'
+windows_lib = meson.source_root() + '\\windows\\lib'
 windows_include = 'windows/include'
 
-if not ode.found()
-  ode = declare_dependency(
-    dependencies: cc.find_library('ode', dirs: [windows_lib]),
-    include_directories: include_directories(windows_include))
-endif
+# backup library locations
+windows_linkflags = [ '-L' + windows_lib, '-lode_double', '-lwinmm' ]
+
 if not raylib.found()
   raylib = declare_dependency(
     dependencies: cc.find_library('raylib', dirs: [windows_lib]),
@@ -43,7 +39,7 @@ endforeach
 includes = ['include', '.']
 link_args = [ '-lm', '-L../lib' ]
 
-if build_machine.system() == 'windows' or build_machine.system() == 'cygwsn'
+if build_machine.system() == 'windows' or build_machine.system() == 'cygwin'
   includes += windows_include
 else
   link_args += '-lstdc++'
@@ -56,5 +52,9 @@ additional_flags = [ ]
 foreach flag : additional_flags
   link_args += flag
 endforeach
+
+if build_machine.system() == 'windows' or build_machine.system() == 'cygwsn'
+  link_args += windows_linkflags
+endif
 
 executable('lungfish', sources, dependencies: [ ode, raylib, my_headers ], link_args: link_args)
