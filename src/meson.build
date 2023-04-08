@@ -1,5 +1,5 @@
 # see https://mesonbuild.com/Builtin-options.html#details-for-buildtype
-project('lungfish', 'c', default_options: ['default_library=static', 'buildtype=debugoptimized', 'warning_level=3'])
+project('dogfish', 'c', default_options: ['default_library=static', 'buildtype=debugoptimized', 'warning_level=3'])
 
 cc = meson.get_compiler('c')
 
@@ -58,4 +58,4 @@ if build_machine.system() == 'windows' or build_machine.system() == 'cygwsn'
   link_args += windows_linkflags
 endif
 
-executable('lungfish', sources, dependencies: [ ode, raylib, my_headers ], link_args: link_args)
+executable('dogfish', sources, dependencies: [ ode, raylib, my_headers ], link_args: link_args)

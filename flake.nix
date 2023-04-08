@@ -22,7 +22,7 @@
         pkgs.clangStdenv.override {
           cc = regularPkgs.buildPackages.clang;
         };
-      # make lungfish's build system and some deps come from standard packages
+      # make dogfish's build system and some deps come from standard packages
       overlays = [
         (_: _: {
           cmake = regularPkgs.cmake;
@@ -46,9 +46,9 @@
     };
   in {
     packages.${system} = {
-      lungfishMusl = clangMuslPkgs.callPackage ./default.nix {};
-      lungfish = regularPkgs.callPackage ./default.nix {stdenv = regularPkgs.clangStdenv;};
-      default = self.packages.${system}.lungfish;
+      dogfishMusl = clangMuslPkgs.callPackage ./default.nix {};
+      dogfish = regularPkgs.callPackage ./default.nix {stdenv = regularPkgs.clangStdenv;};
+      default = self.packages.${system}.dogfish;
     };
     devShell.${system} =
       regularPkgs.mkShell.override

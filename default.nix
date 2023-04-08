@@ -8,7 +8,7 @@
   ...
 }:
 stdenv.mkDerivation {
-  name = "lungfish";
+  name = "dogfish";
   src = ./src;
   nativeBuildInputs = [
     pkg-config
@@ -25,6 +25,6 @@ stdenv.mkDerivation {
   '';
   installPhase = ''
     mkdir -p $out/bin
-    mv builddir/lungfish $out/bin/lungfish
+    mv builddir/dogfish $out/bin/dogfish
   '';
 }

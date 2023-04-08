@@ -49,7 +49,7 @@ int main(void)
 	gamestate_new_fps_camera(&gamestate);
 
 	// initialization complete
-	printf("lungfish...\n");
+	printf("dogfish...\n");
 
 	// loop until player presses escape or close button
 	bool window_open = true;
@@ -142,7 +142,7 @@ void window_settings()
 {
 	SetTargetFPS(60);
 	SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
-	InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "lungfish");
+	InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "dogfish");
 	SetWindowMinSize(WINDOW_WIDTH, WINDOW_HEIGHT);
 }
 
