@@ -72,7 +72,7 @@ void apply_player_input_impulses(Inputstate input, float angle_x)
 		impulse.y += PLAYER_JUMP_FORCE;
 	}
 
-	dBodyAddRelForce(test_cube, impulse.x, impulse.y, impulse.z);
+	dBodyAddForce(test_cube, impulse.x, impulse.y, impulse.z);
 }
 
 static void nearCallback(void *data, dGeomID o1, dGeomID o2)
@@ -101,7 +101,7 @@ static void nearCallback(void *data, dGeomID o1, dGeomID o2)
 
 void update_physics(float delta_time)
 {
-	dSpaceCollide(space, 0, nearCallback);
+	dSpaceCollide(space, 0, &nearCallback);
 	dWorldStep(world, delta_time);
 	dJointGroupEmpty(contactgroup);
 }
@@ -136,10 +136,14 @@ void init_physics()
 	// make geometry and apply it to the cube body
 	test_cube_geom = dCreateBox(space, cube_size.x, cube_size.y, cube_size.z);
 	dGeomSetBody(test_cube_geom, test_cube);
+    
+    // allocate the data for this thread to access ODE
+	assert(dAllocateODEDataForThread(dAllocateMaskAll));
 }
 
 void close_physics()
 {
+    dCleanupODEAllDataForThread();
 	dJointGroupDestroy(contactgroup);
 	dSpaceDestroy(space);
 	dWorldDestroy(world);
