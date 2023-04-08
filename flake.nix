@@ -60,9 +60,7 @@
           (ninja.override {python3 = python3Minimal;})
           pkg-config
           raylib
-          (ode.overrideAttrs (_: {
-            CFLAGS="-ggdb";
-          }))
+		  ode
           meson
           bear
           clang-tools
