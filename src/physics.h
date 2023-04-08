@@ -10,6 +10,6 @@ void update_physics(float delta_time);
 void close_physics();
 
 const dReal *get_test_cube_position();
-const Vector3 get_test_cube_size();
+Vector3 get_test_cube_size();
 
 void apply_player_input_impulses(Inputstate input, float angle_x);

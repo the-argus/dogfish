@@ -18,7 +18,7 @@ static dJointGroupID contactgroup;
 
 Vector3 to_raylib(const dVector3 v3) { return (Vector3){v3[0], v3[1], v3[2]}; }
 const dReal *get_test_cube_position() { return dBodyGetPosition(test_cube); }
-const Vector3 get_test_cube_size()
+Vector3 get_test_cube_size()
 {
 	const Vector3 size = {1, 1, 1};
 	return size;
@@ -77,6 +77,7 @@ void apply_player_input_impulses(Inputstate input, float angle_x)
 
 static void nearCallback(void *unused, dGeomID o1, dGeomID o2)
 {
+    UNUSED(unused);
 	int i;
 
 	// only collide things with the ground
