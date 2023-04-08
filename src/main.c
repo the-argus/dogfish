@@ -68,17 +68,34 @@ int main(void)
 
 		// update in-game elements before drawing
 		update_function();
-
-		// set draw target to the rendertexture, dont actually draw to window
-		BeginTextureMode(main_target);
-		// clang-format off
+        RenderTexture2D rt1 rt2;
+		
+        BeginTextureMode(rt1);
+        // clang-format off
 		    ClearBackground(RAYWHITE);
-            BeginMode3D(*gamestate.current_camera);
+            BeginMode3D(*gamestate.player_1_camera);
                 // draw in-game objects
                 main_draw();
 
             EndMode3D();
 		// clang-format on
+        EndTextureMode();
+        BeginTextureMode(rt2);
+        // clang-format off
+		    ClearBackground(RAYWHITE);
+            BeginMode3D(*gamestate.player_2_camera);
+                // draw in-game objects
+                main_draw();
+
+            EndMode3D();
+		// clang-format on
+        EndTextureMode();
+
+		// set draw target to the rendertexture, dont actually draw to window
+		BeginTextureMode(main_target);
+
+        DrawRectangleRec(rt1);
+
 		EndTextureMode();
 
 		// draw the game to the window at the correct size
