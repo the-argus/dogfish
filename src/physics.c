@@ -108,7 +108,7 @@ void update_physics(float delta_time)
 
 void init_physics()
 {
-	dInitODE();
+	dInitODE2(0);
 	world = dWorldCreate();
 	space = dHashSpaceCreate(0);
 	dWorldSetGravity(world, 0, -GRAVITY, 0);
