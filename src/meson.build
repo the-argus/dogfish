@@ -27,7 +27,8 @@ source_file_names = [
   'camera_manager.c',
   'fps_camera.c',
   'physics.c',
-  'debug.c'
+  'debug.c',
+  'skybox.c'
 ]
 
 sources = []

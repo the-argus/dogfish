@@ -10,6 +10,7 @@
 #include "camera_manager.h"
 #include "fps_camera.h"
 #include "physics.h"
+#include "skybox.h"
 #include "debug.h"
 
 // useful for screen scaling
@@ -36,6 +37,8 @@ int main(void)
 	window_settings();
 	// initialize main_texture to the correct size
 	init_rendertexture();
+
+	load_skybox();
 
 	// initialize physics system
 	init_physics();
@@ -108,6 +111,7 @@ void update()
 /// Draw the in-game objects to a consistently sized rendertexture.
 void main_draw()
 {
+	draw_skybox();
 	// draw a cube
     Vector3 pos = to_raylib(get_test_cube_position());
     Vector3 size = get_test_cube_size();
