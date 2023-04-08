@@ -8,6 +8,11 @@
 
 #define FOV 90
 
+// ../assets because the executable is in the build directory usually
+#ifndef ASSETS_FOLDER
+#define ASSETS_FOLDER "assets"
+#endif
+
 // FPS camera related constants
 #define CAMERA_CONTROLS {'W', 'S', 'D', 'A', 'E', 'Q'}
 typedef enum

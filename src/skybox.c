@@ -2,6 +2,8 @@
 #include "rlgl.h"
 #include "raymath.h"
 
+#include "constants.h"
+
 static Model skybox;
 
 // Generate cubemap (6 faces) from equirectangular (panorama) texture
@@ -29,9 +31,9 @@ void load_skybox()
 
 	// Load skybox shader and set required locations
 	// NOTE Some locations are automatically set at shader loading
-	skybox.materials[0].shader =
-		LoadShader("assets/skybox/common/shaders/skybox.vs",
-				   "assets/skybox/common/shaders/skybox.fs");
+	skybox.materials[0].shader = LoadShader(
+		TextFormat("%s/skybox/common/shaders/skybox.vs", ASSETS_FOLDER),
+		TextFormat("%s/skybox/common/shaders/skybox.fs", ASSETS_FOLDER));
 
 	SetShaderValue(
 		skybox.materials[0].shader,
@@ -45,8 +47,9 @@ void load_skybox()
 				   (int[1]){useHDR ? 1 : 0}, SHADER_UNIFORM_INT);
 
 	// Load cubemap shader and setup required shader locations
-	Shader shdrCubemap = LoadShader("assets/skybox/common/shaders/cubemap.vs",
-									"assets/skybox/common/shaders/cubemap.fs");
+	Shader shdrCubemap = LoadShader(
+		TextFormat("%s/skybox/common/shaders/cubemap.vs", ASSETS_FOLDER),
+		TextFormat("%s/skybox/common/shaders/cubemap.fs", ASSETS_FOLDER));
 
 	SetShaderValue(shdrCubemap,
 				   GetShaderLocation(shdrCubemap, "equirectangularMap"),
