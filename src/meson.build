@@ -1,5 +1,5 @@
 # see https://mesonbuild.com/Builtin-options.html#details-for-buildtype
-project('lungfish', 'c', default_options: ['default_library=static', 'buildtype=debug', 'warning_level=3'])
+project('lungfish', 'c', default_options: ['default_library=static', 'buildtype=debugoptimized', 'warning_level=3'])
 
 cc = meson.get_compiler('c')
 
