@@ -10,7 +10,7 @@ windows_lib = meson.source_root() + '\\windows\\lib'
 windows_include = 'windows/include'
 
 # backup library locations
-windows_linkflags = [ '-L' + windows_lib, '-lode_double', '-lwinmm' ]
+windows_linkflags = [ '-L' + windows_lib, '-lode_single', '-lwinmm' ]
 
 if not raylib.found()
   raylib = declare_dependency(
