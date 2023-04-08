@@ -11,7 +11,6 @@ typedef struct Opt_##type { \
 typedef struct
 {
 	Vector2 angle;			  // Camera angle in plane XZ
-	int moveControl[6];	   // Move controls (CAMERA_FIRST_PERSON)
 } CameraData;
 
 typedef struct Mousestate {

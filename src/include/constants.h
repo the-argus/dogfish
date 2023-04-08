@@ -14,7 +14,6 @@
 #endif
 
 // FPS camera related constants
-#define CAMERA_CONTROLS {'W', 'S', 'D', 'A', 'E', 'Q'}
 typedef enum
 {
 	MOVE_FRONT = 0,

@@ -24,7 +24,6 @@ void gamestate_new_fps_camera(struct Gamestate *gamestate)
 	CameraData camera_data = {
 		// Global CAMERA state context
 		.angle = {0},
-		.moveControl = CAMERA_CONTROLS,
 	};
 
 	Vector3 v1 = camera->position;
