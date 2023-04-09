@@ -38,11 +38,22 @@ void gather_input(Gamestate *gamestate, float screen_scaling)
 		IsMouseButtonPressed(MOUSE_BUTTON_RIGHT);
 
 	// collect keyboard information
-	gamestate->input.keys.jump = IsKeyDown(KEY_SPACE);
-	gamestate->input.keys.right = IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D);
-	gamestate->input.keys.left = IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A);
-	gamestate->input.keys.up = IsKeyDown(KEY_UP) || IsKeyDown(KEY_W);
-	gamestate->input.keys.down = IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S);
+
+	// player 1 moves with WASD
+	gamestate->input.keys.right = IsKeyDown(KEY_D);
+	gamestate->input.keys.left = IsKeyDown(KEY_A);
+	gamestate->input.keys.up = IsKeyDown(KEY_W);
+	gamestate->input.keys.down = IsKeyDown(KEY_S);
+
+	gamestate->input.keys.jump = IsKeyDown(KEY_Z);
+
+	// player 2 moves with arrow keys
+	gamestate->input.keys_2.right = IsKeyDown(KEY_RIGHT);
+	gamestate->input.keys_2.left = IsKeyDown(KEY_LEFT);
+	gamestate->input.keys_2.up = IsKeyDown(KEY_UP);
+	gamestate->input.keys_2.down = IsKeyDown(KEY_DOWN);
+
+	gamestate->input.keys_2.jump = IsKeyDown(KEY_SPACE);
 }
 
 // return 1 if the controls to exit the game are being pressed, 0 otherwise
