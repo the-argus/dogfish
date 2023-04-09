@@ -41,12 +41,15 @@ int main(void)
 	// initialize main_texture to the correct size
 	init_rendertexture();
 
-	RenderTexture2D rt1 = LoadRenderTexture(GetScreenWidth(), GetScreenHeight() / 2);
-	RenderTexture2D rt2 = LoadRenderTexture(GetScreenWidth(), GetScreenHeight() / 2);
+	RenderTexture2D rt1 =
+		LoadRenderTexture(GetScreenWidth(), GetScreenHeight() / 2);
+	RenderTexture2D rt2 =
+		LoadRenderTexture(GetScreenWidth(), GetScreenHeight() / 2);
 
 	// Build a flipped rectangle the size of the split view to use for drawing
 	// later
-	Rectangle splitScreenRect = {0.0f, 0.0f, (float)rt1.texture.width, (float)-rt1.texture.height};
+	Rectangle splitScreenRect = {0.0f, 0.0f, (float)rt1.texture.width,
+								 (float)-rt1.texture.height};
 
 	load_skybox();
 
