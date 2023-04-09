@@ -35,8 +35,10 @@ typedef struct Inputstate {
 
 typedef struct Gamestate {
     Inputstate input;
-    Camera *current_camera;
-    CameraData camera_data;
+    Camera *p1_camera;
+    CameraData p1_camera_data;
+    Camera *p2_camera;
+    CameraData p2_camera_data;
 } Gamestate;
 
 struct GameObject;

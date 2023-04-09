@@ -22,6 +22,9 @@ static float scale;
 static RenderTexture2D main_target;
 static void (*update_function)();
 
+static Camera player1Cam = { 0 };
+static Camera player2Cam = { 0 };
+
 void window_settings();
 void init_rendertexture();
 void gather_input();
@@ -45,8 +48,11 @@ int main(void)
 
 	// inialize gamestate struct
 	gamestate.input.mouse.virtual_position = (Vector2){0};
-	// this initializes current_camera, which involves a malloc
-	gamestate_new_fps_camera(&gamestate);
+	// these initialize current_camera, which involves a malloc
+	// player 1
+	gamestate_new_fps_camera(&gamestate, 0);
+	// player 2
+	gamestate_new_fps_camera(&gamestate, 1);
 
 	// initialization complete
 	printf("dogfish...\n");
@@ -68,22 +74,29 @@ int main(void)
 
 		// update in-game elements before drawing
 		update_function();
-        RenderTexture2D rt1 rt2;
+        RenderTexture2D rt1 = LoadRenderTexture(GetScreenWidth(), GetScreenHeight() / 2);
+		RenderTexture2D rt2 = LoadRenderTexture(GetScreenWidth(), GetScreenHeight() / 2);
 		
+ 		// Build a flipped rectangle the size of the split view to use for drawing later
+    	Rectangle splitScreenRect = { 0.0f, 0.0f, (float)rt1.texture.width, (float)-rt1.texture.height };
+
+		// Render Camera 1
         BeginTextureMode(rt1);
         // clang-format off
 		    ClearBackground(RAYWHITE);
-            BeginMode3D(*gamestate.player_1_camera);
+            BeginMode3D(*gamestate.p1_camera);
                 // draw in-game objects
                 main_draw();
 
             EndMode3D();
 		// clang-format on
         EndTextureMode();
+
+		// Render Camera 2
         BeginTextureMode(rt2);
         // clang-format off
 		    ClearBackground(RAYWHITE);
-            BeginMode3D(*gamestate.player_2_camera);
+            BeginMode3D(*gamestate.p2_camera);
                 // draw in-game objects
                 main_draw();
 
@@ -93,9 +106,9 @@ int main(void)
 
 		// set draw target to the rendertexture, dont actually draw to window
 		BeginTextureMode(main_target);
-
-        DrawRectangleRec(rt1);
-
+		ClearBackground(BLACK);
+		DrawTextureRec(rt1.texture, splitScreenRect, (Vector2){0,0}, WHITE);
+		DrawTextureRec(rt2.texture, splitScreenRect, (Vector2){0,GetScreenHeight() / 2}, WHITE);
 		EndTextureMode();
 
 		// draw the game to the window at the correct size
@@ -105,7 +118,8 @@ int main(void)
 	}
 
 	// cleanup
-	free(gamestate.current_camera);
+	free(gamestate.p1_camera);
+	free(gamestate.p2_camera);
 	close_physics();
 	CloseWindow();
 
@@ -115,10 +129,13 @@ int main(void)
 /// Perform per-frame game logic.
 void update()
 {
-	fps_camera_update(gamestate.current_camera, &(gamestate.camera_data));
-	update_camera_tilt(gamestate.current_camera, gamestate.input);
+	fps_camera_update(gamestate.p1_camera, &(gamestate.p1_camera_data));
+	fps_camera_update(gamestate.p2_camera, &(gamestate.p2_camera_data));
+	update_camera_tilt(gamestate.p1_camera, gamestate.input);
+	update_camera_tilt(gamestate.p2_camera, gamestate.input);
 
-    apply_player_input_impulses(gamestate.input, gamestate.camera_data.angle.x);
+    apply_player_input_impulses(gamestate.input, gamestate.p1_camera_data.angle.x);
+    apply_player_input_impulses(gamestate.input, gamestate.p2_camera_data.angle.x);
 	update_physics(GetFrameTime());
     
     Vector3 pos = to_raylib(get_test_cube_position());

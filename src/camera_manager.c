@@ -7,7 +7,8 @@
 #include <math.h>
 
 // I have to just remember to free the camera that gets malloced here :(
-void gamestate_new_fps_camera(struct Gamestate *gamestate)
+// player_index is either 0 (p1) or 1 (p2)
+void gamestate_new_fps_camera(struct Gamestate *gamestate, unsigned int player_index)
 {
 	Camera3D *camera;
 	camera = malloc(sizeof(Camera3D));
@@ -42,6 +43,14 @@ void gamestate_new_fps_camera(struct Gamestate *gamestate)
 	// Lock cursor for first person and third person cameras
 	DisableCursor();
 
-	gamestate->current_camera = camera;
-	gamestate->camera_data = camera_data;
+	if (player_index == 0)
+	{
+		gamestate->p1_camera = camera;
+		gamestate->p1_camera_data = camera_data;
+	}
+	else if (player_index == 1)
+	{
+		gamestate->p2_camera = camera;
+		gamestate->p2_camera_data = camera_data;
+	}
 }
