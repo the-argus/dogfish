@@ -27,16 +27,14 @@
 // Maximum left-right tilting distance when walking
 #define CAMERA_FIRST_PERSON_TILTING_DELTA 0.005f
 
-void fps_camera_update(Camera *camera, CameraData *camera_data)
+void fps_camera_update(Camera *camera, CameraData *camera_data,
+					   Cursorstate cursor)
 {
-	// Mouse movement detection
-	Vector2 mousePositionDelta = GetMouseDelta();
-
 	// Camera orientation calculation
 	camera_data->angle.x -=
-		mousePositionDelta.x * CAMERA_MOUSE_MOVE_SENSITIVITY * GetFrameTime();
+		cursor.delta.x * CAMERA_MOUSE_MOVE_SENSITIVITY * GetFrameTime();
 	camera_data->angle.y -=
-		mousePositionDelta.y * CAMERA_MOUSE_MOVE_SENSITIVITY * GetFrameTime();
+		cursor.delta.y * CAMERA_MOUSE_MOVE_SENSITIVITY * GetFrameTime();
 
 	// Angle clamp
 	if (camera_data->angle.y > CAMERA_FIRST_PERSON_MIN_CLAMP * DEG2RAD)

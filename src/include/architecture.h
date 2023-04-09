@@ -13,12 +13,11 @@ typedef struct
 	Vector2 angle;			  // Camera angle in plane XZ
 } CameraData;
 
-typedef struct Mousestate {
-    unsigned char left_pressed;
-    unsigned char right_pressed;
+typedef struct Cursorstate {
     Vector2 position;
     Vector2 virtual_position;
-} Mousestate;
+    Vector2 delta;
+} Cursorstate;
 
 typedef struct Keystate {
     unsigned char up : 1;
@@ -31,10 +30,7 @@ typedef struct Keystate {
     unsigned char look_down : 1;
 } Keystate;
 
-typedef struct Joystick {
-    float x;
-    float y;
-} Joystick;
+typedef Vector2 Joystick;
 
 typedef struct ControllerState {
     unsigned char left : 1;
@@ -45,7 +41,8 @@ typedef struct ControllerState {
 } ControllerState;
 
 typedef struct Inputstate {
-    Mousestate mouse;
+    Cursorstate cursor;
+    Cursorstate cursor_2;
     Keystate keys;
     Keystate keys_2;
     ControllerState controller;

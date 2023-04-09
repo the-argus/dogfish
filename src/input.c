@@ -4,37 +4,30 @@
 #include "architecture.h"
 #include "constants.h"
 
-void set_virtual_mouse_position(struct Gamestate *gamestate,
-								float screen_scale_fraction)
+/// Makes sure the location of the virtual cursor respects whatever the
+/// cursor's actual position is
+static void set_virtual_cursor_position(Cursorstate *cursor,
+										float screen_scale_fraction)
 {
 	// get the mouse position as if the window was not scaled from render size
-	gamestate->input.mouse.virtual_position.x =
-		(gamestate->input.mouse.position.x -
+	cursor->virtual_position.x =
+		(cursor->position.x -
 		 (GetScreenWidth() - (GAME_WIDTH * screen_scale_fraction)) * 0.5f) /
 		screen_scale_fraction;
-	gamestate->input.mouse.virtual_position.y =
-		(gamestate->input.mouse.position.y -
+	cursor->virtual_position.y =
+		(cursor->position.y -
 		 (GetScreenHeight() - (GAME_HEIGHT * screen_scale_fraction)) * 0.5f) /
 		screen_scale_fraction;
 
 	// clamp the virtual mouse position to the size of the rendertarget
-	gamestate->input.mouse.virtual_position =
-		Vector2Clamp(gamestate->input.mouse.virtual_position, (Vector2){0, 0},
+	cursor->virtual_position =
+		Vector2Clamp(cursor->virtual_position, (Vector2){0, 0},
 					 (Vector2){(float)GAME_WIDTH, (float)GAME_HEIGHT});
 }
 
 /// Make the gamestate reflect the actual system IO state.
 void gather_input(Gamestate *gamestate, float screen_scaling)
 {
-	// collect mouse information
-	gamestate->input.mouse.position = GetMousePosition();
-	set_virtual_mouse_position(gamestate, screen_scaling);
-
-	gamestate->input.mouse.left_pressed =
-		IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
-	gamestate->input.mouse.right_pressed =
-		IsMouseButtonPressed(MOUSE_BUTTON_RIGHT);
-
 	// collect keyboard information
 
 	// player 1 moves with WASD
@@ -80,6 +73,20 @@ void gather_input(Gamestate *gamestate, float screen_scaling)
 		GetGamepadAxisMovement(0, GAMEPAD_AXIS_RIGHT_X);
 	gamestate->input.controller_2.joystick.y =
 		GetGamepadAxisMovement(0, GAMEPAD_AXIS_RIGHT_Y);
+
+	// collect cursor information (mouse input only affects player 1's cursor)
+	// *delta* is how much the cursor should move this frame. used by the first
+	// person cameras to determine how much to rotate.
+	gamestate->input.cursor.delta =
+		Vector2Add(GetMouseDelta(), gamestate->input.controller.joystick);
+	gamestate->input.cursor_2.delta = gamestate->input.controller_2.joystick;
+
+	// *position* is where the cursor is on the screen. will be useful for
+	// things like pause menus.
+	gamestate->input.cursor.position = GetMousePosition();
+
+	set_virtual_cursor_position(&gamestate->input.cursor, screen_scaling);
+	set_virtual_cursor_position(&gamestate->input.cursor_2, screen_scaling);
 }
 
 // return 1 if the controls to exit the game are being pressed, 0 otherwise
