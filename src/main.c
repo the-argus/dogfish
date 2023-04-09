@@ -24,8 +24,8 @@ static float scale;
 static RenderTexture2D main_target;
 static RenderTexture2D rt1;
 static RenderTexture2D rt2;
-static const Rectangle splitScreenRect = {0, 0, GAME_WIDTH,
-										  -(int)(GAME_HEIGHT / 2)};
+static const Rectangle splitScreenRect = {
+	.x = 0, .y = 0, .width = GAME_WIDTH, .height = (int)-(GAME_HEIGHT / 2)};
 
 static void (*update_function)();
 
