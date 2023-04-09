@@ -25,7 +25,6 @@ typedef struct Keystate {
     unsigned char left : 1;
     unsigned char right : 1;
     unsigned char down : 1;
-    unsigned char jump : 1;
     unsigned char look_left : 1;
     unsigned char look_right : 1;
     unsigned char look_up : 1;

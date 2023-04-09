@@ -1,3 +1,4 @@
+#include "input.h"
 #include "ode/ode.h"
 #include "constants.h"
 #include "architecture.h"
@@ -46,29 +47,22 @@ static int on_ground(dBodyID body)
 	return 0;
 }
 
-void apply_player_input_impulses(Inputstate input, float angle_x)
+void apply_player_input_impulses(Inputstate inputstate, float angle_x)
 {
 	Vector3 impulse = {0};
-
-	// calculate forward/backwards input
-	int vertical_input = input.keys.down - input.keys.up;
+    Vector2 input = total_input(inputstate, 0);
 
 	impulse.x = sin(angle_x) * PLAYER_MOVE_IMPULSE;
 	impulse.z = cos(angle_x) * PLAYER_MOVE_IMPULSE;
 	Vector3 h_impulse =
 		Vector3CrossProduct(Vector3Normalize(impulse), (Vector3){0, 1, 0});
 
-	impulse = Vector3Scale(impulse, vertical_input);
+	impulse = Vector3Scale(impulse, input.y);
 
 	// also grab left/right input
-	int horizontal_input = input.keys.left - input.keys.right;
-	h_impulse = Vector3Scale(h_impulse, horizontal_input);
+	h_impulse = Vector3Scale(h_impulse, input.x);
 
 	impulse = Vector3Add(impulse, h_impulse);
-
-	if (input.keys.jump && on_ground(test_cube)) {
-		impulse.y += PLAYER_JUMP_FORCE;
-	}
 
 	dBodyAddForce(test_cube, impulse.x, impulse.y, impulse.z);
 }
