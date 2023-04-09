@@ -21,11 +21,11 @@ typedef struct Mousestate {
 } Mousestate;
 
 typedef struct Keystate {
-    unsigned char up;
-    unsigned char left;
-    unsigned char right;
-    unsigned char down;
-    unsigned char jump;
+    unsigned char up : 1;
+    unsigned char left : 1;
+    unsigned char right : 1;
+    unsigned char down : 1;
+    unsigned char jump : 1;
 } Keystate;
 
 typedef struct Inputstate {
