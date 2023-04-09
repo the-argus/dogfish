@@ -74,6 +74,7 @@ OPTIONAL(CollisionHandler)
 // a physics component always has a geom but not necessarily a body
 typedef struct PhysicsComponent {
     unsigned short mask; // 8 bits
+    unsigned short bit; // 8 bits
     PhysicsGeometry geom;
     Opt_CollisionHandler collision_handler;
     Opt_PhysicsBody body; // this body's UserData should be a pointer to the parent gameobject
