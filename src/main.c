@@ -18,12 +18,19 @@
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
 static Gamestate gamestate;
+
+// window scaling and splitscreen
 static float scale;
 static RenderTexture2D main_target;
+static RenderTexture2D rt1;
+static RenderTexture2D rt2;
+static const Rectangle splitScreenRect = {0, 0, GAME_WIDTH,
+										  -(int)(GAME_HEIGHT / 2)};
+
 static void (*update_function)();
 
 void window_settings();
-void init_rendertexture();
+void init_rendertextures();
 void gather_input();
 void update();
 void main_draw();
@@ -36,17 +43,7 @@ int main(void)
 	// set windowing backend vars like title and size
 	window_settings();
 	// initialize main_texture to the correct size
-	init_rendertexture();
-
-	RenderTexture2D rt1 =
-		LoadRenderTexture(GAME_WIDTH, GAME_HEIGHT / 2);
-	RenderTexture2D rt2 =
-		LoadRenderTexture(GAME_WIDTH, GAME_HEIGHT / 2);
-
-	// Build a flipped rectangle the size of the split view to use for drawing
-	// later
-	Rectangle splitScreenRect = {0.0f, 0.0f, (float)rt1.texture.width,
-								 (float)-rt1.texture.height};
+	init_rendertextures();
 
 	load_skybox();
 
@@ -187,11 +184,18 @@ void window_settings()
 
 /// Initialize the main rendertexture to which the actual game elements are
 /// drawn. Determines the universal texture filter for scaling.
-void init_rendertexture()
+void init_rendertextures()
 {
 	// variable width screen
 	main_target = LoadRenderTexture(GAME_WIDTH, GAME_HEIGHT);
+
+	rt1 = LoadRenderTexture(splitScreenRect.width, splitScreenRect.height);
+	rt2 = LoadRenderTexture(splitScreenRect.width, splitScreenRect.height);
+
+	// set all to bilinear
 	SetTextureFilter(main_target.texture, TEXTURE_FILTER_BILINEAR);
+	SetTextureFilter(rt1.texture, TEXTURE_FILTER_BILINEAR);
+	SetTextureFilter(rt2.texture, TEXTURE_FILTER_BILINEAR);
 }
 
 /// Make the gamestate reflect the actual system IO state.
