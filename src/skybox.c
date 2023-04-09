@@ -6,10 +6,6 @@
 
 static Model skybox;
 
-// Generate cubemap (6 faces) from equirectangular (panorama) texture
-static TextureCubemap GenTextureCubemap(Shader shader, Texture2D panorama,
-										int size, int format);
-
 void draw_skybox()
 {
 	// We are inside the cube, we need to disable backface culling!
