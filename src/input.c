@@ -54,6 +54,38 @@ void gather_input(Gamestate *gamestate, float screen_scaling)
 	gamestate->input.keys_2.down = IsKeyDown(KEY_DOWN);
 
 	gamestate->input.keys_2.jump = IsKeyDown(KEY_SPACE);
+
+	// collect controller information
+
+	// player 1 uses d-pad and left joystick
+	gamestate->input.controller.down =
+		IsGamepadButtonDown(0, GAMEPAD_BUTTON_LEFT_FACE_DOWN);
+	gamestate->input.controller.up =
+		IsGamepadButtonDown(0, GAMEPAD_BUTTON_LEFT_FACE_UP);
+	gamestate->input.controller.left =
+		IsGamepadButtonDown(0, GAMEPAD_BUTTON_LEFT_FACE_LEFT);
+	gamestate->input.controller.right =
+		IsGamepadButtonDown(0, GAMEPAD_BUTTON_LEFT_FACE_RIGHT);
+
+	gamestate->input.controller.joystick.x =
+		GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_X);
+	gamestate->input.controller.joystick.y =
+		GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_Y);
+
+	// player 2 uses buttons (X Y A B) and right joystick
+	gamestate->input.controller_2.down =
+		IsGamepadButtonDown(0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN);
+	gamestate->input.controller_2.up =
+		IsGamepadButtonDown(0, GAMEPAD_BUTTON_RIGHT_FACE_UP);
+	gamestate->input.controller_2.left =
+		IsGamepadButtonDown(0, GAMEPAD_BUTTON_RIGHT_FACE_LEFT);
+	gamestate->input.controller_2.right =
+		IsGamepadButtonDown(0, GAMEPAD_BUTTON_RIGHT_FACE_RIGHT);
+
+	gamestate->input.controller_2.joystick.x =
+		GetGamepadAxisMovement(0, GAMEPAD_AXIS_RIGHT_X);
+	gamestate->input.controller_2.joystick.y =
+		GetGamepadAxisMovement(0, GAMEPAD_AXIS_RIGHT_Y);
 }
 
 // return 1 if the controls to exit the game are being pressed, 0 otherwise

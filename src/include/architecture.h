@@ -32,12 +32,17 @@ typedef struct Keystate {
     unsigned char look_down : 1;
 } Keystate;
 
+typedef struct Joystick {
+    float x;
+    float y;
+} Joystick;
+
 typedef struct ControllerState {
     unsigned char left : 1;
     unsigned char up : 1;
     unsigned char down : 1;
     unsigned char right : 1;
-    u_int64_t joystick : 8;
+    Joystick joystick;
 } ControllerState;
 
 typedef struct Inputstate {
