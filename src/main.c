@@ -108,7 +108,7 @@ int main(void)
 		ClearBackground(BLACK);
 		DrawTextureRec(rt1.texture, splitScreenRect, (Vector2){0, 0}, WHITE);
 		DrawTextureRec(rt2.texture, splitScreenRect,
-					   (Vector2){0, (int)(GAME_HEIGHT / 2)}, WHITE);
+					   (Vector2){0, splitScreenRect.height}, WHITE);
 		EndTextureMode();
 
 		// draw the game to the window at the correct size
