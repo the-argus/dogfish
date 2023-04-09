@@ -22,9 +22,6 @@ static float scale;
 static RenderTexture2D main_target;
 static void (*update_function)();
 
-static Camera player1Cam = {0};
-static Camera player2Cam = {0};
-
 void window_settings();
 void init_rendertexture();
 void gather_input();
@@ -114,7 +111,7 @@ int main(void)
 		ClearBackground(BLACK);
 		DrawTextureRec(rt1.texture, splitScreenRect, (Vector2){0, 0}, WHITE);
 		DrawTextureRec(rt2.texture, splitScreenRect,
-					   (Vector2){0, GetScreenHeight() / 2}, WHITE);
+					   (Vector2){0, (int)(GAME_HEIGHT / 2)}, WHITE);
 		EndTextureMode();
 
 		// draw the game to the window at the correct size
