@@ -1,6 +1,7 @@
 #include "input.h"
 #include "raylib.h"
 #include "raymath.h"
+#include "architecture.h"
 #include "constants.h"
 
 void set_virtual_mouse_position(struct Gamestate *gamestate,
@@ -23,3 +24,23 @@ void set_virtual_mouse_position(struct Gamestate *gamestate,
 }
 
 float get_joystick(ControllerState *cstate) { return (float)cstate->joystick; }
+
+/// Make the gamestate reflect the actual system IO state.
+void gather_input(Gamestate* gamestate, float screen_scaling)
+{
+	// collect mouse information
+	gamestate->input.mouse.position = GetMousePosition();
+	set_virtual_mouse_position(gamestate, screen_scaling);
+
+	gamestate->input.mouse.left_pressed =
+		IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+	gamestate->input.mouse.right_pressed =
+		IsMouseButtonPressed(MOUSE_BUTTON_RIGHT);
+
+	// collect keyboard information
+	gamestate->input.keys.jump = IsKeyDown(KEY_SPACE);
+	gamestate->input.keys.right = IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D);
+	gamestate->input.keys.left = IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A);
+	gamestate->input.keys.up = IsKeyDown(KEY_UP) || IsKeyDown(KEY_W);
+	gamestate->input.keys.down = IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S);
+}
