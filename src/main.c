@@ -22,8 +22,8 @@ static float scale;
 static RenderTexture2D main_target;
 static void (*update_function)();
 
-static Camera player1Cam = { 0 };
-static Camera player2Cam = { 0 };
+static Camera player1Cam = {0};
+static Camera player2Cam = {0};
 
 void window_settings();
 void init_rendertexture();
@@ -35,11 +35,18 @@ void defer_update_once() { update_function = &update; }
 
 int main(void)
 {
-    update_function = &defer_update_once;
+	update_function = &defer_update_once;
 	// set windowing backend vars like title and size
 	window_settings();
 	// initialize main_texture to the correct size
 	init_rendertexture();
+
+	RenderTexture2D rt1 = LoadRenderTexture(GetScreenWidth(), GetScreenHeight() / 2);
+	RenderTexture2D rt2 = LoadRenderTexture(GetScreenWidth(), GetScreenHeight() / 2);
+
+	// Build a flipped rectangle the size of the split view to use for drawing
+	// later
+	Rectangle splitScreenRect = {0.0f, 0.0f, (float)rt1.texture.width, (float)-rt1.texture.height};
 
 	load_skybox();
 
@@ -74,15 +81,10 @@ int main(void)
 
 		// update in-game elements before drawing
 		update_function();
-        RenderTexture2D rt1 = LoadRenderTexture(GetScreenWidth(), GetScreenHeight() / 2);
-		RenderTexture2D rt2 = LoadRenderTexture(GetScreenWidth(), GetScreenHeight() / 2);
-		
- 		// Build a flipped rectangle the size of the split view to use for drawing later
-    	Rectangle splitScreenRect = { 0.0f, 0.0f, (float)rt1.texture.width, (float)-rt1.texture.height };
 
 		// Render Camera 1
-        BeginTextureMode(rt1);
-        // clang-format off
+		BeginTextureMode(rt1);
+		// clang-format off
 		    ClearBackground(RAYWHITE);
             BeginMode3D(*gamestate.p1_camera);
                 // draw in-game objects
@@ -90,11 +92,11 @@ int main(void)
 
             EndMode3D();
 		// clang-format on
-        EndTextureMode();
+		EndTextureMode();
 
 		// Render Camera 2
-        BeginTextureMode(rt2);
-        // clang-format off
+		BeginTextureMode(rt2);
+		// clang-format off
 		    ClearBackground(RAYWHITE);
             BeginMode3D(*gamestate.p2_camera);
                 // draw in-game objects
@@ -102,13 +104,14 @@ int main(void)
 
             EndMode3D();
 		// clang-format on
-        EndTextureMode();
+		EndTextureMode();
 
 		// set draw target to the rendertexture, dont actually draw to window
 		BeginTextureMode(main_target);
 		ClearBackground(BLACK);
-		DrawTextureRec(rt1.texture, splitScreenRect, (Vector2){0,0}, WHITE);
-		DrawTextureRec(rt2.texture, splitScreenRect, (Vector2){0,GetScreenHeight() / 2}, WHITE);
+		DrawTextureRec(rt1.texture, splitScreenRect, (Vector2){0, 0}, WHITE);
+		DrawTextureRec(rt2.texture, splitScreenRect,
+					   (Vector2){0, GetScreenHeight() / 2}, WHITE);
 		EndTextureMode();
 
 		// draw the game to the window at the correct size
@@ -134,12 +137,14 @@ void update()
 	update_camera_tilt(gamestate.p1_camera, gamestate.input);
 	update_camera_tilt(gamestate.p2_camera, gamestate.input);
 
-    apply_player_input_impulses(gamestate.input, gamestate.p1_camera_data.angle.x);
-    apply_player_input_impulses(gamestate.input, gamestate.p2_camera_data.angle.x);
+	apply_player_input_impulses(gamestate.input,
+								gamestate.p1_camera_data.angle.x);
+	apply_player_input_impulses(gamestate.input,
+								gamestate.p2_camera_data.angle.x);
 	update_physics(GetFrameTime());
-    
-    Vector3 pos = to_raylib(get_test_cube_position());
-    gamestate.current_camera->position = pos;
+
+	Vector3 pos = to_raylib(get_test_cube_position());
+	// gamestate.current_camera->position = pos;
 }
 
 /// Draw the in-game objects to a consistently sized rendertexture.
@@ -147,8 +152,8 @@ void main_draw()
 {
 	draw_skybox();
 	// draw a cube
-    Vector3 pos = to_raylib(get_test_cube_position());
-    Vector3 size = get_test_cube_size();
+	Vector3 pos = to_raylib(get_test_cube_position());
+	Vector3 size = get_test_cube_size();
 	DrawCube(pos, size.x, size.y, size.z, RED);
 
 	// grid for visual aid
@@ -202,7 +207,7 @@ void gather_input()
 		IsMouseButtonPressed(MOUSE_BUTTON_RIGHT);
 
 	// collect keyboard information
-    gamestate.input.keys.jump = IsKeyDown(KEY_SPACE);
+	gamestate.input.keys.jump = IsKeyDown(KEY_SPACE);
 	gamestate.input.keys.right = IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D);
 	gamestate.input.keys.left = IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A);
 	gamestate.input.keys.up = IsKeyDown(KEY_UP) || IsKeyDown(KEY_W);
