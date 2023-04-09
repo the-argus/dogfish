@@ -24,6 +24,7 @@ static float scale;
 static RenderTexture2D main_target;
 static RenderTexture2D rt1;
 static RenderTexture2D rt2;
+// make sure to take absolute values when using height...
 static const Rectangle splitScreenRect = {
 	.x = 0, .y = 0, .width = GAME_WIDTH, .height = (int)-(GAME_HEIGHT / 2)};
 
@@ -108,7 +109,7 @@ int main(void)
 		ClearBackground(BLACK);
 		DrawTextureRec(rt1.texture, splitScreenRect, (Vector2){0, 0}, WHITE);
 		DrawTextureRec(rt2.texture, splitScreenRect,
-					   (Vector2){0, splitScreenRect.height}, WHITE);
+					   (Vector2){0, abs((int)splitScreenRect.height)}, WHITE);
 		EndTextureMode();
 
 		// draw the game to the window at the correct size
@@ -189,8 +190,10 @@ void init_rendertextures()
 	// variable width screen
 	main_target = LoadRenderTexture(GAME_WIDTH, GAME_HEIGHT);
 
-	rt1 = LoadRenderTexture(splitScreenRect.width, splitScreenRect.height);
-	rt2 = LoadRenderTexture(splitScreenRect.width, splitScreenRect.height);
+	rt1 = LoadRenderTexture(abs((int)splitScreenRect.width),
+							abs((int)splitScreenRect.height));
+	rt2 = LoadRenderTexture(abs((int)splitScreenRect.width),
+							abs((int)splitScreenRect.height));
 
 	// set all to bilinear
 	SetTextureFilter(main_target.texture, TEXTURE_FILTER_BILINEAR);
