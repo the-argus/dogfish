@@ -22,7 +22,9 @@ static const SkyboxInfo industrial_hdr = {
 	.path = "assets/skybox/industrial/industrial_sunset_puresky_4k.hdr",
 	.hdr = 1,
 	.flip_vertically = 1,
-	.use_gamma = 1,
+    // TODO: use gamma once we have postprocessing to apply bloom to the
+    // emissive sky.
+	.use_gamma = 0,
 	.gen_texture_cubemap = 1};
 
 static const SkyboxInfo industrial = {
