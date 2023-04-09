@@ -26,11 +26,26 @@ typedef struct Keystate {
     unsigned char right : 1;
     unsigned char down : 1;
     unsigned char jump : 1;
+    unsigned char look_left : 1;
+    unsigned char look_right : 1;
+    unsigned char look_up : 1;
+    unsigned char look_down : 1;
 } Keystate;
+
+typedef struct ControllerState {
+    unsigned char left : 1;
+    unsigned char up : 1;
+    unsigned char down : 1;
+    unsigned char right : 1;
+    u_int64_t joystick : 8;
+} ControllerState;
 
 typedef struct Inputstate {
     Mousestate mouse;
     Keystate keys;
+    Keystate keys_2;
+    ControllerState controller;
+    ControllerState controller_2;
 } Inputstate;
 
 typedef struct Gamestate {

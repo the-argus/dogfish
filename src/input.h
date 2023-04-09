@@ -5,3 +5,5 @@
 // modified during this process
 void set_virtual_mouse_position(struct Gamestate *gamestate,
 								float screen_scale_fraction);
+
+float get_joystick(ControllerState *cstate);

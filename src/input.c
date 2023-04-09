@@ -21,3 +21,5 @@ void set_virtual_mouse_position(struct Gamestate *gamestate,
 		Vector2Clamp(gamestate->input.mouse.virtual_position, (Vector2){0, 0},
 					 (Vector2){(float)GAME_WIDTH, (float)GAME_HEIGHT});
 }
+
+float get_joystick(ControllerState *cstate) { return (float)cstate->joystick; }
