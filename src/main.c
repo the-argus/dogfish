@@ -39,9 +39,9 @@ int main(void)
 	init_rendertexture();
 
 	RenderTexture2D rt1 =
-		LoadRenderTexture(GetScreenWidth(), GetScreenHeight() / 2);
+		LoadRenderTexture(GAME_WIDTH, GAME_HEIGHT / 2);
 	RenderTexture2D rt2 =
-		LoadRenderTexture(GetScreenWidth(), GetScreenHeight() / 2);
+		LoadRenderTexture(GAME_WIDTH, GAME_HEIGHT / 2);
 
 	// Build a flipped rectangle the size of the split view to use for drawing
 	// later
