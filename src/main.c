@@ -32,7 +32,6 @@ static void (*update_function)();
 
 void window_settings();
 void init_rendertextures();
-void gather_input();
 void update();
 void main_draw();
 void window_draw();
@@ -52,7 +51,8 @@ int main(void)
 	init_physics();
 
 	// inialize gamestate struct
-	gamestate.input.mouse.virtual_position = (Vector2){0};
+	gamestate.input.cursor.virtual_position = (Vector2){0};
+	gamestate.input.cursor_2.virtual_position = (Vector2){0};
 	// these initialize current_camera, which involves a malloc
 	// player 1
 	gamestate_new_fps_camera(&gamestate, 0);
@@ -62,10 +62,11 @@ int main(void)
 	// initialization complete
 	printf("dogfish...\n");
 
-	// loop until player presses escape or close button
+	// loop until player presses escape or close button, or both start/select
+	// buttons on a controller
 	bool window_open = true;
 	while (window_open) {
-		if (IsKeyPressed(KEY_ESCAPE) || WindowShouldClose()) {
+		if (exit_control_pressed() || WindowShouldClose()) {
 			window_open = false;
 		}
 
@@ -75,7 +76,7 @@ int main(void)
 					(float)GetScreenHeight() / GAME_HEIGHT);
 
 		// set the variables in gamestate to reflect input state
-		gather_input();
+		gather_input(&gamestate, scale);
 
 		// update in-game elements before drawing
 		update_function();
@@ -130,10 +131,10 @@ int main(void)
 /// Perform per-frame game logic.
 void update()
 {
-	fps_camera_update(gamestate.p1_camera, &(gamestate.p1_camera_data));
-	fps_camera_update(gamestate.p2_camera, &(gamestate.p2_camera_data));
-	update_camera_tilt(gamestate.p1_camera, gamestate.input);
-	update_camera_tilt(gamestate.p2_camera, gamestate.input);
+	fps_camera_update(gamestate.p1_camera, &(gamestate.p1_camera_data),
+					  gamestate.input.cursor);
+	fps_camera_update(gamestate.p2_camera, &(gamestate.p2_camera_data),
+					  gamestate.input.cursor_2);
 
 	apply_player_input_impulses(gamestate.input,
 								gamestate.p1_camera_data.angle.x);
@@ -199,24 +200,4 @@ void init_rendertextures()
 	SetTextureFilter(main_target.texture, TEXTURE_FILTER_BILINEAR);
 	SetTextureFilter(rt1.texture, TEXTURE_FILTER_BILINEAR);
 	SetTextureFilter(rt2.texture, TEXTURE_FILTER_BILINEAR);
-}
-
-/// Make the gamestate reflect the actual system IO state.
-void gather_input()
-{
-	// collect mouse information
-	gamestate.input.mouse.position = GetMousePosition();
-	set_virtual_mouse_position(&gamestate, scale);
-
-	gamestate.input.mouse.left_pressed =
-		IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
-	gamestate.input.mouse.right_pressed =
-		IsMouseButtonPressed(MOUSE_BUTTON_RIGHT);
-
-	// collect keyboard information
-	gamestate.input.keys.jump = IsKeyDown(KEY_SPACE);
-	gamestate.input.keys.right = IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D);
-	gamestate.input.keys.left = IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A);
-	gamestate.input.keys.up = IsKeyDown(KEY_UP) || IsKeyDown(KEY_W);
-	gamestate.input.keys.down = IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S);
 }
