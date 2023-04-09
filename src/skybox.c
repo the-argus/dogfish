@@ -3,8 +3,43 @@
 #include "raymath.h"
 
 #include "constants.h"
+#include "shorthand.h"
 
 static Model skybox;
+
+typedef struct SkyboxInfo
+{
+	const char path[100];
+	uchar hdr;
+	uchar use_gamma; // if hdr is false, this shouldnt be true. wont do anything
+	uchar flip_vertically;
+	uchar gen_texture_cubemap;
+} SkyboxInfo;
+
+// TODO: remove whatever skybox we end up not using
+
+static const SkyboxInfo industrial_hdr = {
+	.path = "assets/skybox/industrial/industrial_sunset_puresky_4k.hdr",
+	.hdr = 1,
+	.flip_vertically = 1,
+    // TODO: use gamma once we have postprocessing to apply bloom to the
+    // emissive sky.
+	.use_gamma = 0,
+	.gen_texture_cubemap = 1};
+
+static const SkyboxInfo industrial = {
+	.path = "assets/skybox/industrial/industrial_sunset_puresky_4k.png",
+	.hdr = 0,
+	.flip_vertically = 1,
+	.use_gamma = 0,
+	.gen_texture_cubemap = 1};
+
+static const SkyboxInfo working_example = {
+	.path = "assets/skybox/bluesky/working_example.png",
+	.hdr = 0,
+	.flip_vertically = 0,
+	.use_gamma = 0,
+	.gen_texture_cubemap = 0};
 
 // Generate cubemap (6 faces) from equirectangular (panorama) texture
 static TextureCubemap GenTextureCubemap(Shader shader, Texture2D panorama,
@@ -22,12 +57,15 @@ void draw_skybox()
 
 void load_skybox()
 {
+	// choose which skybox to use
+	SkyboxInfo const *skybox_info = &industrial_hdr;
+	UNUSED(industrial);
+	UNUSED(industrial_hdr);
+	UNUSED(working_example);
+
 	// Load skybox model
 	Mesh cube = GenMeshCube(1.0f, 1.0f, 1.0f);
 	skybox = LoadModelFromMesh(cube);
-
-	// we dont have a .hdr skybox file...
-	bool useHDR = false;
 
 	// Load skybox shader and set required locations
 	// NOTE Some locations are automatically set at shader loading
@@ -41,10 +79,12 @@ void load_skybox()
 		(int[1]){MATERIAL_MAP_CUBEMAP}, SHADER_UNIFORM_INT);
 	SetShaderValue(skybox.materials[0].shader,
 				   GetShaderLocation(skybox.materials[0].shader, "doGamma"),
-				   (int[1]){useHDR ? 1 : 0}, SHADER_UNIFORM_INT);
+				   (int[1]){skybox_info->use_gamma ? 1 : 0},
+				   SHADER_UNIFORM_INT);
 	SetShaderValue(skybox.materials[0].shader,
 				   GetShaderLocation(skybox.materials[0].shader, "vflipped"),
-				   (int[1]){useHDR ? 1 : 0}, SHADER_UNIFORM_INT);
+				   (int[1]){skybox_info->flip_vertically ? 1 : 0},
+				   SHADER_UNIFORM_INT);
 
 	// Load cubemap shader and setup required shader locations
 	Shader shdrCubemap = LoadShader(
@@ -55,34 +95,17 @@ void load_skybox()
 				   GetShaderLocation(shdrCubemap, "equirectangularMap"),
 				   (int[1]){0}, SHADER_UNIFORM_INT);
 
-	char skyboxFileName[256] = {0};
-
-	Texture2D panorama;
-
-	if (useHDR) {
-		TextCopy(skyboxFileName, "resources/dresden_square_2k.hdr");
-
-		// Load HDR panorama (sphere) texture
-		panorama = LoadTexture(skyboxFileName);
-
-		// Generate cubemap (texture with 6 quads-cube-mapping) from panorama
-		// HDR texture NOTE 1: New texture is generated rendering to texture,
-		// shader calculates the sphere->cube coordinates mapping NOTE 2: It
-		// seems on some Android devices WebGL, fbo does not properly support a
-		// FLOAT-based attachment, despite texture can be successfully created..
-		// so using PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 instead of
-		// PIXELFORMAT_UNCOMPRESSED_R32G32B32A32
+	if (skybox_info->gen_texture_cubemap) {
+		Texture2D panorama = LoadTexture(skybox_info->path);
 		skybox.materials[0].maps[MATERIAL_MAP_CUBEMAP].texture =
 			GenTextureCubemap(shdrCubemap, panorama, 1024,
 							  PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
-
-		// UnloadTexture(panorama);    // Texture not required anymore, cubemap
-		// already generated
+		UnloadTexture(panorama);
 	} else {
-		Image img = LoadImage("assets/skybox/bluesky/box.png");
+		Image img = LoadImage(skybox_info->path);
 		skybox.materials[0].maps[MATERIAL_MAP_CUBEMAP].texture =
-			LoadTextureCubemap(
-				img, CUBEMAP_LAYOUT_AUTO_DETECT); // CUBEMAP_LAYOUT_PANORAMA
+			LoadTextureCubemap(img, CUBEMAP_LAYOUT_AUTO_DETECT);
+
 		UnloadImage(img);
 	}
 }
