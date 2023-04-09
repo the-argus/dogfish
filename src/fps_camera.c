@@ -88,30 +88,3 @@ void fps_camera_update(Camera *camera, CameraData *camera_data)
 	camera->target.y = camera->position.y - matTransform.m13;
 	camera->target.z = camera->position.z - matTransform.m14;
 }
-
-void update_camera_tilt(Camera *camera, Inputstate input)
-{
-	static float swingCounter = 0.0f; // Used for 1st person swinging movement
-
-	bool direction[4] = {input.keys.up, input.keys.down, input.keys.left,
-						 input.keys.right};
-
-	// Camera swinging (y-movement), only when walking (some key pressed)
-	for (int i = 0; i < 4; i++)
-		if (direction[i]) {
-			swingCounter += GetFrameTime();
-			break;
-		}
-
-	camera->position.y -=
-		sinf(2 * PI * CAMERA_FIRST_PERSON_STEP_FREQUENCY * swingCounter) *
-		CAMERA_FIRST_PERSON_SWINGING_DELTA;
-
-	// Camera waiving (xz-movement), only when walking (some key pressed)
-	camera->up.x =
-		sinf(2 * PI * CAMERA_FIRST_PERSON_STEP_FREQUENCY * swingCounter) *
-		CAMERA_FIRST_PERSON_TILTING_DELTA;
-	camera->up.z =
-		-sinf(2 * PI * CAMERA_FIRST_PERSON_STEP_FREQUENCY * swingCounter) *
-		CAMERA_FIRST_PERSON_TILTING_DELTA;
-}

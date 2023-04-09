@@ -132,8 +132,6 @@ void update()
 {
 	fps_camera_update(gamestate.p1_camera, &(gamestate.p1_camera_data));
 	fps_camera_update(gamestate.p2_camera, &(gamestate.p2_camera_data));
-	update_camera_tilt(gamestate.p1_camera, gamestate.input);
-	update_camera_tilt(gamestate.p2_camera, gamestate.input);
 
 	apply_player_input_impulses(gamestate.input,
 								gamestate.p1_camera_data.angle.x);
