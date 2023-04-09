@@ -26,7 +26,7 @@ void set_virtual_mouse_position(struct Gamestate *gamestate,
 float get_joystick(ControllerState *cstate) { return (float)cstate->joystick; }
 
 /// Make the gamestate reflect the actual system IO state.
-void gather_input(Gamestate* gamestate, float screen_scaling)
+void gather_input(Gamestate *gamestate, float screen_scaling)
 {
 	// collect mouse information
 	gamestate->input.mouse.position = GetMousePosition();
@@ -43,4 +43,12 @@ void gather_input(Gamestate* gamestate, float screen_scaling)
 	gamestate->input.keys.left = IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A);
 	gamestate->input.keys.up = IsKeyDown(KEY_UP) || IsKeyDown(KEY_W);
 	gamestate->input.keys.down = IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S);
+}
+
+// return 1 if the controls to exit the game are being pressed, 0 otherwise
+int exit_control_pressed()
+{
+	return IsKeyPressed(KEY_ESCAPE) ||
+		   (IsGamepadButtonDown(0, GAMEPAD_BUTTON_MIDDLE_LEFT) &&
+			IsGamepadButtonDown(0, GAMEPAD_BUTTON_MIDDLE_RIGHT));
 }

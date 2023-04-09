@@ -62,12 +62,10 @@ int main(void)
 	printf("dogfish...\n");
 
 	// loop until player presses escape or close button, or both start/select
-    // buttons on a controller
+	// buttons on a controller
 	bool window_open = true;
 	while (window_open) {
-		if (IsKeyPressed(KEY_ESCAPE) || WindowShouldClose() ||
-			(IsGamepadButtonDown(0, GAMEPAD_BUTTON_MIDDLE_LEFT) &&
-			 IsGamepadButtonDown(0, GAMEPAD_BUTTON_MIDDLE_RIGHT))) {
+		if (exit_control_pressed() || WindowShouldClose()) {
 			window_open = false;
 		}
 
