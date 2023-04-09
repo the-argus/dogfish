@@ -59,6 +59,10 @@ int main(void)
 	// player 2
 	gamestate_new_fps_camera(&gamestate, 1);
 
+	GameObject gameobjects[100];
+
+	gameobjects[0] = create_player(&gamestate);
+
 	// initialization complete
 	printf("dogfish...\n");
 
@@ -79,6 +83,11 @@ int main(void)
 
 		// update in-game elements before drawing
 		update_function();
+
+		for (int i = 0; i < 100; i++) {
+            if (gameobjects[i].update.has)
+			    gameobjects[i].update.value(&gameobjects[i], &gamestate, GetFrameTime());
+		}
 
 		// Render Camera 1
 		BeginTextureMode(rt1);
