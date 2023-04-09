@@ -18,12 +18,19 @@
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
 static Gamestate gamestate;
+
+// window scaling and splitscreen
 static float scale;
 static RenderTexture2D main_target;
+static RenderTexture2D rt1;
+static RenderTexture2D rt2;
+static const Rectangle splitScreenRect = {0, 0, GAME_WIDTH,
+										  -(int)(GAME_HEIGHT / 2)};
+
 static void (*update_function)();
 
 void window_settings();
-void init_rendertexture();
+void init_rendertextures();
 void gather_input();
 void update();
 void main_draw();
@@ -32,11 +39,11 @@ void defer_update_once() { update_function = &update; }
 
 int main(void)
 {
-    update_function = &defer_update_once;
+	update_function = &defer_update_once;
 	// set windowing backend vars like title and size
 	window_settings();
 	// initialize main_texture to the correct size
-	init_rendertexture();
+	init_rendertextures();
 
 	load_skybox();
 
@@ -45,8 +52,11 @@ int main(void)
 
 	// inialize gamestate struct
 	gamestate.input.mouse.virtual_position = (Vector2){0};
-	// this initializes current_camera, which involves a malloc
-	gamestate_new_fps_camera(&gamestate);
+	// these initialize current_camera, which involves a malloc
+	// player 1
+	gamestate_new_fps_camera(&gamestate, 0);
+	// player 2
+	gamestate_new_fps_camera(&gamestate, 1);
 
 	// initialization complete
 	printf("dogfish...\n");
@@ -69,16 +79,36 @@ int main(void)
 		// update in-game elements before drawing
 		update_function();
 
-		// set draw target to the rendertexture, dont actually draw to window
-		BeginTextureMode(main_target);
+		// Render Camera 1
+		BeginTextureMode(rt1);
 		// clang-format off
 		    ClearBackground(RAYWHITE);
-            BeginMode3D(*gamestate.current_camera);
+            BeginMode3D(*gamestate.p1_camera);
                 // draw in-game objects
                 main_draw();
 
             EndMode3D();
 		// clang-format on
+		EndTextureMode();
+
+		// Render Camera 2
+		BeginTextureMode(rt2);
+		// clang-format off
+		    ClearBackground(RAYWHITE);
+            BeginMode3D(*gamestate.p2_camera);
+                // draw in-game objects
+                main_draw();
+
+            EndMode3D();
+		// clang-format on
+		EndTextureMode();
+
+		// set draw target to the rendertexture, dont actually draw to window
+		BeginTextureMode(main_target);
+		ClearBackground(BLACK);
+		DrawTextureRec(rt1.texture, splitScreenRect, (Vector2){0, 0}, WHITE);
+		DrawTextureRec(rt2.texture, splitScreenRect,
+					   (Vector2){0, (int)(GAME_HEIGHT / 2)}, WHITE);
 		EndTextureMode();
 
 		// draw the game to the window at the correct size
@@ -88,7 +118,8 @@ int main(void)
 	}
 
 	// cleanup
-	free(gamestate.current_camera);
+	free(gamestate.p1_camera);
+	free(gamestate.p2_camera);
 	close_physics();
 	CloseWindow();
 
@@ -98,14 +129,19 @@ int main(void)
 /// Perform per-frame game logic.
 void update()
 {
-	fps_camera_update(gamestate.current_camera, &(gamestate.camera_data));
-	update_camera_tilt(gamestate.current_camera, gamestate.input);
+	fps_camera_update(gamestate.p1_camera, &(gamestate.p1_camera_data));
+	fps_camera_update(gamestate.p2_camera, &(gamestate.p2_camera_data));
+	update_camera_tilt(gamestate.p1_camera, gamestate.input);
+	update_camera_tilt(gamestate.p2_camera, gamestate.input);
 
-    apply_player_input_impulses(gamestate.input, gamestate.camera_data.angle.x);
+	apply_player_input_impulses(gamestate.input,
+								gamestate.p1_camera_data.angle.x);
+	apply_player_input_impulses(gamestate.input,
+								gamestate.p2_camera_data.angle.x);
 	update_physics(GetFrameTime());
-    
-    Vector3 pos = to_raylib(get_test_cube_position());
-    gamestate.current_camera->position = pos;
+
+	Vector3 pos = to_raylib(get_test_cube_position());
+	// gamestate.current_camera->position = pos;
 }
 
 /// Draw the in-game objects to a consistently sized rendertexture.
@@ -113,8 +149,8 @@ void main_draw()
 {
 	draw_skybox();
 	// draw a cube
-    Vector3 pos = to_raylib(get_test_cube_position());
-    Vector3 size = get_test_cube_size();
+	Vector3 pos = to_raylib(get_test_cube_position());
+	Vector3 size = get_test_cube_size();
 	DrawCube(pos, size.x, size.y, size.z, RED);
 
 	// grid for visual aid
@@ -148,11 +184,18 @@ void window_settings()
 
 /// Initialize the main rendertexture to which the actual game elements are
 /// drawn. Determines the universal texture filter for scaling.
-void init_rendertexture()
+void init_rendertextures()
 {
 	// variable width screen
 	main_target = LoadRenderTexture(GAME_WIDTH, GAME_HEIGHT);
+
+	rt1 = LoadRenderTexture(splitScreenRect.width, splitScreenRect.height);
+	rt2 = LoadRenderTexture(splitScreenRect.width, splitScreenRect.height);
+
+	// set all to bilinear
 	SetTextureFilter(main_target.texture, TEXTURE_FILTER_BILINEAR);
+	SetTextureFilter(rt1.texture, TEXTURE_FILTER_BILINEAR);
+	SetTextureFilter(rt2.texture, TEXTURE_FILTER_BILINEAR);
 }
 
 /// Make the gamestate reflect the actual system IO state.
@@ -168,7 +211,7 @@ void gather_input()
 		IsMouseButtonPressed(MOUSE_BUTTON_RIGHT);
 
 	// collect keyboard information
-    gamestate.input.keys.jump = IsKeyDown(KEY_SPACE);
+	gamestate.input.keys.jump = IsKeyDown(KEY_SPACE);
 	gamestate.input.keys.right = IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D);
 	gamestate.input.keys.left = IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A);
 	gamestate.input.keys.up = IsKeyDown(KEY_UP) || IsKeyDown(KEY_W);
