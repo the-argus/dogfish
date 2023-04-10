@@ -30,6 +30,10 @@ static const Rectangle splitScreenRect = {
 
 static void (*update_function)();
 
+// gameplay objects- probably moved to gameobject pool once that is ready
+static GameObject p1_plane;
+static GameObject p2_plane;
+
 void window_settings();
 void init_rendertextures();
 void update();
