@@ -9,7 +9,9 @@ void setup_airplane(GameObject *plane, Gamestate *gamestate,
 					unsigned int player)
 {
 	// Set up the values for the opts
+    // DRAW
 	plane->draw.value = &airplane_draw;
+    // UPDATE
 	if (player == 0) {
 		plane->update.value = &airplane_update_p1;
 	} else {
@@ -32,7 +34,6 @@ void airplane_update_p2(struct GameObject *self, Gamestate *gamestate,
 						float delta_time)
 {
     apply_airplane_input_impulses(self->physics.value.body.value, gamestate->input, 1);
-	// gamestate->input.controller_2;
 }
 
 // Draw the plane
