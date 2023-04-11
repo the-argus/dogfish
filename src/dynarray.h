@@ -32,9 +32,27 @@ typedef struct DYNARRAY_TYPE_NAME
 	uint capacity;
 } DYNARRAY_TYPE_NAME;
 
-DYNARRAY_TYPE_NAME dynarray_create(int initial_capacity);
-void dynarray_insert(DYNARRAY_TYPE_NAME *dynarray, DYNARRAY_TYPE new);
-void dynarray_remove(DYNARRAY_TYPE_NAME *dynarray, uint index);
+#define _DYNARRAY_CREATE_SIGNATURE(type) \
+	DYNARRAY_TYPE_NAME dynarray_create_##type(int initial_capacity)
+
+#define _DYNARRAY_INSERT_SIGNATURE(type) \
+	void dynarray_insert_##type(DYNARRAY_TYPE_NAME *dynarray, type new)
+
+#define _DYNARRAY_REMOVE_SIGNATURE(type) \
+	void dynarray_remove_##type(DYNARRAY_TYPE_NAME *dynarray, uint index)
+
+#define _DYNARRAY_MAP_SIGNATURE(type) \
+	void dynarray_map_##type(         \
+		DYNARRAY_TYPE_NAME *dynarray, \
+		void (*map_func)(DYNARRAY_TYPE * item, uint index))
+
+#define _DYNARRAY_FUNCTION_DECLARATIONS(type) \
+	_DYNARRAY_CREATE_SIGNATURE(type);         \
+	_DYNARRAY_INSERT_SIGNATURE(type);         \
+	_DYNARRAY_REMOVE_SIGNATURE(type);         \
+	_DYNARRAY_MAP_SIGNATURE(type);
+
+_DYNARRAY_FUNCTION_DECLARATIONS(DYNARRAY_TYPE)
 
 ///
 /// This provides the implementation of the functions in this header.
@@ -42,7 +60,7 @@ void dynarray_remove(DYNARRAY_TYPE_NAME *dynarray, uint index);
 /// project.
 ///
 #ifdef _IMPLEMENT_DYNARRAY
-DYNARRAY_TYPE_NAME dynarray_create(int initial_capacity)
+_DYNARRAY_CREATE_SIGNATURE(DYNARRAY_TYPE)
 {
 	DYNARRAY_TYPE *head = malloc(initial_capacity * sizeof(DYNARRAY_TYPE));
 	if (head == NULL) {
@@ -55,7 +73,7 @@ DYNARRAY_TYPE_NAME dynarray_create(int initial_capacity)
 		.head = head, .capacity = initial_capacity, .size = 0};
 }
 
-void dynarray_insert(DYNARRAY_TYPE_NAME *dynarray, DYNARRAY_TYPE new)
+_DYNARRAY_INSERT_SIGNATURE(DYNARRAY_TYPE)
 {
 	if (dynarray->size >= dynarray->capacity) {
 		// we dont have enough space, realloc
@@ -82,7 +100,7 @@ void dynarray_insert(DYNARRAY_TYPE_NAME *dynarray, DYNARRAY_TYPE new)
 	dynarray->size += 1;
 }
 
-void dynarray_remove(DYNARRAY_TYPE_NAME *dynarray, uint index)
+_DYNARRAY_REMOVE_SIGNATURE(DYNARRAY_TYPE)
 {
 	// assert that index is in range
 	if (index >= dynarray->size) {
@@ -101,6 +119,14 @@ void dynarray_remove(DYNARRAY_TYPE_NAME *dynarray, uint index)
 	// reduce size
 	dynarray->size -= 1;
 }
+
+_DYNARRAY_MAP_SIGNATURE(DYNARRAY_TYPE)
+{
+	for (int i = 0; i < dynarray->size; i++) {
+		map_func(&(dynarray->head[i]), i);
+	}
+}
+
 #endif
 
 #endif
