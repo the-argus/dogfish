@@ -28,7 +28,8 @@ source_file_names = [
   'fps_camera.c',
   'physics.c',
   'debug.c',
-  'skybox.c'
+  'skybox.c',
+  'airplane.c'
 ]
 
 sources = []

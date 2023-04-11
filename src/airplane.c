@@ -5,17 +5,15 @@
 // Attach the chosen inputs to the update method
 // player = 0 for p1, 1 for p2
 void setup_airplane(GameObject *plane, Gamestate *gamestate,
-					ControllerState *controller, Cursorstate *cursor,
-					Keystate *keys, unsigned int player)
+					unsigned int player)
 {
 	// Set up the values for the opts
 	plane->draw.value = &airplane_draw;
 	if (player == 0) {
 		plane->update.value = &airplane_update_p1;
+	} else {
+		plane->update.value = &airplane_update_p2;
 	}
-    else {
-        plane->update.value = &airplane_update_p2;
-    }
 
 	// Say that it has them
 	plane->draw.has = 1;
@@ -31,7 +29,7 @@ void airplane_update_p1(struct GameObject *self, Gamestate *gamestate,
 void airplane_update_p2(struct GameObject *self, Gamestate *gamestate,
 						float delta_time)
 {
-	gamestate->input.controller_2;
+	// gamestate->input.controller_2;
 }
 
 // Draw the plane

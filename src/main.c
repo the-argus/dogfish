@@ -11,6 +11,7 @@
 #include "fps_camera.h"
 #include "physics.h"
 #include "skybox.h"
+#include "airplane.h"
 #include "debug.h"
 
 // useful for screen scaling
@@ -204,4 +205,11 @@ void init_rendertextures()
 	SetTextureFilter(main_target.texture, TEXTURE_FILTER_BILINEAR);
 	SetTextureFilter(rt1.texture, TEXTURE_FILTER_BILINEAR);
 	SetTextureFilter(rt2.texture, TEXTURE_FILTER_BILINEAR);
+}
+
+/// Initialize the player plane gameobjects.
+void init_players()
+{
+	setup_airplane(&p1_plane, &gamestate, 0);
+	setup_airplane(&p2_plane, &gamestate, 1);
 }
