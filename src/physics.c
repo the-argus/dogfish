@@ -83,19 +83,18 @@ static void nearCallback(void *data, dGeomID o1, dGeomID o2)
 	if (b1 && b2 && dAreConnected(b1, b2))
 		return;
 
-	CollisionHandler handler1 = (CollisionHandler)dGeomGetData(o1);
-	CollisionHandler handler2 = (CollisionHandler)dGeomGetData(o1);
-
-	if (handler1 != NULL) {
-		handler1(o1, o2);
-	}
-	if (handler2 != NULL) {
-		handler1(o2, o1);
-	}
-
 	dContact contact;
 	init_contact(&contact);
 	if (dCollide(o1, o2, 1, &contact.geom, sizeof(contact.geom))) {
+		CollisionHandler handler1 = (CollisionHandler)dGeomGetData(o1);
+		CollisionHandler handler2 = (CollisionHandler)dGeomGetData(o1);
+
+		if (handler1 != NULL) {
+			handler1(o1, o2);
+		}
+		if (handler2 != NULL) {
+			handler1(o2, o1);
+		}
 		dJointID c = dJointCreateContact(world, contactgroup, &contact);
 		dJointAttach(c, b1, b2);
 	}
