@@ -11,18 +11,30 @@
 
 #ifndef DYNARRAY_TYPE
 #define DYNARRAY_TYPE GameObject
+#ifdef DYNARRAY_TYPE_NAME
+// clang-format off
+#warning "DYNARRAY_TYPE_NAME defined but not DYNARRAY_TYPE... using DYNARRAY_TYPE_NAME for GameObject dynamic array."
+// clang-format on
+#else
+#define DYNARRAY_TYPE_NAME Dynarray_GameObject
+#endif
+#else
+#ifndef DYNARRAY_TYPE_NAME
+#error \
+	"DYNARRAY_TYPE defined, but DYNARRAY_TYPE_NAME not defined. Please define both."
+#endif
 #endif
 
-typedef struct Dynarray
+typedef struct DYNARRAY_TYPE_NAME
 {
 	DYNARRAY_TYPE *head;
 	uint size;
 	uint capacity;
-} Dynarray;
+} DYNARRAY_TYPE_NAME;
 
-Dynarray dynarray_create(int initial_capacity);
-void dynarray_insert(Dynarray *dynarray, DYNARRAY_TYPE new);
-void dynarray_remove(Dynarray *dynarray, uint index);
+DYNARRAY_TYPE_NAME dynarray_create(int initial_capacity);
+void dynarray_insert(DYNARRAY_TYPE_NAME *dynarray, DYNARRAY_TYPE new);
+void dynarray_remove(DYNARRAY_TYPE_NAME *dynarray, uint index);
 
 ///
 /// This provides the implementation of the functions in this header.
@@ -30,19 +42,20 @@ void dynarray_remove(Dynarray *dynarray, uint index);
 /// project.
 ///
 #ifdef _IMPLEMENT_DYNARRAY
-Dynarray dynarray_create(int initial_capacity)
+DYNARRAY_TYPE_NAME dynarray_create(int initial_capacity)
 {
-	GameObject *head = malloc(initial_capacity * sizeof(DYNARRAY_TYPE));
+	DYNARRAY_TYPE *head = malloc(initial_capacity * sizeof(DYNARRAY_TYPE));
 	if (head == NULL) {
 		printf("Memory allocation for dynamic array of capacity %d failed.\n",
 			   initial_capacity);
 		exit(EXIT_FAILURE);
 	}
 
-	return (Dynarray){.head = head, .capacity = initial_capacity, .size = 0};
+	return (DYNARRAY_TYPE_NAME){
+		.head = head, .capacity = initial_capacity, .size = 0};
 }
 
-void dynarray_insert(Dynarray *dynarray, DYNARRAY_TYPE new)
+void dynarray_insert(DYNARRAY_TYPE_NAME *dynarray, DYNARRAY_TYPE new)
 {
 	if (dynarray->size >= dynarray->capacity) {
 		// we dont have enough space, realloc
@@ -57,8 +70,10 @@ void dynarray_insert(Dynarray *dynarray, DYNARRAY_TYPE new)
 		}
 
 		// copy over all of the old contents
-		memcpy(new_head, dynarray->head, dynarray->size);
+		memcpy(new_head, dynarray->head,
+			   dynarray->size * sizeof(DYNARRAY_TYPE));
 
+		free(dynarray->head);
 		dynarray->head = new_head;
 		dynarray->capacity = new_capacity;
 	}
@@ -67,8 +82,24 @@ void dynarray_insert(Dynarray *dynarray, DYNARRAY_TYPE new)
 	dynarray->size += 1;
 }
 
-void dynarray_remove(Dynarray *dynarray, uint index) {
-    
+void dynarray_remove(DYNARRAY_TYPE_NAME *dynarray, uint index)
+{
+	// assert that index is in range
+	if (index >= dynarray->size) {
+		printf("Index %d out of range of dynamic array of size %d\n", index,
+			   dynarray->size);
+		exit(EXIT_FAILURE);
+	}
+
+	// perform a memcpy on each induvidual item
+	// to move everything after index back one
+	for (int i = index; i < dynarray->size; i++) {
+		// move current index to index-1
+		memcpy(index, index + 1, sizeof(DYNARRAY_TYPE));
+	}
+
+	// reduce size
+	dynarray->size -= 1;
 }
 #endif
 
