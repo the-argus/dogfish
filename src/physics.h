@@ -12,4 +12,5 @@ void close_physics();
 const dReal *get_test_cube_position();
 Vector3 get_test_cube_size();
 
-void apply_player_input_impulses(Inputstate input, float angle_x);
+void apply_player_input_impulses(Inputstate inputstate, float angle_x);
+void apply_airplane_input_impulses(Inputstate inputstate, float angle_x, unsigned int player_index);

@@ -67,6 +67,26 @@ void apply_player_input_impulses(Inputstate inputstate, float angle_x)
 	dBodyAddForce(test_cube, impulse.x, impulse.y, impulse.z);
 }
 
+void apply_airplane_input_impulses(Inputstate inputstate, float angle_x, unsigned int player_index)
+{
+	Vector3 impulse = {0};
+    Vector2 input = total_input(inputstate, player_index);
+
+	impulse.x = sin(angle_x) * PLAYER_MOVE_IMPULSE;
+	impulse.z = cos(angle_x) * PLAYER_MOVE_IMPULSE;
+	Vector3 h_impulse =
+		Vector3CrossProduct(Vector3Normalize(impulse), (Vector3){0, 1, 0});
+
+	impulse = Vector3Scale(impulse, input.y);
+
+	// also grab left/right input
+	h_impulse = Vector3Scale(h_impulse, input.x);
+
+	impulse = Vector3Add(impulse, h_impulse);
+
+	dBodyAddForce(test_cube, impulse.x, impulse.y, impulse.z);
+}
+
 static void nearCallback(void *data, dGeomID o1, dGeomID o2)
 {
 	UNUSED(data);
