@@ -25,13 +25,13 @@ void setup_airplane(GameObject *plane, Gamestate *gamestate,
 void airplane_update_p1(struct GameObject *self, Gamestate *gamestate,
 						float delta_time)
 {
-    apply_airplane_input_impulses(gamestate->input, 0, 0);
+    apply_airplane_input_impulses(self->physics.value.body.value, gamestate->input, 0);
 }
 
 void airplane_update_p2(struct GameObject *self, Gamestate *gamestate,
 						float delta_time)
 {
-    apply_airplane_input_impulses(gamestate->input, 0, 1);
+    apply_airplane_input_impulses(self->physics.value.body.value, gamestate->input, 1);
 	// gamestate->input.controller_2;
 }
 
