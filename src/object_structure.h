@@ -11,5 +11,20 @@
 ///
 
 #include "architecture.h"
+#include "shorthand.h"
 
-typedef 
+// define game object dynamic array
+#define DYNARRAY_TYPE GameObject
+#define DYNARRAY_TYPE_NAME Dynarray_GameObject
+#include "dynarray.h"
+
+typedef struct ObjectStructure
+{
+	Dynarray_GameObject _dynarray;
+} ObjectStructure;
+
+void object_structure_insert(ObjectStructure *structure, GameObject new);
+void object_structure_remove(ObjectStructure *structure, uint index);
+ObjectStructure object_structure_create();
+void object_structure_map(ObjectStructure *structure,
+						  void (*map_func)(GameObject *self, uint index));

@@ -8,6 +8,7 @@
 
 #include "architecture.h"
 #include "shorthand.h"
+#include <assert.h>
 
 #ifndef DYNARRAY_TYPE
 #define DYNARRAY_TYPE GameObject
@@ -96,7 +97,7 @@ _DYNARRAY_INSERT_SIGNATURE(DYNARRAY_TYPE)
 		dynarray->capacity = new_capacity;
 	}
 	assert(dynarray->size < dynarray->capacity);
-	(*dynarray->head[dynarray.size]) = new;
+	dynarray->head[dynarray->size] = new;
 	dynarray->size += 1;
 }
 
@@ -111,9 +112,9 @@ _DYNARRAY_REMOVE_SIGNATURE(DYNARRAY_TYPE)
 
 	// perform a memcpy on each induvidual item
 	// to move everything after index back one
-	for (int i = index; i < dynarray->size; i++) {
+	for (uint i = index; i < dynarray->size; i++) {
 		// move current index to index-1
-		memcpy(index, index + 1, sizeof(DYNARRAY_TYPE));
+		memcpy(&dynarray->head[index], &dynarray->head[index + 1], sizeof(DYNARRAY_TYPE));
 	}
 
 	// reduce size
@@ -122,7 +123,7 @@ _DYNARRAY_REMOVE_SIGNATURE(DYNARRAY_TYPE)
 
 _DYNARRAY_MAP_SIGNATURE(DYNARRAY_TYPE)
 {
-	for (int i = 0; i < dynarray->size; i++) {
+	for (uint i = 0; i < dynarray->size; i++) {
 		map_func(&(dynarray->head[i]), i);
 	}
 }
