@@ -72,12 +72,11 @@ void apply_airplane_input_impulses(dBodyID plane, dBodyID ground, Inputstate inp
 	// Get the current linear and angular velocity
 	dVector3* forward = dBodyGetLinearVel( plane );
 	
-
-	// Check the state of the stick inputs
+	// Check the state of the stick inputs (for your player index)
 	// if up/down, apply pitch
 	// if left/right, apply roll
 	
-	// Check the state of the keys
+	// Check the state of the keys (for your player index)
 	// if lb/rb, apply yaw
 
 	// Transform forward by the rotation matrix
