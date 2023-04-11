@@ -28,6 +28,8 @@ source_file_names = [
   'fps_camera.c',
   'physics.c',
   'debug.c',
+  'object_structure',
+  'dynarray_implementation.c',
   'skybox.c'
 ]
 
