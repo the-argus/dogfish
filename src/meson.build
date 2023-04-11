@@ -29,6 +29,7 @@ source_file_names = [
   'physics.c',
   'debug.c',
   'object_structure.c',
+  'gameobject.c',
   'dynarray_implementation.c',
   'skybox.c'
 ]

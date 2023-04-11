@@ -1,6 +1,7 @@
 #pragma once
 #include "raylib.h"
 #include "ode/ode.h"
+#include "shorthand.h"
 
 #define OPTIONAL(type) \
 typedef struct Opt_##type { \
@@ -93,4 +94,7 @@ typedef struct GameObject {
     Opt_PhysicsComponent physics;
     Opt_DrawFunction draw;
     Opt_UpdateFunction update;
+    u_int16_t id;
+    u_int8_t disabled: 1;
+    u_int8_t queued_for_cleanup: 1;
 } GameObject;
