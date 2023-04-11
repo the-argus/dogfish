@@ -13,4 +13,4 @@ const dReal *get_test_cube_position();
 Vector3 get_test_cube_size();
 
 void apply_player_input_impulses(Inputstate inputstate, float angle_x);
-void apply_airplane_input_impulses(dBodyID plane, Inputstate inputstate, unsigned int player_index);
+void apply_airplane_input_impulses(dBodyID plane, Keystate keys, ControllerState controls);

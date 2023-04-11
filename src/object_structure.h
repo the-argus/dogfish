@@ -29,3 +29,4 @@ int object_structure_remove_by_id(ObjectStructure *structure, u_int16_t id);
 ObjectStructure object_structure_create();
 void object_structure_map(ObjectStructure *structure,
 						  void (*map_func)(GameObject *self, uint index));
+int object_structure_size(ObjectStructure *object);

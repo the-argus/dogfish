@@ -67,15 +67,18 @@ void apply_player_input_impulses(Inputstate inputstate, float angle_x)
 	dBodyAddForce(test_cube, impulse.x, impulse.y, impulse.z);
 }
 
-void apply_airplane_input_impulses(dBodyID plane, dBodyID ground, Inputstate inputstate, unsigned int player_index)
+void apply_airplane_input_impulses(dBodyID plane, Keystate keys, ControllerState controls)
 {
+    UNUSED(plane);
+    UNUSED(keys);
+    UNUSED(controls);
 	// Get the current linear and angular velocity
-	dVector3* forward = dBodyGetLinearVel( plane );
-	
+	// dVector3 *forward = dBodyGetLinearVel(plane);
+
 	// Check the state of the stick inputs (for your player index)
 	// if up/down, apply pitch
 	// if left/right, apply roll
-	
+
 	// Check the state of the keys (for your player index)
 	// if lb/rb, apply yaw
 
@@ -83,11 +86,10 @@ void apply_airplane_input_impulses(dBodyID plane, dBodyID ground, Inputstate inp
 	// Apply force on the transformed forward vector
 
 	// Make this an impulse and apply it
-	
 
 	// --- COPIED PLAYER MOVEMENT CODE FOR YOUR REFERENCE ---
 	// Vector3 impulse = {0};
-    // Vector2 input = total_input(inputstate, player_index);
+	// Vector2 input = total_input(inputstate, player_index);
 
 	// //impulse.x = sin(angle_x) * PLAYER_MOVE_IMPULSE;
 	// //impulse.z = cos(angle_x) * PLAYER_MOVE_IMPULSE;
@@ -158,7 +160,7 @@ void init_physics(Gamestate *gamestate)
 	dWorldSetGravity(world, 0, -GRAVITY, 0);
 	ground = dCreatePlane(space, 0, 1, 0, 0);
 
-	#pragma region CUBE
+#pragma region CUBE
 
 	// create a cube which raylib can draw later
 	test_cube = dBodyCreate(world);
@@ -180,11 +182,11 @@ void init_physics(Gamestate *gamestate)
 	test_cube_geom = dCreateBox(space, cube_size.x, cube_size.y, cube_size.z);
 	dGeomSetBody(test_cube_geom, test_cube);
 
-	#pragma endregion
+#pragma endregion
 
-	#pragma region PLANE1
+#pragma region PLANE1
 
-	#pragma endregion
+#pragma endregion
 
 	// allocate the data for this thread to access ODE
 	assert(dAllocateODEDataForThread(dAllocateMaskAll));

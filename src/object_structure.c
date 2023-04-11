@@ -38,3 +38,7 @@ int object_structure_remove_by_id(ObjectStructure *structure, u_int16_t id)
 	}
 	return 0;
 }
+
+int object_structure_size(ObjectStructure *object) {
+    return object->_dynarray.size;
+}

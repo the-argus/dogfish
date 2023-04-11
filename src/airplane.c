@@ -1,5 +1,6 @@
 #include "airplane.h"
 #include "physics.h"
+#include "gameobject.h"
 
 // Like a constructor:
 // Hook up all the GameObject optional features
@@ -8,9 +9,10 @@
 void setup_airplane(GameObject *plane, Gamestate *gamestate,
 					unsigned int player)
 {
+    // plane = create_game_object();
 	// Set up the values for the opts
     // DRAW
-	plane->draw.value = &airplane_draw;
+	// plane->draw.value = &airplane_draw;
     // UPDATE
 	if (player == 0) {
 		plane->update.value = &airplane_update_p1;
@@ -19,7 +21,7 @@ void setup_airplane(GameObject *plane, Gamestate *gamestate,
 	}
 
 	// Say that it has them
-	plane->draw.has = 1;
+	plane->draw.has = 0;
 	plane->update.has = 1;
 }
 
@@ -27,14 +29,16 @@ void setup_airplane(GameObject *plane, Gamestate *gamestate,
 void airplane_update_p1(struct GameObject *self, Gamestate *gamestate,
 						float delta_time)
 {
-    apply_airplane_input_impulses(self->physics.value.body.value, gamestate->input, 0);
+    UNUSED(delta_time);
+    apply_airplane_input_impulses(self->physics.value.body.value, gamestate->input.keys, gamestate->input.controller);
 }
 
 void airplane_update_p2(struct GameObject *self, Gamestate *gamestate,
 						float delta_time)
 {
-    apply_airplane_input_impulses(self->physics.value.body.value, gamestate->input, 1);
+    UNUSED(delta_time);
+    apply_airplane_input_impulses(self->physics.value.body.value, gamestate->input.keys_2, gamestate->input.controller_2);
 }
 
 // Draw the plane
-void airplane_draw(struct GameObject *self, Gamestate *gamestate) {}
+// void airplane_draw(struct GameObject *self, Gamestate *gamestate) {}

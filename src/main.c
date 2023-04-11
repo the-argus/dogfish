@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "bullet.h"
 #include "raylib.h"
 #include "raymath.h"
 
@@ -12,6 +13,8 @@
 #include "physics.h"
 #include "skybox.h"
 #include "airplane.h"
+#include "gameobject.h"
+#include "object_structure.h"
 #include "debug.h"
 
 // useful for screen scaling
@@ -35,12 +38,15 @@ static void (*update_function)();
 static GameObject p1_plane;
 static GameObject p2_plane;
 
+static ObjectStructure objects;
+
 void window_settings();
 void init_rendertextures();
 void update();
 void main_draw();
 void window_draw();
 void defer_update_once() { update_function = &update; }
+void init_players();
 
 int main(void)
 {
@@ -52,8 +58,12 @@ int main(void)
 
 	load_skybox();
 
-	// initialize physics system
+	objects = object_structure_create();
+	
+    // initialize physics system
 	init_physics(&gamestate);
+
+	init_players();
 
 	// inialize gamestate struct
 	gamestate.input.cursor.virtual_position = (Vector2){0};
@@ -66,6 +76,12 @@ int main(void)
 
 	// initialization complete
 	printf("dogfish...\n");
+
+	object_structure_insert(&objects, p1_plane);
+	object_structure_insert(&objects, p2_plane);
+
+	GameObject my_bullet = create_bullet(&gamestate);
+	object_structure_insert(&objects, my_bullet);
 
 	// loop until player presses escape or close button, or both start/select
 	// buttons on a controller
@@ -147,6 +163,13 @@ void update()
 								gamestate.p2_camera_data.angle.x);
 	update_physics(GetFrameTime());
 
+	for (int i = 0; i < object_structure_size(&objects); i++) {
+		if (objects._dynarray.head[i].update.has) {
+			objects._dynarray.head[i].update.value(&objects._dynarray.head[i],
+												   &gamestate, GetFrameTime());
+		}
+	}
+
 	Vector3 pos = to_raylib(get_test_cube_position());
 	// gamestate.current_camera->position = pos;
 }
@@ -159,6 +182,13 @@ void main_draw()
 	Vector3 pos = to_raylib(get_test_cube_position());
 	Vector3 size = get_test_cube_size();
 	DrawCube(pos, size.x, size.y, size.z, RED);
+
+	for (int i = 0; i < object_structure_size(&objects); i++) {
+		if (objects._dynarray.head[i].draw.has) {
+			objects._dynarray.head[i].draw.value(&objects._dynarray.head[i],
+												 &gamestate);
+		}
+	}
 
 	// grid for visual aid
 	DrawGrid(10, 1.0f);
