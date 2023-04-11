@@ -69,7 +69,7 @@ void apply_player_input_impulses(Inputstate inputstate, float angle_x)
 
 void apply_airplane_input_impulses(dBodyID plane, dBodyID ground, Inputstate inputstate, unsigned int player_index)
 {
-	dReal *planeLinear[3] = dBodyGetLinearVel( plane );
+	dVector3* planeLinear = dBodyGetLinearVel( plane );
 	
 	Vector3 impulse = {0};
     Vector2 input = total_input(inputstate, player_index);
