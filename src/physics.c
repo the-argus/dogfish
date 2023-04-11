@@ -118,11 +118,16 @@ void update_physics(float delta_time)
 	dJointGroupEmpty(contactgroup);
 }
 
-void init_physics()
+void init_physics(Gamestate *gamestate)
 {
 	dInitODE2(0);
+
+	// create world and space, send them to the gamestate
 	world = dWorldCreate();
 	space = dHashSpaceCreate(0);
+	gamestate->world = world;
+	gamestate->space = space;
+
 	contactgroup = dJointGroupCreate(0);
 	dWorldSetGravity(world, 0, -GRAVITY, 0);
 	ground = dCreatePlane(space, 0, 1, 0, 0);

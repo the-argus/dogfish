@@ -53,7 +53,7 @@ int main(void)
 	load_skybox();
 
 	// initialize physics system
-	init_physics();
+	init_physics(&gamestate);
 
 	// inialize gamestate struct
 	gamestate.input.cursor.virtual_position = (Vector2){0};

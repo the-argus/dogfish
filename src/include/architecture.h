@@ -55,6 +55,8 @@ typedef struct Gamestate {
     CameraData p1_camera_data;
     Camera *p2_camera;
     CameraData p2_camera_data;
+    dWorldID world;
+    dSpaceID space;
 } Gamestate;
 
 struct GameObject;
