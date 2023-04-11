@@ -50,7 +50,7 @@ static int on_ground(dBodyID body)
 void apply_player_input_impulses(Inputstate inputstate, float angle_x)
 {
 	Vector3 impulse = {0};
-    Vector2 input = total_input(inputstate, 0);
+	Vector2 input = total_input(inputstate, 0);
 
 	impulse.x = sin(angle_x) * PLAYER_MOVE_IMPULSE;
 	impulse.z = cos(angle_x) * PLAYER_MOVE_IMPULSE;
@@ -86,6 +86,15 @@ static void nearCallback(void *data, dGeomID o1, dGeomID o2)
 	dContact contact;
 	init_contact(&contact);
 	if (dCollide(o1, o2, 1, &contact.geom, sizeof(contact.geom))) {
+		CollisionHandler handler1 = (CollisionHandler)dGeomGetData(o1);
+		CollisionHandler handler2 = (CollisionHandler)dGeomGetData(o1);
+
+		if (handler1 != NULL) {
+			handler1(o1, o2);
+		}
+		if (handler2 != NULL) {
+			handler1(o2, o1);
+		}
 		dJointID c = dJointCreateContact(world, contactgroup, &contact);
 		dJointAttach(c, b1, b2);
 	}
