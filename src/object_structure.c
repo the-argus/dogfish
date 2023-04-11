@@ -9,17 +9,32 @@ void object_structure_insert(ObjectStructure *structure, GameObject new)
 {
 	dynarray_insert_GameObject(&structure->_dynarray, new);
 }
+
 void object_structure_remove(ObjectStructure *structure, uint index)
 {
 	dynarray_remove_GameObject(&structure->_dynarray, index);
 }
+
 ObjectStructure object_structure_create()
 {
 	Dynarray_GameObject array = dynarray_create_GameObject(20);
 	return (ObjectStructure){._dynarray = array};
 }
+
 void object_structure_map(ObjectStructure *structure,
 						  void (*map_func)(GameObject *self, uint index))
 {
 	dynarray_map_GameObject(&structure->_dynarray, map_func);
+}
+
+int object_structure_remove_by_id(ObjectStructure *structure, u_int16_t id)
+{
+	for (uint i = 0; i < structure->_dynarray.size; i++) {
+		if (structure->_dynarray.head[i].id == id) {
+			// game object with matching id found
+			dynarray_remove_GameObject(&structure->_dynarray, i);
+			return 1;
+		}
+	}
+	return 0;
 }

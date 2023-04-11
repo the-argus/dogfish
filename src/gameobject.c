@@ -1,6 +1,6 @@
 #include "architecture.h"
 
-static int unused_id = 0;
+static int unused_id = 1;
 
 PhysicsComponent create_physics_component()
 {

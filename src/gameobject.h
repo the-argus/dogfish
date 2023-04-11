@@ -2,7 +2,7 @@
 
 /// 
 /// Create an initialized GameObject, everything with 0. Basically a default
-/// constructor.
+/// constructor- absolutely required for gameobject initialization.
 ///
 GameObject create_game_object();
 
