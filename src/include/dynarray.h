@@ -26,6 +26,9 @@
 #endif
 #endif
 
+// funny trick to call a macro with macro args
+#define _CALL(macro, ...)  macro(__VA_ARGS__)
+
 typedef struct DYNARRAY_TYPE_NAME
 {
 	DYNARRAY_TYPE *head;
@@ -61,7 +64,7 @@ _DYNARRAY_FUNCTION_DECLARATIONS(DYNARRAY_TYPE)
 /// project.
 ///
 #ifdef _IMPLEMENT_DYNARRAY
-_DYNARRAY_CREATE_SIGNATURE(DYNARRAY_TYPE)
+_CALL(_DYNARRAY_CREATE_SIGNATURE, DYNARRAY_TYPE)
 {
 	DYNARRAY_TYPE *head = malloc(initial_capacity * sizeof(DYNARRAY_TYPE));
 	if (head == NULL) {
@@ -74,7 +77,7 @@ _DYNARRAY_CREATE_SIGNATURE(DYNARRAY_TYPE)
 		.head = head, .capacity = initial_capacity, .size = 0};
 }
 
-_DYNARRAY_INSERT_SIGNATURE(DYNARRAY_TYPE)
+_CALL(_DYNARRAY_INSERT_SIGNATURE, DYNARRAY_TYPE)
 {
 	if (dynarray->size >= dynarray->capacity) {
 		// we dont have enough space, realloc
@@ -101,7 +104,7 @@ _DYNARRAY_INSERT_SIGNATURE(DYNARRAY_TYPE)
 	dynarray->size += 1;
 }
 
-_DYNARRAY_REMOVE_SIGNATURE(DYNARRAY_TYPE)
+_CALL(_DYNARRAY_REMOVE_SIGNATURE, DYNARRAY_TYPE)
 {
 	// assert that index is in range
 	if (index >= dynarray->size) {
@@ -121,7 +124,7 @@ _DYNARRAY_REMOVE_SIGNATURE(DYNARRAY_TYPE)
 	dynarray->size -= 1;
 }
 
-_DYNARRAY_MAP_SIGNATURE(DYNARRAY_TYPE)
+_CALL(_DYNARRAY_MAP_SIGNATURE, DYNARRAY_TYPE)
 {
 	for (uint i = 0; i < dynarray->size; i++) {
 		map_func(&(dynarray->head[i]), i);
