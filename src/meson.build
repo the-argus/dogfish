@@ -28,10 +28,12 @@ source_file_names = [
   'fps_camera.c',
   'physics.c',
   'debug.c',
+  'airplane.c',
   'object_structure.c',
   'gameobject.c',
   'dynarray_implementation.c',
-  'skybox.c'
+  'skybox.c',
+  'bullet.c'
 ]
 
 sources = []

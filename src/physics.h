@@ -5,11 +5,7 @@
 
 Vector3 to_raylib(const dVector3 v3);
 
-void init_physics();
+void init_physics(Gamestate *gamestate);
 void update_physics(float delta_time);
 void close_physics();
-
-const dReal *get_test_cube_position();
-Vector3 get_test_cube_size();
-
-void apply_player_input_impulses(Inputstate input, float angle_x);
+int on_ground(dBodyID body);
