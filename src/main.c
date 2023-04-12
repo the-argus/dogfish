@@ -21,10 +21,11 @@
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
-static Gamestate gamestate;
+// the big important things
+static Gamestate gamestate;		// stores miscellaneous variables
+static ObjectStructure objects; // contains all the game objects
 
 // window scaling and splitscreen
-static float scale;
 static RenderTexture2D main_target;
 static RenderTexture2D rt1;
 static RenderTexture2D rt2;
@@ -32,40 +33,34 @@ static RenderTexture2D rt2;
 static const Rectangle splitScreenRect = {
 	.x = 0, .y = 0, .width = GAME_WIDTH, .height = (int)-(GAME_HEIGHT / 2)};
 
+// use a function pointer for the update loop so that we can change it
 static void (*update_function)();
 
-// gameplay objects- probably moved to gameobject pool once that is ready
-static GameObject p1_plane;
-static GameObject p2_plane;
-
-static ObjectStructure objects;
-
+// split up code that would normally all be in main()
 void window_settings();
 void init_rendertextures();
 void update();
 void main_draw();
 void window_draw();
 void defer_update_once() { update_function = &update; }
-void init_players();
 
 int main(void)
 {
+	// initialize miscellaneous things from other functions and files ----------
+
+	// set the update function to run once without doing anything
 	update_function = &defer_update_once;
 	// set windowing backend vars like title and size
 	window_settings();
-	// initialize main_texture to the correct size
+	// initialize main_texture render texture to the correct size
 	init_rendertextures();
-
+	// load skybox textures
 	load_skybox();
-
+	// allocate memory for the object structure which will contain all
+	// gameobjects
 	objects = object_structure_create();
-	
-    // initialize physics system
-	init_physics(&gamestate);
 
-	init_players();
-
-	// inialize gamestate struct
+	// inialize gamestate struct -----------------------------------------------
 	gamestate.input.cursor.virtual_position = (Vector2){0};
 	gamestate.input.cursor_2.virtual_position = (Vector2){0};
 	// these initialize current_camera, which involves a malloc
@@ -74,13 +69,22 @@ int main(void)
 	// player 2
 	gamestate_new_fps_camera(&gamestate, 1);
 
-	// initialization complete
+	// initialize physics system
+	init_physics(&gamestate);
+
+	// initialization complete -------------------------------------------------
+
 	printf("dogfish...\n");
 
+	// create game objects
+	GameObject p1_plane = create_airplane(gamestate, 0);
+	GameObject p2_plane = create_airplane(gamestate, 1);
+	GameObject my_bullet = create_bullet(gamestate);
+
+	// copy the game objects into the object structure (the originals dont
+	// matter)
 	object_structure_insert(&objects, p1_plane);
 	object_structure_insert(&objects, p2_plane);
-
-	GameObject my_bullet = create_bullet(&gamestate);
 	object_structure_insert(&objects, my_bullet);
 
 	// loop until player presses escape or close button, or both start/select
@@ -93,11 +97,11 @@ int main(void)
 
 		// fraction of window resize that will occur this frame, basically the
 		// difference between current width/height ratio to target width/height
-		scale = MIN((float)GetScreenWidth() / GAME_WIDTH,
-					(float)GetScreenHeight() / GAME_HEIGHT);
+		gamestate.screen_scale = MIN((float)GetScreenWidth() / GAME_WIDTH,
+									 (float)GetScreenHeight() / GAME_HEIGHT);
 
 		// set the variables in gamestate to reflect input state
-		gather_input(&gamestate, scale);
+		gather_input(&gamestate);
 
 		// update in-game elements before drawing
 		update_function();
@@ -141,6 +145,9 @@ int main(void)
 	}
 
 	// cleanup
+	while (object_structure_size(&objects) > 0) {
+		object_structure_remove(&objects, 0);
+	}
 	free(gamestate.p1_camera);
 	free(gamestate.p2_camera);
 	close_physics();
@@ -157,10 +164,6 @@ void update()
 	fps_camera_update(gamestate.p2_camera, &(gamestate.p2_camera_data),
 					  gamestate.input.cursor_2);
 
-	apply_player_input_impulses(gamestate.input,
-								gamestate.p1_camera_data.angle.x);
-	apply_player_input_impulses(gamestate.input,
-								gamestate.p2_camera_data.angle.x);
 	update_physics(GetFrameTime());
 
 	for (int i = 0; i < object_structure_size(&objects); i++) {
@@ -169,19 +172,12 @@ void update()
 												   &gamestate, GetFrameTime());
 		}
 	}
-
-	Vector3 pos = to_raylib(get_test_cube_position());
-	// gamestate.current_camera->position = pos;
 }
 
 /// Draw the in-game objects to a consistently sized rendertexture.
 void main_draw()
 {
 	draw_skybox();
-	// draw a cube
-	Vector3 pos = to_raylib(get_test_cube_position());
-	Vector3 size = get_test_cube_size();
-	DrawCube(pos, size.x, size.y, size.z, RED);
 
 	for (int i = 0; i < object_structure_size(&objects); i++) {
 		if (objects._dynarray.head[i].draw.has) {
@@ -200,14 +196,18 @@ void window_draw()
 	// color of the bars around the rendertexture
 	ClearBackground(BLACK);
 	// draw the render texture scaled
-	DrawTexturePro(
-		main_target.texture,
-		(Rectangle){0.0f, 0.0f, (float)main_target.texture.width,
-					(float)-main_target.texture.height},
-		(Rectangle){(GetScreenWidth() - ((float)GAME_WIDTH * scale)) * 0.5f,
-					(GetScreenHeight() - ((float)GAME_HEIGHT * scale)) * 0.5f,
-					(float)GAME_WIDTH * scale, (float)GAME_HEIGHT * scale},
-		(Vector2){0, 0}, 0.0f, WHITE);
+	DrawTexturePro(main_target.texture,
+				   (Rectangle){0.0f, 0.0f, (float)main_target.texture.width,
+							   (float)-main_target.texture.height},
+				   (Rectangle){(GetScreenWidth() -
+								((float)GAME_WIDTH * gamestate.screen_scale)) *
+								   0.5f,
+							   (GetScreenHeight() -
+								((float)GAME_HEIGHT * gamestate.screen_scale)) *
+								   0.5f,
+							   (float)GAME_WIDTH * gamestate.screen_scale,
+							   (float)GAME_HEIGHT * gamestate.screen_scale},
+				   (Vector2){0, 0}, 0.0f, WHITE);
 }
 
 /// Set windowing backend settings like window title and size.
@@ -235,11 +235,4 @@ void init_rendertextures()
 	SetTextureFilter(main_target.texture, TEXTURE_FILTER_BILINEAR);
 	SetTextureFilter(rt1.texture, TEXTURE_FILTER_BILINEAR);
 	SetTextureFilter(rt2.texture, TEXTURE_FILTER_BILINEAR);
-}
-
-/// Initialize the player plane gameobjects.
-void init_players()
-{
-	setup_airplane(&p1_plane, &gamestate, 0);
-	setup_airplane(&p2_plane, &gamestate, 1);
 }
