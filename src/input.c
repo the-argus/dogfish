@@ -26,7 +26,7 @@ static void set_virtual_cursor_position(Cursorstate *cursor,
 }
 
 /// Make the gamestate reflect the actual system IO state.
-void gather_input(Gamestate *gamestate, float screen_scaling)
+void gather_input(Gamestate *gamestate)
 {
 	// collect keyboard information
 
@@ -85,8 +85,8 @@ void gather_input(Gamestate *gamestate, float screen_scaling)
 	// things like pause menus.
 	gamestate->input.cursor.position = GetMousePosition();
 
-	set_virtual_cursor_position(&gamestate->input.cursor, screen_scaling);
-	set_virtual_cursor_position(&gamestate->input.cursor_2, screen_scaling);
+	set_virtual_cursor_position(&gamestate->input.cursor, gamestate->screen_scale);
+	set_virtual_cursor_position(&gamestate->input.cursor_2, gamestate->screen_scale);
 }
 
 // return 1 if the controls to exit the game are being pressed, 0 otherwise
