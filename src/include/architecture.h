@@ -58,6 +58,7 @@ typedef struct Gamestate {
     CameraData p2_camera_data;
     dWorldID world;
     dSpaceID space;
+    float screen_scale;
 } Gamestate;
 
 struct GameObject;
@@ -65,6 +66,7 @@ struct GameObject;
 typedef void (*UpdateFunction)(struct GameObject *self, Gamestate *gamestate, float delta_time);
 typedef void (*DrawFunction)(struct GameObject *self, Gamestate *gamestate);
 typedef void (*CollisionHandler)(dGeomID self, dGeomID other);
+typedef void (*CleanupFunction)(struct GameObject *self);
 
 // versions of types but they have a true/false for whether or not they
 // are valid/populated
@@ -86,6 +88,7 @@ typedef struct PhysicsComponent {
 OPTIONAL(UpdateFunction)
 OPTIONAL(DrawFunction)
 OPTIONAL(PhysicsComponent)
+OPTIONAL(CleanupFunction)
 
 // THE game object!!!!
 // Possible implementations that will use game object:
@@ -96,6 +99,7 @@ typedef struct GameObject {
     Opt_PhysicsComponent physics;
     Opt_DrawFunction draw;
     Opt_UpdateFunction update;
+    Opt_CleanupFunction cleanup;
     u_int16_t id;
     u_int8_t disabled: 1;
     u_int8_t queued_for_cleanup: 1;
