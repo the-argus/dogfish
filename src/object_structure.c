@@ -12,6 +12,11 @@ void object_structure_insert(ObjectStructure *structure, GameObject new)
 
 void object_structure_remove(ObjectStructure *structure, uint index)
 {
+	// call the object's cleanup function if it has one
+	if (structure->_dynarray.head[index].cleanup.has) {
+		structure->_dynarray.head[index].cleanup.value(
+			&structure->_dynarray.head[index]);
+	}
 	dynarray_remove_GameObject(&structure->_dynarray, index);
 }
 
@@ -39,6 +44,7 @@ int object_structure_remove_by_id(ObjectStructure *structure, u_int16_t id)
 	return 0;
 }
 
-int object_structure_size(ObjectStructure *object) {
-    return object->_dynarray.size;
+int object_structure_size(ObjectStructure *object)
+{
+	return object->_dynarray.size;
 }
