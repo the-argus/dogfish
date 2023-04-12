@@ -9,19 +9,26 @@
 #define BULLET_LENGTH 0.5f
 #define BULLET_MASS 1
 
-GameObject create_bullet(Gamestate *gamestate)
+static void bullet_update(GameObject *self, Gamestate *gamestate,
+						  float delta_time);
+static void bullet_draw(GameObject *self, Gamestate *gamestate);
+
+GameObject create_bullet(Gamestate gamestate)
 {
 	GameObject initial_bullet = create_game_object();
 
 	initial_bullet.draw.value = bullet_draw;
 	initial_bullet.draw.has = 1;
 
+	initial_bullet.update.value = bullet_update;
+	initial_bullet.update.has = 1;
+
 	initial_bullet.physics.has = 1;
 	initial_bullet.physics.value = create_physics_component();
 	initial_bullet.physics.value.mask = BULLET_MASK;
 	initial_bullet.physics.value.bit = BULLET_BIT;
 	// TODO set up later
-	dBodyID body = dBodyCreate(gamestate->world);
+	dBodyID body = dBodyCreate(gamestate.world);
 	initial_bullet.physics.value.body.value = body;
 
 	dMass mass;
@@ -38,27 +45,23 @@ GameObject create_bullet(Gamestate *gamestate)
 	dBodySetAngularDamping(body, 1);
 
 	// make geometry and apply it to the cube body
-	dGeomID geom =
-		dCreateBox(gamestate->space, size.x, size.y, size.z);
+	dGeomID geom = dCreateBox(gamestate.space, size.x, size.y, size.z);
 	dGeomSetBody(geom, body);
 
 	initial_bullet.physics.value.body.has = 1;
-    
-    Vector3 pos = to_raylib(dBodyGetPosition(body));
-    pos.z += 1;
-	gamestate->p1_camera->position = pos;
 
 	return initial_bullet;
 }
 
-void bullet_update(GameObject *self, Gamestate *gamestate, float delta_time)
+static void bullet_update(GameObject *self, Gamestate *gamestate,
+						  float delta_time)
 {
 	UNUSED(self);
 	UNUSED(gamestate);
 	UNUSED(delta_time);
 }
 
-void bullet_draw(GameObject *self, Gamestate *gamestate)
+static void bullet_draw(GameObject *self, Gamestate *gamestate)
 {
 	UNUSED(gamestate);
 	Vector3 pos = to_raylib(dBodyGetPosition(self->physics.value.body.value));
