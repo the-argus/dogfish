@@ -21,23 +21,23 @@ typedef struct Cursorstate {
 } Cursorstate;
 
 typedef struct Keystate {
-    unsigned char up : 1;
-    unsigned char left : 1;
-    unsigned char right : 1;
-    unsigned char down : 1;
-    unsigned char look_left : 1;
-    unsigned char look_right : 1;
-    unsigned char look_up : 1;
-    unsigned char look_down : 1;
+    uchar up : 1;
+    uchar left : 1;
+    uchar right : 1;
+    uchar down : 1;
+    uchar look_left : 1;
+    uchar look_right : 1;
+    uchar look_up : 1;
+    uchar look_down : 1;
 } Keystate;
 
 typedef Vector2 Joystick;
 
 typedef struct ControllerState {
-    unsigned char left : 1;
-    unsigned char up : 1;
-    unsigned char down : 1;
-    unsigned char right : 1;
+    uchar left : 1;
+    uchar up : 1;
+    uchar down : 1;
+    uchar right : 1;
     Joystick joystick;
 } ControllerState;
 
@@ -78,8 +78,8 @@ OPTIONAL(CollisionHandler)
 
 // a physics component always has a geom but not necessarily a body
 typedef struct PhysicsComponent {
-    unsigned short mask; // 8 bits
-    unsigned short bit; // 8 bits
+    ushort mask; // 8 bits
+    ushort bit; // 8 bits
     PhysicsGeometry geom;
     Opt_CollisionHandler collision_handler;
     Opt_PhysicsBody body; // this body's UserData should be a pointer to the parent gameobject
@@ -100,7 +100,13 @@ typedef struct GameObject {
     Opt_DrawFunction draw;
     Opt_UpdateFunction update;
     Opt_CleanupFunction cleanup;
+<<<<<<< HEAD
     u_int16_t id;
     u_int8_t disabled: 1;
     u_int8_t queued_for_cleanup: 1;
+=======
+    ushort id;
+    uchar disabled: 1;
+    uchar queued_for_cleanup: 1;
+>>>>>>> main
 } GameObject;

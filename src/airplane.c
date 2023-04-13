@@ -164,7 +164,7 @@ static void apply_airplane_input_impulses(dBodyID plane, Keystate keys,
 
 	// --- COPIED PLAYER MOVEMENT CODE FOR YOUR REFERENCE ---
 	// Vector3 impulse = {0};
-	// //Vector2 input = total_input(inputstate, player_index);
+	// Vector2 input = total_input(inputstate, player_index);
 
 	// //impulse.x = sin(angle_x) * PLAYER_MOVE_IMPULSE;
 	// //impulse.z = cos(angle_x) * PLAYER_MOVE_IMPULSE;
