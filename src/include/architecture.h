@@ -100,13 +100,7 @@ typedef struct GameObject {
     Opt_DrawFunction draw;
     Opt_UpdateFunction update;
     Opt_CleanupFunction cleanup;
-<<<<<<< HEAD
-    u_int16_t id;
-    u_int8_t disabled: 1;
-    u_int8_t queued_for_cleanup: 1;
-=======
     ushort id;
     uchar disabled: 1;
     uchar queued_for_cleanup: 1;
->>>>>>> main
 } GameObject;
