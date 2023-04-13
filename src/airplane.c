@@ -178,5 +178,5 @@ static void apply_airplane_input_impulses(dBodyID plane, Keystate keys,
 
 	// impulse = Vector3Add(impulse, h_impulse);
 
-	dBodyAddForce(plane, 1000.0, 000.0, 000.0);
+	//dBodyAddForce(plane, 1000.0, 000.0, 000.0);
 }
