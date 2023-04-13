@@ -4,6 +4,7 @@
 #include "bullet.h"
 #include "raylib.h"
 #include "raymath.h"
+#include "render_pipeline.h"
 #include "rlgl.h"
 
 #include "constants.h"
@@ -19,33 +20,18 @@
 #include "terrain.h"
 #include "debug.h"
 
-// useful for screen scaling
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
-
 // the big important things
 static Gamestate gamestate;		// stores miscellaneous variables
 static ObjectStructure objects; // contains all the game objects
-
-// window scaling and splitscreen
-static RenderTexture2D main_target;
-static RenderTexture2D rt1;
-static RenderTexture2D rt2;
-static Shader shader;
-// make sure to take absolute values when using height...
-static const Rectangle splitScreenRect = {
-	.x = 0, .y = 0, .width = GAME_WIDTH, .height = (int)-(GAME_HEIGHT / 2)};
 
 // use a function pointer for the update loop so that we can change it
 static void (*update_function)();
 
 // split up code that would normally all be in main()
-void window_settings();
-void init_rendertextures();
-void update();
-void main_draw();
-void window_draw();
-void defer_update_once() { update_function = &update; }
+static void window_settings();
+static void update();
+static void main_draw();
+static void defer_update_once() { update_function = &update; }
 
 int main(void)
 {
@@ -55,13 +41,8 @@ int main(void)
 	update_function = &defer_update_once;
 	// set windowing backend vars like title and size
 	window_settings();
-	// initialize main_texture render texture to the correct size
-	init_rendertextures();
 
-	shader = LoadShader(0, "assets/postprocessing/edges.fs");
-	int resolution = GetShaderLocation(shader, "resolution");
-	float resolution_vec2[2] = {GAME_WIDTH, GAME_HEIGHT};
-	SetShaderValue(shader, resolution, resolution_vec2, SHADER_UNIFORM_VEC2);
+    init_render_pipeline();
 
 	// load skybox textures
 	load_skybox();
@@ -106,55 +87,15 @@ int main(void)
 			window_open = false;
 		}
 
-		// fraction of window resize that will occur this frame, basically the
-		// difference between current width/height ratio to target width/height
-		gamestate.screen_scale = MIN((float)GetScreenWidth() / GAME_WIDTH,
-									 (float)GetScreenHeight() / GAME_HEIGHT);
-
+		gather_screen_info(&gamestate);
 		// set the variables in gamestate to reflect input state
 		gather_input(&gamestate);
 
 		// update in-game elements before drawing
 		update_function();
 
-		// Render Camera 1
-		BeginTextureMode(rt1);
-		// clang-format off
-		    ClearBackground(RAYWHITE);
-            BeginMode3D(*gamestate.p1_camera);
-                // draw in-game objects
-                main_draw();
-
-            EndMode3D();
-		// clang-format on
-		EndTextureMode();
-
-		// Render Camera 2
-		BeginTextureMode(rt2);
-		// clang-format off
-		    ClearBackground(RAYWHITE);
-            BeginMode3D(*gamestate.p2_camera);
-                // draw in-game objects
-                main_draw();
-
-            EndMode3D();
-		// clang-format on
-		EndTextureMode();
-
-		// set draw target to the rendertexture, dont actually draw to window
-		BeginTextureMode(main_target);
-		ClearBackground(BLACK);
-		DrawTextureRec(rt1.texture, splitScreenRect, (Vector2){0, 0}, WHITE);
-		DrawTextureRec(rt2.texture, splitScreenRect,
-					   (Vector2){0, abs((int)splitScreenRect.height)}, WHITE);
-		EndTextureMode();
-
-		// draw the game to the window at the correct size
-		BeginDrawing();
-		// BeginShaderMode(shader);
-		window_draw();
-		// EndShaderMode();
-		EndDrawing();
+		// render both cameras to the window
+		render(gamestate, main_draw);
 	}
 
 	// cleanup
@@ -165,10 +106,7 @@ int main(void)
 	free(gamestate.p1_camera);
 	free(gamestate.p2_camera);
 	cleanup_terrain();
-	UnloadShader(shader);
-	UnloadRenderTexture(rt1);
-	UnloadRenderTexture(rt2);
-	UnloadRenderTexture(main_target);
+	cleanup_render_pipeline();
 	close_physics();
 	CloseWindow();
 
@@ -211,49 +149,11 @@ void main_draw()
 	DrawGrid(10, 1.0f);
 }
 
-/// Resize the game's main render texture and draw it to the window.
-void window_draw()
-{
-	// color of the bars around the rendertexture
-	ClearBackground(BLACK);
-	// draw the render texture scaled
-	DrawTexturePro(main_target.texture,
-				   (Rectangle){0.0f, 0.0f, (float)main_target.texture.width,
-							   (float)-main_target.texture.height},
-				   (Rectangle){(GetScreenWidth() -
-								((float)GAME_WIDTH * gamestate.screen_scale)) *
-								   0.5f,
-							   (GetScreenHeight() -
-								((float)GAME_HEIGHT * gamestate.screen_scale)) *
-								   0.5f,
-							   (float)GAME_WIDTH * gamestate.screen_scale,
-							   (float)GAME_HEIGHT * gamestate.screen_scale},
-				   (Vector2){0, 0}, 0.0f, WHITE);
-}
-
 /// Set windowing backend settings like window title and size.
-void window_settings()
+static void window_settings()
 {
 	SetTargetFPS(60);
 	SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
 	InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "dogfish");
 	SetWindowMinSize(WINDOW_WIDTH, WINDOW_HEIGHT);
-}
-
-/// Initialize the main rendertexture to which the actual game elements are
-/// drawn. Determines the universal texture filter for scaling.
-void init_rendertextures()
-{
-	// variable width screen
-	main_target = LoadRenderTexture(GAME_WIDTH, GAME_HEIGHT);
-
-	rt1 = LoadRenderTexture(abs((int)splitScreenRect.width),
-							abs((int)splitScreenRect.height));
-	rt2 = LoadRenderTexture(abs((int)splitScreenRect.width),
-							abs((int)splitScreenRect.height));
-
-	// set all to bilinear
-	SetTextureFilter(main_target.texture, TEXTURE_FILTER_BILINEAR);
-	SetTextureFilter(rt1.texture, TEXTURE_FILTER_BILINEAR);
-	SetTextureFilter(rt2.texture, TEXTURE_FILTER_BILINEAR);
 }

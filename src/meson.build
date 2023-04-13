@@ -34,7 +34,8 @@ source_file_names = [
   'dynarray_implementation.c',
   'skybox.c',
   'bullet.c',
-  'terrain.c'
+  'terrain.c',
+  'render_pipeline.c'
 ]
 
 sources = []
