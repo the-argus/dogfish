@@ -32,7 +32,7 @@ void object_structure_map(ObjectStructure *structure,
 	dynarray_map_GameObject(&structure->_dynarray, map_func);
 }
 
-int object_structure_remove_by_id(ObjectStructure *structure, u_int16_t id)
+int object_structure_remove_by_id(ObjectStructure *structure, ushort id)
 {
 	for (uint i = 0; i < structure->_dynarray.size; i++) {
 		if (structure->_dynarray.head[i].id == id) {
