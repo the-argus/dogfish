@@ -11,7 +11,10 @@
 static RenderTexture2D main_target;
 static RenderTexture2D rt1;
 static RenderTexture2D rt2;
+static RenderTexture2D ping;
+static RenderTexture2D pong;
 static Shader shader;
+static Shader normal_shader;
 
 // make sure to take absolute values when using height...
 static const Rectangle splitScreenRect = {
@@ -22,27 +25,38 @@ static void window_draw(float screen_scale);
 
 void render(Gamestate gamestate, void (*game_draw)())
 {
+	// extract normals
+	BeginTextureMode(ping);
+	// clang-format off
+        ClearBackground(BLACK);
+        BeginMode3D(*gamestate.p1_camera);
+	        BeginShaderMode(normal_shader);
+                game_draw();
+            EndShaderMode();
+        EndMode3D();
+	// clang-format on
+	EndTextureMode();
 	// Render Camera 1
 	BeginTextureMode(rt1);
 	// clang-format off
-		    ClearBackground(RAYWHITE);
-            BeginMode3D(*gamestate.p1_camera);
-                // draw in-game objects
-                game_draw();
+		ClearBackground(RAYWHITE);
+        BeginMode3D(*gamestate.p1_camera);
+            // draw in-game objects
+            game_draw();
 
-            EndMode3D();
+        EndMode3D();
 	// clang-format on
 	EndTextureMode();
 
 	// Render Camera 2
 	BeginTextureMode(rt2);
 	// clang-format off
-		    ClearBackground(RAYWHITE);
-            BeginMode3D(*gamestate.p2_camera);
-                // draw in-game objects
-                game_draw();
+		ClearBackground(RAYWHITE);
+        BeginMode3D(*gamestate.p2_camera);
+            // draw in-game objects
+            game_draw();
 
-            EndMode3D();
+        EndMode3D();
 	// clang-format on
 	EndTextureMode();
 
@@ -56,9 +70,7 @@ void render(Gamestate gamestate, void (*game_draw)())
 
 	// draw the game to the window at the correct size
 	BeginDrawing();
-	// BeginShaderMode(shader);
 	window_draw(gamestate.screen_scale);
-	// EndShaderMode();
 	EndDrawing();
 }
 
@@ -66,6 +78,8 @@ void init_render_pipeline()
 {
 	init_rendertextures();
 	shader = LoadShader(0, "assets/postprocessing/edges.fs");
+	normal_shader = LoadShader("assets/postprocessing/normals.vs",
+							   "assets/postprocessing/normals.fs");
 	int resolution = GetShaderLocation(shader, "resolution");
 	float resolution_vec2[2] = {GAME_WIDTH, GAME_HEIGHT};
 	SetShaderValue(shader, resolution, resolution_vec2, SHADER_UNIFORM_VEC2);
@@ -76,6 +90,8 @@ void cleanup_render_pipeline()
 	UnloadShader(shader);
 	UnloadRenderTexture(rt1);
 	UnloadRenderTexture(rt2);
+	UnloadRenderTexture(ping);
+	UnloadRenderTexture(pong);
 	UnloadRenderTexture(main_target);
 }
 
@@ -101,6 +117,10 @@ static void init_rendertextures()
 							abs((int)splitScreenRect.height));
 	rt2 = LoadRenderTexture(abs((int)splitScreenRect.width),
 							abs((int)splitScreenRect.height));
+	ping = LoadRenderTexture(abs((int)splitScreenRect.width),
+							 abs((int)splitScreenRect.height));
+	pong = LoadRenderTexture(abs((int)splitScreenRect.width),
+							 abs((int)splitScreenRect.height));
 
 	// set all to bilinear
 	SetTextureFilter(main_target.texture, TEXTURE_FILTER_BILINEAR);
