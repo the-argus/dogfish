@@ -65,8 +65,8 @@ int main(void)
 
 	// load skybox textures
 	load_skybox();
-    
-    load_terrain();
+
+	load_terrain();
 	// allocate memory for the object structure which will contain all
 	// gameobjects
 	objects = object_structure_create();
@@ -151,9 +151,9 @@ int main(void)
 
 		// draw the game to the window at the correct size
 		BeginDrawing();
-        // BeginShaderMode(shader);
+		// BeginShaderMode(shader);
 		window_draw();
-        // EndShaderMode();
+		// EndShaderMode();
 		EndDrawing();
 	}
 
@@ -161,10 +161,10 @@ int main(void)
 	while (object_structure_size(&objects) > 0) {
 		object_structure_remove(&objects, 0);
 	}
-    free(objects._dynarray.head);
+	free(objects._dynarray.head);
 	free(gamestate.p1_camera);
 	free(gamestate.p2_camera);
-    cleanup_terrain();
+	cleanup_terrain();
 	UnloadShader(shader);
 	UnloadRenderTexture(rt1);
 	UnloadRenderTexture(rt2);
@@ -191,8 +191,6 @@ void update()
 												   &gamestate, GetFrameTime());
 		}
 	}
-
-    UseDebugCameraController(gamestate.p1_camera);
 }
 
 /// Draw the in-game objects to a consistently sized rendertexture.
@@ -200,7 +198,7 @@ void main_draw()
 {
 	draw_skybox();
 
-    draw_terrain();
+	draw_terrain();
 
 	for (int i = 0; i < object_structure_size(&objects); i++) {
 		if (objects._dynarray.head[i].draw.has) {

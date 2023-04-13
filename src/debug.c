@@ -11,22 +11,23 @@ void UseDebugCameraController(Camera *camera_to_move)
 	camera_forward = Vector3Normalize(camera_forward);
 
 	Vector3 camera_right =
-		Vector3CrossProduct((Vector3){0, 1, 0}, camera_forward);
+		Vector3CrossProduct(camera_to_move->up, camera_forward);
 
-	int horizontal_input = IsKeyDown(KEY_D) - IsKeyDown(KEY_A);
+	int horizontal_input = IsKeyDown(KEY_A) - IsKeyDown(KEY_D);
 	int vertical_input = IsKeyDown(KEY_W) - IsKeyDown(KEY_S);
 
 	Vector3 delta = Vector3Scale(camera_right, horizontal_input);
 	delta = Vector3Add(delta, Vector3Scale(camera_forward, vertical_input));
 
 	// prevent divide by 0 error from normalize
-	if (Vector3Length(delta) == 0) {
-		return;
+	if (Vector3Length(delta) != 0) {
+		delta = Vector3Normalize(delta);
+		delta = Vector3Scale(delta, 0.3f);
+
+		debug_camera_position = Vector3Add(debug_camera_position, delta);
+        camera_to_move->target = Vector3Add(camera_to_move->target, delta);
 	}
 
-	delta = Vector3Normalize(delta);
-
-	debug_camera_position = Vector3Add(debug_camera_position, delta);
 	camera_to_move->position = debug_camera_position;
 }
 
