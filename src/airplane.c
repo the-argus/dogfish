@@ -136,18 +136,19 @@ static void airplane_draw(struct GameObject *self, Gamestate *gamestate)
 static void apply_airplane_input_impulses(dBodyID plane, Keystate keys,
 										  ControllerState controls)
 {
-	UNUSED(plane);
-	UNUSED(keys);
-	UNUSED(controls);
 	// Get the current linear and angular velocity
-	// dVector3 *forward = dBodyGetLinearVel(plane);
+	dVector3 *forward = dBodyGetLinearVel(plane);
 
 	// Check the state of the stick inputs (for your player index)
 	// if up/down, apply pitch
+	int controller_verti = controls.up - controls.down;
+
 	// if left/right, apply roll
+	int controller_hori = controls.left - controls.right;
 
 	// Check the state of the keys (for your player index)
 	// if lb/rb, apply yaw
+	int key_hori = keys.left - keys.right;
 
 	// Transform forward by the rotation matrix
 	// Apply force on the transformed forward vector
