@@ -191,6 +191,8 @@ void update()
 												   &gamestate, GetFrameTime());
 		}
 	}
+
+    UseDebugCameraController(gamestate.p1_camera);
 }
 
 /// Draw the in-game objects to a consistently sized rendertexture.
