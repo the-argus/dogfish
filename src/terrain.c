@@ -59,7 +59,7 @@ void load_terrain()
 	}
 
 	// initialize terrain material
-	terrain_shader = LoadShader("assets/materials/instanced.vs", 0);
+	terrain_shader = LoadShader("assets/materials/instanced.vs", "assets/materials/instanced.fs");
 	// Get shader locations
 	terrain_shader.locs[SHADER_LOC_MATRIX_MVP] =
 		GetShaderLocation(terrain_shader, "mvp");
