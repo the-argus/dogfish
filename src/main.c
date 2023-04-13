@@ -15,6 +15,7 @@
 #include "airplane.h"
 #include "gameobject.h"
 #include "object_structure.h"
+#include "terrain.h"
 #include "debug.h"
 
 // useful for screen scaling
@@ -183,6 +184,19 @@ void main_draw()
 		if (objects._dynarray.head[i].draw.has) {
 			objects._dynarray.head[i].draw.value(&objects._dynarray.head[i],
 												 &gamestate);
+		}
+	}
+
+	const int size = 50;
+	const float unit = 1;
+	const float threshhold = 0.5f;
+	for (int x = 0; x < size; x++) {
+		for (int y = 0; y < size; y++) {
+			for (int z = 0; z < size; z++) {
+				if (perlin(x, y, z, 2, 10, 3) > threshhold) {
+					DrawCube((Vector3){x, y, z}, unit, unit, unit, GREEN);
+				}
+			}
 		}
 	}
 
