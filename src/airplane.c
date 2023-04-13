@@ -3,6 +3,7 @@
 #include "physics.h"
 #include "shorthand.h"
 #include "gameobject.h"
+#include "raymath.h"
 
 #define AIRPLANE_DEBUG_CUBE_WIDTH 0.5
 #define AIRPLANE_DEBUG_CUBE_LENGTH 2
@@ -10,6 +11,9 @@
 #define AIRPLANE_MASS 5.4
 #define INITIAL_AIRPLANE_POS_P1 5, 10, 0
 #define INITIAL_AIRPLANE_POS_P2 -5, 10, 0
+
+static Model p1_model;
+static Model p2_model;
 
 // Accept p1's input state from game state, and move accordingly
 static void airplane_update_p1(struct GameObject *self, Gamestate *gamestate,
@@ -23,16 +27,16 @@ static void airplane_update_p2(struct GameObject *self, Gamestate *gamestate,
 static void apply_airplane_input_impulses(dBodyID plane, Keystate keys,
 										  ControllerState controls);
 
-// Draw the plane
-static void airplane_draw();
+// Draw p1 plane
+static void airplane_draw_p1(struct GameObject *self, Gamestate *gamestate);
+
+// Draw p2 plane
+static void airplane_draw_p2(struct GameObject *self, Gamestate *gamestate);
 
 GameObject create_airplane(Gamestate gamestate, uint player)
 {
 	GameObject plane = create_game_object();
 	// Set up the values for the opts
-	// DRAW
-	plane.draw.value = airplane_draw;
-	plane.draw.has = 1;
 
 	// initialize physics
 	plane.physics.value = create_physics_component();
@@ -59,18 +63,23 @@ GameObject create_airplane(Gamestate gamestate, uint player)
 	// UPDATE
 	if (player == 0) {
 		plane.update.value = &airplane_update_p1;
+		plane.draw.value = &airplane_draw_p1;
 		plane.physics.value.bit = P1_PLANE_BIT;
 		plane.physics.value.mask = P1_PLANE_MASK;
+		p1_model = LoadModelFromMesh(GenMeshCube(2.0f, 1.0f, 2.0f));
 		dBodySetPosition(body, INITIAL_AIRPLANE_POS_P1);
 	} else {
 		plane.update.value = &airplane_update_p2;
+		plane.draw.value = &airplane_draw_p2;
 		plane.physics.value.bit = P2_PLANE_BIT;
 		plane.physics.value.mask = P2_PLANE_MASK;
+		p2_model = LoadModelFromMesh(GenMeshCube(2.0f, 1.0f, 2.0f));
 		dBodySetPosition(body, INITIAL_AIRPLANE_POS_P2);
 	}
 
 	// Say that it has them
 	plane.update.has = 1;
+	plane.draw.has = 1;
 
 	return plane;
 }
@@ -123,17 +132,32 @@ static void airplane_update_p2(GameObject *self, Gamestate *gamestate,
 	airplane_update_common(self, gamestate, delta_time);
 }
 
-// Draw the plane
-static void airplane_draw(struct GameObject *self, Gamestate *gamestate)
+// Draw the p1 model at the p1 position
+static void airplane_draw_p1(struct GameObject *self, Gamestate *gamestate)
 {
 	UNUSED(gamestate);
+	
 	dBodyID body = self->physics.value.body.value;
-	// DrawCube(to_raylib(dBodyGetPosition(body)), AIRPLANE_DEBUG_CUBE_WIDTH,
-	// 		 AIRPLANE_DEBUG_CUBE_WIDTH, AIRPLANE_DEBUG_CUBE_LENGTH,
-	// 		 AIRPLANE_DEBUG_CUBE_COLOR);
-	Model planemodel = LoadModelFromMesh(GenMeshCube(2.0f, 1.0f, 2.0f));
-    planemodel.transform = MatrixRotateXYZ((Vector3){ DEG2RAD*0, DEG2RAD*0, DEG2RAD*0 });
-	DrawModel(planemodel, to_raylib(dBodyGetPosition(body)), 1.0, BLUE);
+
+	// Tranformation matrix for rotations
+	Vector3 plane_rotation = to_raylib(dBodyGetRotation(body));
+	p1_model.transform = MatrixRotateXYZ((Vector3){DEG2RAD * plane_rotation.x, DEG2RAD * plane_rotation.y, DEG2RAD * plane_rotation.z});
+	DrawModel(p1_model, to_raylib(dBodyGetPosition(body)), 1.0, BLUE);
+	//UnloadModel(planemodel);
+}
+
+// Draw the p2 model at the p2 position
+static void airplane_draw_p2(struct GameObject *self, Gamestate *gamestate)
+{
+	UNUSED(gamestate);
+	
+	dBodyID body = self->physics.value.body.value;
+
+	// Tranformation matrix for rotations
+	Vector3 plane_rotation = to_raylib(dBodyGetRotation(body));
+	p2_model.transform = MatrixRotateXYZ((Vector3){DEG2RAD * plane_rotation.x, DEG2RAD * plane_rotation.y, DEG2RAD * plane_rotation.z});
+	DrawModel(p2_model, to_raylib(dBodyGetPosition(body)), 1.0, BLUE);
+	//UnloadModel(planemodel);
 }
 
 static void apply_airplane_input_impulses(dBodyID plane, Keystate keys,
@@ -142,28 +166,26 @@ static void apply_airplane_input_impulses(dBodyID plane, Keystate keys,
 	// Get the current linear and angular velocity
 	dVector3 *forward = dBodyGetLinearVel(plane);
 	dBodyAddRelForce(plane, *forward[0], *forward[1], *forward[2]);
-	
+
 	// attempt to counteract gravity, doesn't work
 	// overwrites the add rel force above
-	//dBodyAddForce(plane, 0.0, 1.0, 0.0);
-	
+	// dBodyAddForce(plane, 0.0, 1.0, 0.0);
+
 	// Check the state of the stick inputs (for your player index)
 	int controller_verti = controls.joystick.y;
 	int controller_hori = controls.joystick.x;
 
-	//dBodySetAngularVel(plane, 100.0, 0.0, 0.0);	// if up/down, apply pitch
+	// dBodySetAngularVel(plane, 100.0, 0.0, 0.0);	// if up/down, apply pitch
 	if (controller_verti > 0) {
 		dBodyAddRelTorque(plane, 0.0, 10.0, 0.0);
-	}
-	else if (controller_verti < 0) {
+	} else if (controller_verti < 0) {
 		dBodyAddRelTorque(plane, 0.0, -10.0, 0.0);
 	}
 
 	// if left/right, apply roll
 	if (controller_hori > 0) {
 		dBodyAddRelTorque(plane, 0.0, 0.0, 10.0);
-	}
-	else if (controller_hori < 0) {
+	} else if (controller_hori < 0) {
 		dBodyAddRelTorque(plane, 0.0, 0.0, -10.0);
 	}
 
@@ -195,5 +217,5 @@ static void apply_airplane_input_impulses(dBodyID plane, Keystate keys,
 
 	// impulse = Vector3Add(impulse, h_impulse);
 
-	//dBodyAddForce(plane, 1000.0, 000.0, 000.0);
+	// dBodyAddForce(plane, 1000.0, 000.0, 000.0);
 }
