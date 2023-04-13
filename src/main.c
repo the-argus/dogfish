@@ -65,6 +65,8 @@ int main(void)
 
 	// load skybox textures
 	load_skybox();
+    
+    load_terrain();
 	// allocate memory for the object structure which will contain all
 	// gameobjects
 	objects = object_structure_create();
@@ -149,9 +151,9 @@ int main(void)
 
 		// draw the game to the window at the correct size
 		BeginDrawing();
-        BeginShaderMode(shader);
+        // BeginShaderMode(shader);
 		window_draw();
-        EndShaderMode();
+        // EndShaderMode();
 		EndDrawing();
 	}
 
@@ -159,8 +161,10 @@ int main(void)
 	while (object_structure_size(&objects) > 0) {
 		object_structure_remove(&objects, 0);
 	}
+    free(objects._dynarray.head);
 	free(gamestate.p1_camera);
 	free(gamestate.p2_camera);
+    cleanup_terrain();
 	UnloadShader(shader);
 	UnloadRenderTexture(rt1);
 	UnloadRenderTexture(rt2);
@@ -194,23 +198,12 @@ void main_draw()
 {
 	draw_skybox();
 
+    draw_terrain();
+
 	for (int i = 0; i < object_structure_size(&objects); i++) {
 		if (objects._dynarray.head[i].draw.has) {
 			objects._dynarray.head[i].draw.value(&objects._dynarray.head[i],
 												 &gamestate);
-		}
-	}
-
-	const int size = 50;
-	const float unit = 1;
-	const float threshhold = 0.5f;
-	for (int x = 0; x < size; x++) {
-		for (int y = 0; y < size; y++) {
-			for (int z = 0; z < size; z++) {
-				if (perlin(x, y, z, 2, 10, 3) > threshhold) {
-					DrawCube((Vector3){x, y, z}, unit, unit, unit, GREEN);
-				}
-			}
 		}
 	}
 
