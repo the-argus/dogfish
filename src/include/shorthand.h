@@ -2,6 +2,7 @@
 #define voidptr void *
 typedef unsigned int uint;
 typedef unsigned char uchar;
+typedef unsigned short ushort;
 
 #define UNUSED(expr) (void)(expr)
 // this only works with clang and gcc, i think its better :(
