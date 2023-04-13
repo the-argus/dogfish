@@ -128,9 +128,12 @@ static void airplane_draw(struct GameObject *self, Gamestate *gamestate)
 {
 	UNUSED(gamestate);
 	dBodyID body = self->physics.value.body.value;
-	DrawCube(to_raylib(dBodyGetPosition(body)), AIRPLANE_DEBUG_CUBE_WIDTH,
-			 AIRPLANE_DEBUG_CUBE_WIDTH, AIRPLANE_DEBUG_CUBE_LENGTH,
-			 AIRPLANE_DEBUG_CUBE_COLOR);
+	// DrawCube(to_raylib(dBodyGetPosition(body)), AIRPLANE_DEBUG_CUBE_WIDTH,
+	// 		 AIRPLANE_DEBUG_CUBE_WIDTH, AIRPLANE_DEBUG_CUBE_LENGTH,
+	// 		 AIRPLANE_DEBUG_CUBE_COLOR);
+	Model planemodel = LoadModelFromMesh(GenMeshCube(2.0f, 1.0f, 2.0f));
+    planemodel.transform = MatrixRotateXYZ((Vector3){ DEG2RAD*0, DEG2RAD*0, DEG2RAD*0 });
+	DrawModel(planemodel, to_raylib(dBodyGetPosition(body)), 1.0, BLUE);
 }
 
 static void apply_airplane_input_impulses(dBodyID plane, Keystate keys,
