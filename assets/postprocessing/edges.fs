@@ -37,5 +37,7 @@ void main()
 
     vec3 edge = sqrt((horizEdge.rgb*horizEdge.rgb) + (vertEdge.rgb*vertEdge.rgb));
 
-    finalColor = vec4(edge, texture2D(texture0, fragTexCoord).a);
+    float grey = max(edge.r, max(edge.g, edge.b));
+
+    finalColor = vec4(grey, grey, grey, texture2D(texture0, fragTexCoord).a);
 }
