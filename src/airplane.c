@@ -33,6 +33,12 @@ static void airplane_draw_p1(struct GameObject *self, Gamestate *gamestate);
 // Draw p2 plane
 static void airplane_draw_p2(struct GameObject *self, Gamestate *gamestate);
 
+// Cleanup p1
+static void airplane_cleanup_p1(struct GameObject *self);
+
+// Cleanup p2
+static void airplane_cleanup_p2(struct GameObject *self);
+
 GameObject create_airplane(Gamestate gamestate, uint player)
 {
 	GameObject plane = create_game_object();
@@ -64,6 +70,7 @@ GameObject create_airplane(Gamestate gamestate, uint player)
 	if (player == 0) {
 		plane.update.value = &airplane_update_p1;
 		plane.draw.value = &airplane_draw_p1;
+		plane.cleanup.value = &airplane_cleanup_p1;
 		plane.physics.value.bit = P1_PLANE_BIT;
 		plane.physics.value.mask = P1_PLANE_MASK;
 		p1_model = LoadModelFromMesh(GenMeshCube(2.0f, 1.0f, 2.0f));
@@ -71,6 +78,7 @@ GameObject create_airplane(Gamestate gamestate, uint player)
 	} else {
 		plane.update.value = &airplane_update_p2;
 		plane.draw.value = &airplane_draw_p2;
+		plane.cleanup.value = &airplane_cleanup_p2;
 		plane.physics.value.bit = P2_PLANE_BIT;
 		plane.physics.value.mask = P2_PLANE_MASK;
 		p2_model = LoadModelFromMesh(GenMeshCube(2.0f, 1.0f, 2.0f));
@@ -80,6 +88,7 @@ GameObject create_airplane(Gamestate gamestate, uint player)
 	// Say that it has them
 	plane.update.has = 1;
 	plane.draw.has = 1;
+	plane.cleanup.has = 1;
 
 	return plane;
 }
@@ -158,6 +167,16 @@ static void airplane_draw_p2(struct GameObject *self, Gamestate *gamestate)
 	p2_model.transform = MatrixRotateXYZ((Vector3){DEG2RAD * plane_rotation.x, DEG2RAD * plane_rotation.y, DEG2RAD * plane_rotation.z});
 	DrawModel(p2_model, to_raylib(dBodyGetPosition(body)), 1.0, BLUE);
 	//UnloadModel(planemodel);
+}
+
+static void airplane_cleanup_p1(struct GameObject *self)
+{
+	UnloadModel(p1_model);
+}
+
+static void airplane_cleanup_p2(struct GameObject *self)
+{
+	UnloadModel(p2_model);
 }
 
 static void apply_airplane_input_impulses(dBodyID plane, Keystate keys,
