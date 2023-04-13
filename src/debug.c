@@ -1,5 +1,34 @@
 #include "debug.h"
 #include "raylib.h"
+#include "raymath.h"
+
+static Vector3 debug_camera_position = {0};
+
+void UseDebugCameraController(Camera *camera_to_move)
+{
+	Vector3 camera_forward =
+		Vector3Subtract(camera_to_move->target, camera_to_move->position);
+	camera_forward = Vector3Normalize(camera_forward);
+
+	Vector3 camera_right =
+		Vector3CrossProduct((Vector3){0, 1, 0}, camera_forward);
+
+	int horizontal_input = IsKeyDown(KEY_D) - IsKeyDown(KEY_A);
+	int vertical_input = IsKeyDown(KEY_W) - IsKeyDown(KEY_S);
+
+	Vector3 delta = Vector3Scale(camera_right, horizontal_input);
+	delta = Vector3Add(delta, Vector3Scale(camera_forward, vertical_input));
+
+	// prevent divide by 0 error from normalize
+	if (Vector3Length(delta) == 0) {
+		return;
+	}
+
+	delta = Vector3Normalize(delta);
+
+	debug_camera_position = Vector3Add(debug_camera_position, delta);
+	camera_to_move->position = debug_camera_position;
+}
 
 void Vector3Print(Vector3 vector, const char *name)
 {
