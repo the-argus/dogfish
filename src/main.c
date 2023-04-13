@@ -4,6 +4,7 @@
 #include "bullet.h"
 #include "raylib.h"
 #include "raymath.h"
+#include "rlgl.h"
 
 #include "constants.h"
 #include "architecture.h"
@@ -30,6 +31,7 @@ static ObjectStructure objects; // contains all the game objects
 static RenderTexture2D main_target;
 static RenderTexture2D rt1;
 static RenderTexture2D rt2;
+static Shader shader;
 // make sure to take absolute values when using height...
 static const Rectangle splitScreenRect = {
 	.x = 0, .y = 0, .width = GAME_WIDTH, .height = (int)-(GAME_HEIGHT / 2)};
@@ -55,6 +57,12 @@ int main(void)
 	window_settings();
 	// initialize main_texture render texture to the correct size
 	init_rendertextures();
+
+	shader = LoadShader(0, "assets/postprocessing/edges.fs");
+	int resolution = GetShaderLocation(shader, "resolution");
+	float resolution_vec2[2] = {GAME_WIDTH, GAME_HEIGHT};
+	SetShaderValue(shader, resolution, resolution_vec2, SHADER_UNIFORM_VEC2);
+
 	// load skybox textures
 	load_skybox();
 	// allocate memory for the object structure which will contain all
@@ -141,7 +149,9 @@ int main(void)
 
 		// draw the game to the window at the correct size
 		BeginDrawing();
+        BeginShaderMode(shader);
 		window_draw();
+        EndShaderMode();
 		EndDrawing();
 	}
 
@@ -151,6 +161,10 @@ int main(void)
 	}
 	free(gamestate.p1_camera);
 	free(gamestate.p2_camera);
+	UnloadShader(shader);
+	UnloadRenderTexture(rt1);
+	UnloadRenderTexture(rt2);
+	UnloadRenderTexture(main_target);
 	close_physics();
 	CloseWindow();
 
