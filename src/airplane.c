@@ -138,7 +138,7 @@ static void apply_airplane_input_impulses(dBodyID plane, Keystate keys,
 {
 	// Get the current linear and angular velocity
 	dVector3 *forward = dBodyGetLinearVel(plane);
-	dBodyAddForce(plane, *forward[0], *forward[1], *forward[2]);
+	dBodyAddRelForce(plane, *forward[0], *forward[1], *forward[2]);
 
 	// Check the state of the stick inputs (for your player index)
 	// int controller_verti = controls.joystick.y;
