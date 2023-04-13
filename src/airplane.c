@@ -138,17 +138,24 @@ static void apply_airplane_input_impulses(dBodyID plane, Keystate keys,
 {
 	// Get the current linear and angular velocity
 	dVector3 *forward = dBodyGetLinearVel(plane);
+	dBodyAddForce(plane, *forward[0], *forward[1], *forward[2]);
 
 	// Check the state of the stick inputs (for your player index)
-	// if up/down, apply pitch
-	int controller_verti = controls.up - controls.down;
+	// int controller_verti = controls.joystick.y;
+	// int controller_hori = controls.joystick.x;
+
+	//dBodySetAngularVel(plane, 100.0, 0.0, 0.0);	// if up/down, apply pitch
+	// if (controller_verti > 0) {
+	// }
 
 	// if left/right, apply roll
-	int controller_hori = controls.left - controls.right;
 
 	// Check the state of the keys (for your player index)
+	// int key_hori = keys.left - keys.right;
+	// if (key_hori > 0) {
+	// 	dBodyAddRelTorque(plane, 100.0, 100.0, 100.0);
+	// }
 	// if lb/rb, apply yaw
-	int key_hori = keys.left - keys.right;
 
 	// Transform forward by the rotation matrix
 	// Apply force on the transformed forward vector
@@ -157,7 +164,7 @@ static void apply_airplane_input_impulses(dBodyID plane, Keystate keys,
 
 	// --- COPIED PLAYER MOVEMENT CODE FOR YOUR REFERENCE ---
 	// Vector3 impulse = {0};
-	// Vector2 input = total_input(inputstate, player_index);
+	// //Vector2 input = total_input(inputstate, player_index);
 
 	// //impulse.x = sin(angle_x) * PLAYER_MOVE_IMPULSE;
 	// //impulse.z = cos(angle_x) * PLAYER_MOVE_IMPULSE;
@@ -171,5 +178,5 @@ static void apply_airplane_input_impulses(dBodyID plane, Keystate keys,
 
 	// impulse = Vector3Add(impulse, h_impulse);
 
-	// dBodyAddForce(test_cube, impulse.x, impulse.y, impulse.z);
+	dBodyAddForce(plane, 1000.0, 000.0, 000.0);
 }
