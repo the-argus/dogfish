@@ -139,16 +139,26 @@ static void apply_airplane_input_impulses(dBodyID plane, Keystate keys,
 	// Get the current linear and angular velocity
 	dVector3 *forward = dBodyGetLinearVel(plane);
 	dBodyAddRelForce(plane, *forward[0], *forward[1], *forward[2]);
-
+	dBodyAddForce(plane, 0.0, 1.0, 0.0);
 	// Check the state of the stick inputs (for your player index)
-	// int controller_verti = controls.joystick.y;
-	// int controller_hori = controls.joystick.x;
+	int controller_verti = controls.joystick.y;
+	int controller_hori = controls.joystick.x;
 
 	//dBodySetAngularVel(plane, 100.0, 0.0, 0.0);	// if up/down, apply pitch
-	// if (controller_verti > 0) {
-	// }
+	if (controller_verti > 0) {
+		dBodyAddRelTorque(plane, 0.0, 10.0, 0.0);
+	}
+	else if (controller_verti < 0) {
+		dBodyAddRelTorque(plane, 0.0, -10.0, 0.0);
+	}
 
 	// if left/right, apply roll
+	if (controller_hori > 0) {
+		dBodyAddRelTorque(plane, 0.0, 0.0, 10.0);
+	}
+	else if (controller_hori < 0) {
+		dBodyAddRelTorque(plane, 0.0, 0.0, -10.0);
+	}
 
 	// Check the state of the keys (for your player index)
 	// int key_hori = keys.left - keys.right;
