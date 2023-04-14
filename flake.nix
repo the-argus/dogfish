@@ -53,20 +53,30 @@
     devShell.${system} =
       regularPkgs.mkShell.override
       {
-        stdenv = regularPkgs.clangStdenv;
+        stdenv = regularPkgs.gccStdenv;
       }
       {
-        packages = with regularPkgs; [
-          (ninja.override {python3 = python3Minimal;})
-          pkg-config
-          raylib
-		  ode
-          meson
-          bear
-          clang-tools
+        packages = with regularPkgs;
+          [
+            # (ninja.override {python3 = python3Minimal;})
+            # pkg-config
+            # raylib
+            # ode
+            # meson
+            bear
+            clang-tools
 
-          cmake
-        ];
+            cmake
+            gnumake
+          ]
+          ++ (with regularPkgs.xorg; [
+            libX11
+            libXrandr
+            libXinerama
+            libXcursor
+            libXi
+            libGL
+          ]);
       };
   };
 }
