@@ -31,7 +31,7 @@ if (NOT ode_FOUND)
   if (NOT ode_POPULATED) # Have we downloaded raylib yet?
     set(FETCHCONTENT_QUIET NO)
     FetchContent_Populate(ode)
-    add_subdirectory(${raylib_SOURCE_DIR} ${raylib_BINARY_DIR})
+    add_subdirectory(${ode_SOURCE_DIR} ${ode_BINARY_DIR})
   endif()
 endif()
 
