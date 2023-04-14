@@ -36,7 +36,6 @@ if (NOT ode_FOUND)
 endif()
 
 # Our Project
-target_include_directories(${PROJECT_NAME} PRIVATE src src/include)
 FILE(GLOB DogfishSources src/*.c)
 FILE(GLOB DogfishHeaders src/*.h)
 FILE(GLOB DogfishHeaders2 src/include/*.h)
@@ -44,6 +43,7 @@ set(SOURCES ${DogfishHeaders} ${DogfishHeaders2} ${DogfishSources} )
 add_executable(${PROJECT_NAME} ${SOURCES})
 #set(raylib_VERBOSE 1)
 target_link_libraries(${PROJECT_NAME} raylib ode)
+target_include_directories(${PROJECT_NAME} PRIVATE src src/include)
 
 # Checks if OSX and links appropriate frameworks (Only required on MacOS)
 if (APPLE)
