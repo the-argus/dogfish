@@ -182,6 +182,7 @@ static void apply_airplane_input_impulses(dBodyID plane, Keystate keys,
 {
 	// Get the current linear and angular velocity
 	Vector3 forward = to_raylib(dBodyGetLinearVel(plane));
+	dReal * rotation = dBodyGetRotation(plane);
 	//dBodyAddRelForce(plane, forward.x, forward.y, forward.z);
 
 	// attempt to counteract gravity, doesn't work
