@@ -116,11 +116,7 @@ static void airplane_update_p1(GameObject *self, Gamestate *gamestate,
 	// set the camera to be at the location of the plane
 	dBodyID body = self->physics.value.body.value;
 	Vector3 pos = to_raylib(dBodyGetPosition(body));
-	//Vector3 aheadPoint = Vector3Add(pos, (Vector3){1.0, 1.0, 1.0});
-	Vector3 forward = to_raylib(dBodyGetLinearVel(body));
-	Vector3 aheadPoint = Vector3Add(pos, Vector3Normalize(forward));
-	gamestate->p1_camera->position = pos;
-	gamestate->p1_camera->target = aheadPoint;
+	gamestate->p1_camera->target = pos;
 
 	airplane_update_common(self, gamestate, delta_time);
 }
@@ -136,7 +132,7 @@ static void airplane_update_p2(GameObject *self, Gamestate *gamestate,
 	// set the camera to be at the location of the plane
 	dBodyID body = self->physics.value.body.value;
 	Vector3 pos = to_raylib(dBodyGetPosition(body));
-	gamestate->p2_camera->position = pos;
+	gamestate->p2_camera->target = pos;
 
 	airplane_update_common(self, gamestate, delta_time);
 }
@@ -199,15 +195,14 @@ static void apply_airplane_input_impulses(dBodyID plane, Keystate keys,
 
 	// dBodySetAngularVel(plane, 100.0, 0.0, 0.0);	// if up/down, apply pitch
 	if (controller_verti > 0 || vertical_input == 1) { // stick down, pull up
-		//printf('a');
-		//dBodyAddTorque(plane, 1000.0, 1000.0, 0.0);
-		dBodyAddRelForce(plane, forward.x, -100.0, forward.z);
+		dBodyAddTorque(plane, 1000.0, 1000.0, 0.0);
+		//dBodyAddRelForce(plane, forward.x, -100.0, forward.z);
 		//dBodySetAngularVel (plane, 100.0, 100.0, 0.0);
 		//dBodySetRotation (plane, const dMatrix3 R);
 		//void dRFromEulerAngles (dMatrix3 R, dReal phi, dReal theta, dReal psi);
 	} else if (controller_verti < 0 || vertical_input == -1) { // stick up, pull down
 		//dBodyAddRelTorque(plane, 0.0, -100.0, 0.0);
-		dBodyAddRelForce(plane, forward.x, 100.0, forward.z);
+		//dBodyAddRelForce(plane, forward.x, 100.0, forward.z);
 		//dBodyAddTorque(plane, 0.0, 1000.0, 1000.0);
 	}
 
