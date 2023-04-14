@@ -1,4 +1,5 @@
 #include "raylib.h"
+#include "rlgl.h"
 
 #include "render_pipeline.h"
 #include "constants.h"
@@ -11,8 +12,8 @@
 static RenderTexture2D main_target;
 static RenderTexture2D rt1;
 static RenderTexture2D rt2;
-static RenderTexture2D ping;
-static RenderTexture2D pong;
+static RenderTexture2D normals;
+static RenderTexture2D depth;
 static Shader shader;
 static Shader normal_shader;
 
@@ -117,9 +118,9 @@ static void init_rendertextures()
 							abs((int)splitScreenRect.height));
 	rt2 = LoadRenderTexture(abs((int)splitScreenRect.width),
 							abs((int)splitScreenRect.height));
-	ping = LoadRenderTexture(abs((int)splitScreenRect.width),
+	normals = LoadRenderTexture(abs((int)splitScreenRect.width),
 							 abs((int)splitScreenRect.height));
-	pong = LoadRenderTexture(abs((int)splitScreenRect.width),
+	depth = LoadRenderTexture(abs((int)splitScreenRect.width),
 							 abs((int)splitScreenRect.height));
 
 	// set all to bilinear
