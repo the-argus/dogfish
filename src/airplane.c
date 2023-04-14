@@ -197,13 +197,15 @@ static void apply_airplane_input_impulses(dBodyID plane, Keystate keys,
 	// dBodySetAngularVel(plane, 100.0, 0.0, 0.0);	// if up/down, apply pitch
 	if (controller_verti > 0) { // stick down, pull up
 		//printf('a');
-		//dBodyAddRelTorque(plane, 0.0, 100.0, 0.0);
-		dBodyAddRelForce(plane, forward.x, -100.0, forward.z);
+		dBodyAddTorque(plane, 1000.0, 1000.0, 0.0);
+		//dBodyAddRelForce(plane, forward.x, -100.0, forward.z);
 		//dBodySetAngularVel (plane, 100.0, 100.0, 0.0);
-		//dBodySetRotation (dBodyID, const dMatrix3 R);
+		//dBodySetRotation (plane, const dMatrix3 R);
+		//void dRFromEulerAngles (dMatrix3 R, dReal phi, dReal theta, dReal psi);
 	} else if (controller_verti < 0) { // stick up, pull down
 		//dBodyAddRelTorque(plane, 0.0, -100.0, 0.0);
-		dBodyAddRelForce(plane, forward.x, 100.0, forward.z);
+		//dBodyAddRelForce(plane, forward.x, 100.0, forward.z);
+		dBodyAddTorque(plane, 0.0, 1000.0, 1000.0);
 	}
 
 	// if left/right, apply roll
