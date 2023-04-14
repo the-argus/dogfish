@@ -6,7 +6,7 @@
 #ifndef _DYNARRAY_HEADER
 #define _DYNARRAY_HEADER
 
-#include "architecture.h"
+#include "gameobject.h"
 #include "shorthand.h"
 #include <assert.h>
 

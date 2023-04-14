@@ -5,6 +5,7 @@
 #include "gameobject.h"
 #include "raymath.h"
 #include "debug.h"
+#include "bullet.h"
 
 #define AIRPLANE_DEBUG_CUBE_WIDTH 0.5
 #define AIRPLANE_DEBUG_CUBE_LENGTH 2

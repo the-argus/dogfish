@@ -49,6 +49,8 @@ void gather_input(Gamestate *gamestate)
 	// player 1 uses d-pad and left joystick
 	gamestate->input.controller.boost =
 		IsGamepadButtonDown(0, GAMEPAD_BUTTON_LEFT_FACE_UP);
+	gamestate->input.controller.shoot =
+		IsGamepadButtonDown(0, GAMEPAD_BUTTON_LEFT_FACE_RIGHT);
 
 	gamestate->input.controller.joystick.x =
 		GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_X);
@@ -58,6 +60,8 @@ void gather_input(Gamestate *gamestate)
 	// player 2 uses buttons (X Y A B) and right joystick
 	gamestate->input.controller_2.boost =
 		IsGamepadButtonDown(0, GAMEPAD_BUTTON_RIGHT_FACE_UP);
+	gamestate->input.controller_2.shoot =
+		IsGamepadButtonDown(0, GAMEPAD_BUTTON_RIGHT_FACE_RIGHT);
 
 	gamestate->input.controller_2.joystick.x =
 		GetGamepadAxisMovement(0, GAMEPAD_AXIS_RIGHT_X);
@@ -74,6 +78,8 @@ void gather_input(Gamestate *gamestate)
 	// *position* is where the cursor is on the screen. will be useful for
 	// things like pause menus.
 	gamestate->input.cursor.position = GetMousePosition();
+
+	gamestate->input.cursor.shoot = IsMouseButtonDown(MOUSE_BUTTON_LEFT);
 
 	set_virtual_cursor_position(&gamestate->input.cursor,
 								gamestate->screen_scale);

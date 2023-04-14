@@ -10,8 +10,8 @@
 /// Iteration does not necessarily occur in insertion order.
 ///
 
-#include "architecture.h"
 #include "shorthand.h"
+#include "gameobject.h"
 
 // define game object dynamic array
 #define DYNARRAY_TYPE GameObject
@@ -21,8 +21,12 @@
 typedef struct ObjectStructure
 {
 	Dynarray_GameObject _dynarray;
+	Dynarray_GameObject _create_queue;
 } ObjectStructure;
 
+void object_structure_flush_create_queue(ObjectStructure *structure);
+void object_structure_queue_for_creation(ObjectStructure *structure,
+										 GameObject object);
 void object_structure_insert(ObjectStructure *structure, GameObject new);
 void object_structure_remove(ObjectStructure *structure, uint index);
 int object_structure_remove_by_id(ObjectStructure *structure, ushort id);

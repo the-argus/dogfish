@@ -50,7 +50,7 @@ int main(void)
 	// load skybox textures
 	load_skybox();
 
-	load_terrain(gamestate);
+	load_terrain(gamestate.space);
 	// allocate memory for the object structure which will contain all
 	// gameobjects
 	objects = object_structure_create();

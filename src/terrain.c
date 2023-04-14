@@ -1,7 +1,11 @@
-#include "terrain.h"
+#include "raylib.h"
 #include "raymath.h"
 
+#include "terrain.h"
+
 #define _IMPLEMENT_DYNARRAY
+#undef DYNARRAY_TYPE
+#undef DYNARRAY_TYPE_NAME
 #define DYNARRAY_TYPE Vector3
 #define DYNARRAY_TYPE_NAME Dynarray_Vector3
 #include "dynarray.h"
@@ -23,7 +27,7 @@ static float perlin_3d(float x, float y, float z, float gain, int octaves,
 					   int hgrid);
 static float perlin_2d(float x, float y, float gain, int octaves, int hgrid);
 
-void load_terrain(Gamestate gamestate)
+void load_terrain(dSpaceID space)
 {
 	Dynarray_Vector3 terrain_nodes = dynarray_create_Vector3(100);
 	cube = GenMeshCube(scale, scale, scale);
@@ -79,11 +83,11 @@ void load_terrain(Gamestate gamestate)
 		printf("Memory allocation failure for terrain physics geometries\n");
 		exit(EXIT_FAILURE);
 	}
-	assert(gamestate.space != NULL);
+	assert(space != NULL);
 
 	for (uint i = 0; i < terrain_nodes.size; i++) {
 		// create physics geometries
-		dGeomID geom = dCreateBox(gamestate.space, scale, scale, scale);
+		dGeomID geom = dCreateBox(space, scale, scale, scale);
 		dGeomSetPosition(geom, terrain_nodes.head[i].x * scale,
 						 terrain_nodes.head[i].y * scale,
 						 terrain_nodes.head[i].z * scale);

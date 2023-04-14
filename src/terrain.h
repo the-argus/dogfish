@@ -1,7 +1,7 @@
 #pragma once
 #include "raylib.h"
-#include "architecture.h"
+#include "ode/ode.h"
 
-void load_terrain(Gamestate gamestate);
+void load_terrain(dSpaceID space);
 void draw_terrain();
 void cleanup_terrain();

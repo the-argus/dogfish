@@ -1,4 +1,4 @@
-#include "architecture.h"
+#include "gameobject.h"
 
 #define _IMPLEMENT_DYNARRAY
 
