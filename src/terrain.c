@@ -56,7 +56,7 @@ void load_terrain()
 
 				float groundh = perlin_2d(x, z, 5, 1, 1) + 12;
 				uchar ground = y < groundh;
-				printf("%f\n", this_perlin);
+				// printf("%f\n", this_perlin);
 
 				if (this && !surrounded && ground) {
 					Vector3 node = {x * scale, y * scale, z * scale};
