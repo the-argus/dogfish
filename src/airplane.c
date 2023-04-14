@@ -20,29 +20,17 @@
 static Model p1_model;
 static Model p2_model;
 
-// Accept p1's input state from game state, and move accordingly
 static void airplane_update_p1(struct GameObject *self, Gamestate *gamestate,
 							   float delta_time);
-
-// Accept p2's input state from game state, and move accordingly
 static void airplane_update_p2(struct GameObject *self, Gamestate *gamestate,
 							   float delta_time);
-
-// general function that applies airplane-like forces based on keys and controls
 static void apply_airplane_input_impulses(dBodyID plane, Keystate keys,
 										  ControllerState controls);
-
-// Draw p1 plane
 static void airplane_draw_p1(struct GameObject *self, Gamestate *gamestate);
-
-// Draw p2 plane
 static void airplane_draw_p2(struct GameObject *self, Gamestate *gamestate);
-
-// Cleanup p1
 static void airplane_cleanup_p1(struct GameObject *self);
-
-// Cleanup p2
 static void airplane_cleanup_p2(struct GameObject *self);
+static int sign(float value);
 
 GameObject create_airplane(Gamestate gamestate, uint player)
 {
@@ -90,7 +78,8 @@ GameObject create_airplane(Gamestate gamestate, uint player)
 		dBodySetPosition(body, INITIAL_AIRPLANE_POS_P2);
 	}
 
-	dBodySetLinearDamping(body, 0.05f);
+	dBodySetLinearDamping(body, 0.01f);
+	dBodySetAngularDamping(body, 0.0f);
 
 	// Say that it has them
 	plane.update.has = 1;
@@ -129,14 +118,15 @@ static void airplane_update_p1(GameObject *self, Gamestate *gamestate,
 	gamestate->p1_camera->target = pos; // look at the plane
 	Vector3 camera_diff = {0, 5, 0};
 	// rotate by angles x and y
-	gamestate->p1_camera_data.angle.x -= gamestate->input.cursor.delta.x *
-										 CAMERA_MOUSE_MOVE_SENSITIVITY *
-										 delta_time;
-	gamestate->p1_camera_data.angle.y -= gamestate->input.cursor.delta.y *
-										 CAMERA_MOUSE_MOVE_SENSITIVITY *
-										 delta_time;
+	gamestate->p1_camera_data.angle.x -=
+		(gamestate->input.cursor.delta.x +
+		 gamestate->input.controller.joystick.x) *
+		CAMERA_MOUSE_MOVE_SENSITIVITY * delta_time;
+	gamestate->p1_camera_data.angle.y -=
+		(gamestate->input.cursor.delta.y +
+		 gamestate->input.controller.joystick.y) *
+		CAMERA_MOUSE_MOVE_SENSITIVITY * delta_time;
 	// clamp y
-	printf("%f\n", gamestate->p1_camera_data.angle.y * RAD2DEG);
 	if (gamestate->p1_camera_data.angle.y >
 		CAMERA_FIRST_PERSON_MIN_CLAMP * DEG2RAD) {
 		gamestate->p1_camera_data.angle.y =
@@ -252,7 +242,6 @@ static void apply_airplane_input_impulses(dBodyID plane, Keystate keys,
 	torque_impulse.y += 0.1f * horizontal_input;
 	torque_impulse.z += 0.1f * vertical_input;
 
-	dBodyAddRelForce(plane, impulse.x, impulse.y, impulse.z);
-	dBodyAddRelTorque(plane, torque_impulse.x, torque_impulse.y,
-					  torque_impulse.z);
+	dBodySetForce(plane, impulse.x, impulse.y, impulse.z);
+	dBodySetTorque(plane, torque_impulse.x, torque_impulse.y, torque_impulse.z);
 }
