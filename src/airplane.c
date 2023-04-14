@@ -4,6 +4,7 @@
 #include "shorthand.h"
 #include "gameobject.h"
 #include "raymath.h"
+#include "debug.h"
 
 #define AIRPLANE_DEBUG_CUBE_WIDTH 0.5
 #define AIRPLANE_DEBUG_CUBE_LENGTH 2
@@ -146,6 +147,7 @@ static void airplane_draw_p1(struct GameObject *self, Gamestate *gamestate)
 
 	// Tranformation matrix for rotations
 	Vector3 plane_rotation = to_raylib(dBodyGetRotation(body));
+	Vector3Print(plane_rotation, "rotation");
 	p1_model.transform = MatrixRotateXYZ((Vector3){DEG2RAD * plane_rotation.x, DEG2RAD * plane_rotation.y, DEG2RAD * plane_rotation.z});
 	DrawModel(p1_model, to_raylib(dBodyGetPosition(body)), 1.0, BLUE);
 	//UnloadModel(planemodel);
@@ -195,15 +197,19 @@ static void apply_airplane_input_impulses(dBodyID plane, Keystate keys,
 
 	// dBodySetAngularVel(plane, 100.0, 0.0, 0.0);	// if up/down, apply pitch
 	if (controller_verti > 0 || vertical_input == 1) { // stick down, pull up
-		dBodyAddTorque(plane, 1000.0, 1000.0, 0.0);
+		
 		//dBodyAddRelForce(plane, forward.x, -100.0, forward.z);
 		//dBodySetAngularVel (plane, 100.0, 100.0, 0.0);
-		//dBodySetRotation (plane, const dMatrix3 R);
-		//void dRFromEulerAngles (dMatrix3 R, dReal phi, dReal theta, dReal psi);
+		dMatrix3 rot_matrix;
+		dRFromEulerAngles(rot_matrix, 100.0, 0.5, 0.2);
+		dBodySetRotation(plane, rot_matrix);
 	} else if (controller_verti < 0 || vertical_input == -1) { // stick up, pull down
 		//dBodyAddRelTorque(plane, 0.0, -100.0, 0.0);
 		//dBodyAddRelForce(plane, forward.x, 100.0, forward.z);
 		//dBodyAddTorque(plane, 0.0, 1000.0, 1000.0);
+		dMatrix3 rot_matrix;
+		dRFromEulerAngles(rot_matrix, 00.0, 500.5, 0.2);
+		dBodySetRotation(plane, rot_matrix);
 	}
 
 	// if left/right, apply roll
