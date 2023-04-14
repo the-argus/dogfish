@@ -44,10 +44,13 @@ int main(void)
 
 	init_render_pipeline();
 
+	// initialize physics system
+	init_physics(&gamestate);
+
 	// load skybox textures
 	load_skybox();
 
-	load_terrain();
+	load_terrain(gamestate);
 	// allocate memory for the object structure which will contain all
 	// gameobjects
 	objects = object_structure_create();
@@ -60,9 +63,6 @@ int main(void)
 	gamestate_new_fps_camera(&gamestate, 0);
 	// player 2
 	gamestate_new_fps_camera(&gamestate, 1);
-
-	// initialize physics system
-	init_physics(&gamestate);
 
 	// initialization complete -------------------------------------------------
 
