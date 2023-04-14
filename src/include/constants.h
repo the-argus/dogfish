@@ -40,3 +40,6 @@ typedef enum
 #define P2_PLANE_MASK 0xFF
 #define P1_PLANE_BIT 0x01
 #define P2_PLANE_BIT 0x02
+
+#define PLANE_MOVE_SPEED 0.3f
+#define PLANE_BOOST_SPEED 0.6f

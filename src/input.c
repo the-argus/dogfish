@@ -35,24 +35,20 @@ void gather_input(Gamestate *gamestate)
 	gamestate->input.keys.left = IsKeyDown(KEY_A);
 	gamestate->input.keys.up = IsKeyDown(KEY_W);
 	gamestate->input.keys.down = IsKeyDown(KEY_S);
+	gamestate->input.keys.boost = IsKeyDown(KEY_SPACE);
 
 	// player 2 moves with arrow keys
 	gamestate->input.keys_2.right = IsKeyDown(KEY_RIGHT);
 	gamestate->input.keys_2.left = IsKeyDown(KEY_LEFT);
 	gamestate->input.keys_2.up = IsKeyDown(KEY_UP);
 	gamestate->input.keys_2.down = IsKeyDown(KEY_DOWN);
+	gamestate->input.keys_2.boost = IsKeyDown(KEY_ENTER);
 
 	// collect controller information
 
 	// player 1 uses d-pad and left joystick
-	gamestate->input.controller.down =
-		IsGamepadButtonDown(0, GAMEPAD_BUTTON_LEFT_FACE_DOWN);
-	gamestate->input.controller.up =
+	gamestate->input.controller.boost =
 		IsGamepadButtonDown(0, GAMEPAD_BUTTON_LEFT_FACE_UP);
-	gamestate->input.controller.left =
-		IsGamepadButtonDown(0, GAMEPAD_BUTTON_LEFT_FACE_LEFT);
-	gamestate->input.controller.right =
-		IsGamepadButtonDown(0, GAMEPAD_BUTTON_LEFT_FACE_RIGHT);
 
 	gamestate->input.controller.joystick.x =
 		GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_X);
@@ -60,14 +56,8 @@ void gather_input(Gamestate *gamestate)
 		GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_Y);
 
 	// player 2 uses buttons (X Y A B) and right joystick
-	gamestate->input.controller_2.down =
-		IsGamepadButtonDown(0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN);
-	gamestate->input.controller_2.up =
+	gamestate->input.controller_2.boost =
 		IsGamepadButtonDown(0, GAMEPAD_BUTTON_RIGHT_FACE_UP);
-	gamestate->input.controller_2.left =
-		IsGamepadButtonDown(0, GAMEPAD_BUTTON_RIGHT_FACE_LEFT);
-	gamestate->input.controller_2.right =
-		IsGamepadButtonDown(0, GAMEPAD_BUTTON_RIGHT_FACE_RIGHT);
 
 	gamestate->input.controller_2.joystick.x =
 		GetGamepadAxisMovement(0, GAMEPAD_AXIS_RIGHT_X);
@@ -85,8 +75,10 @@ void gather_input(Gamestate *gamestate)
 	// things like pause menus.
 	gamestate->input.cursor.position = GetMousePosition();
 
-	set_virtual_cursor_position(&gamestate->input.cursor, gamestate->screen_scale);
-	set_virtual_cursor_position(&gamestate->input.cursor_2, gamestate->screen_scale);
+	set_virtual_cursor_position(&gamestate->input.cursor,
+								gamestate->screen_scale);
+	set_virtual_cursor_position(&gamestate->input.cursor_2,
+								gamestate->screen_scale);
 }
 
 // return 1 if the controls to exit the game are being pressed, 0 otherwise
@@ -97,8 +89,6 @@ int exit_control_pressed()
 			IsGamepadButtonDown(0, GAMEPAD_BUTTON_MIDDLE_RIGHT));
 }
 
-static int controller_horizontal_input(ControllerState controls);
-static int controller_vertical_input(ControllerState controls);
 static int key_vertical_input(Keystate keys);
 static int key_horizontal_input(Keystate keys);
 
@@ -109,16 +99,15 @@ Vector2 total_input(Inputstate input, int player_index)
 
 	if (player_index == 0) {
 		// add all input together
-		raw = (Vector2){.x = key_horizontal_input(input.keys) +
-							 controller_horizontal_input(input.controller),
-						.y = key_vertical_input(input.keys) +
-							 controller_vertical_input(input.controller)};
+		raw = (Vector2){
+			.x = key_horizontal_input(input.keys) + input.controller.joystick.x,
+			.y = key_vertical_input(input.keys) + input.controller.joystick.y};
 	} else if (player_index == 1) {
 		// add all input together
 		raw = (Vector2){.x = key_horizontal_input(input.keys_2) +
-							 controller_horizontal_input(input.controller_2),
+							 input.controller_2.joystick.x,
 						.y = key_vertical_input(input.keys_2) +
-							 controller_vertical_input(input.controller_2)};
+							 input.controller_2.joystick.y};
 	}
 #ifndef RELEASE
 	else {
@@ -137,12 +126,4 @@ static int key_vertical_input(Keystate keys) { return keys.up - keys.down; }
 static int key_horizontal_input(Keystate keys)
 {
 	return keys.left - keys.right;
-}
-static int controller_vertical_input(ControllerState controls)
-{
-	return controls.up - controls.down;
-}
-static int controller_horizontal_input(ControllerState controls)
-{
-	return controls.left - controls.right;
 }

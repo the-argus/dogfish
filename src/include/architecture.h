@@ -25,19 +25,13 @@ typedef struct Keystate {
     uchar left : 1;
     uchar right : 1;
     uchar down : 1;
-    uchar look_left : 1;
-    uchar look_right : 1;
-    uchar look_up : 1;
-    uchar look_down : 1;
+    uchar boost : 1;
 } Keystate;
 
 typedef Vector2 Joystick;
 
 typedef struct ControllerState {
-    uchar left : 1;
-    uchar up : 1;
-    uchar down : 1;
-    uchar right : 1;
+    uchar boost : 1;
     Joystick joystick;
 } ControllerState;
 

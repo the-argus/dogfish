@@ -13,7 +13,10 @@
 #define INITIAL_AIRPLANE_POS_P1 5, 10, 0
 #define INITIAL_AIRPLANE_POS_P2 -5, 10, 0
 
-#define DEBUG_CAMERA
+#define CAMERA_FIRST_PERSON_MIN_CLAMP -1.0f
+#define CAMERA_FIRST_PERSON_MAX_CLAMP -179.0f
+#define CAMERA_MOUSE_MOVE_SENSITIVITY 0.5f
+
 static Model p1_model;
 static Model p2_model;
 
@@ -87,6 +90,8 @@ GameObject create_airplane(Gamestate gamestate, uint player)
 		dBodySetPosition(body, INITIAL_AIRPLANE_POS_P2);
 	}
 
+	dBodySetLinearDamping(body, 0.05f);
+
 	// Say that it has them
 	plane.update.has = 1;
 	plane.draw.has = 1;
@@ -121,7 +126,36 @@ static void airplane_update_p1(GameObject *self, Gamestate *gamestate,
 #else
 	dBodyID body = self->physics.value.body.value;
 	Vector3 pos = to_raylib(dBodyGetPosition(body));
-	gamestate->p1_camera->target = pos;
+	gamestate->p1_camera->target = pos; // look at the plane
+	Vector3 camera_diff = {0, 5, 0};
+	// rotate by angles x and y
+	gamestate->p1_camera_data.angle.x -= gamestate->input.cursor.delta.x *
+										 CAMERA_MOUSE_MOVE_SENSITIVITY *
+										 delta_time;
+	gamestate->p1_camera_data.angle.y -= gamestate->input.cursor.delta.y *
+										 CAMERA_MOUSE_MOVE_SENSITIVITY *
+										 delta_time;
+	// clamp y
+	printf("%f\n", gamestate->p1_camera_data.angle.y * RAD2DEG);
+	if (gamestate->p1_camera_data.angle.y >
+		CAMERA_FIRST_PERSON_MIN_CLAMP * DEG2RAD) {
+		gamestate->p1_camera_data.angle.y =
+			CAMERA_FIRST_PERSON_MIN_CLAMP * DEG2RAD;
+	} else if (gamestate->p1_camera_data.angle.y <
+			   CAMERA_FIRST_PERSON_MAX_CLAMP * DEG2RAD) {
+		gamestate->p1_camera_data.angle.y =
+			CAMERA_FIRST_PERSON_MAX_CLAMP * DEG2RAD;
+	}
+	// clamp x
+	gamestate->p1_camera_data.angle.x -=
+		((int)(gamestate->p1_camera_data.angle.x / (2 * PI))) * (2 * PI);
+
+	// apply rotation to camera_diff
+	Quaternion camera_rot =
+		QuaternionFromEuler(gamestate->p1_camera_data.angle.y,
+							gamestate->p1_camera_data.angle.x, 0);
+	camera_diff = Vector3RotateByQuaternion(camera_diff, camera_rot);
+	gamestate->p1_camera->position = Vector3Add(pos, camera_diff);
 #endif
 
 	airplane_update_common(self, gamestate, delta_time);
@@ -152,12 +186,9 @@ static void airplane_draw_p1(struct GameObject *self, Gamestate *gamestate)
 
 	// Tranformation matrix for rotations
 	Vector3 plane_rotation = to_raylib(dBodyGetRotation(body));
-	Vector3Print(plane_rotation, "rotation");
-	p1_model.transform = MatrixRotateXYZ((Vector3){DEG2RAD * plane_rotation.x,
-												   DEG2RAD * plane_rotation.y,
-												   DEG2RAD * plane_rotation.z});
+	p1_model.transform = MatrixRotateXYZ(
+		(Vector3){plane_rotation.x, plane_rotation.y, plane_rotation.z});
 	DrawModel(p1_model, to_raylib(dBodyGetPosition(body)), 1.0, BLUE);
-	// UnloadModel(planemodel);
 }
 
 // Draw the p2 model at the p2 position
@@ -169,11 +200,9 @@ static void airplane_draw_p2(struct GameObject *self, Gamestate *gamestate)
 
 	// Tranformation matrix for rotations
 	Vector3 plane_rotation = to_raylib(dBodyGetRotation(body));
-	p2_model.transform = MatrixRotateXYZ((Vector3){DEG2RAD * plane_rotation.x,
-												   DEG2RAD * plane_rotation.y,
-												   DEG2RAD * plane_rotation.z});
+	p2_model.transform = MatrixRotateXYZ(
+		(Vector3){plane_rotation.x, plane_rotation.y, plane_rotation.z});
 	DrawModel(p2_model, to_raylib(dBodyGetPosition(body)), 1.0, BLUE);
-	// UnloadModel(planemodel);
 }
 
 static void airplane_cleanup_p1(struct GameObject *self)
@@ -186,77 +215,44 @@ static void airplane_cleanup_p2(struct GameObject *self)
 	UnloadModel(p2_model);
 }
 
+static int sign(float value)
+{
+	if (value == 0) {
+		return 0;
+	} else if (value > 0) {
+		return 1;
+	} else {
+		return -1;
+	}
+}
+
 static void apply_airplane_input_impulses(dBodyID plane, Keystate keys,
 										  ControllerState controls)
 {
 	// Get the current linear and angular velocity
 	Vector3 forward = to_raylib(dBodyGetLinearVel(plane));
-	dReal *rotation = dBodyGetRotation(plane);
-	// dBodyAddRelForce(plane, forward.x, forward.y, forward.z);
+	forward = Vector3Normalize(forward);
 
-	// attempt to counteract gravity, doesn't work
-	// overwrites the add rel force above
-	dBodyAddForce(plane, 0.0, 0.5, 0.0);
+	Vector3 impulse = {0, -1 * GRAVITY, 0};
+	Vector3 torque_impulse = {0, 0, 0};
 
-	// Check the state of the stick inputs (for your player index)
-	float controller_verti = controls.joystick.y;
-	float controller_hori = controls.joystick.x;
+	int vertical_input = sign(keys.up - keys.down + sign(controls.joystick.y));
+	int horizontal_input =
+		sign(keys.right - keys.left + sign(controls.joystick.x));
 
-	int vertical_input = keys.up - keys.down;
-	int horizontal_input = keys.right - keys.left;
+	int thrust = controls.boost || keys.boost;
 
-	// dBodySetAngularVel(plane, 100.0, 0.0, 0.0);	// if up/down, apply pitch
-	if (controller_verti > 0 || vertical_input == 1) { // stick down, pull up
+	// modify impulse and torque based on input
 
-		// dBodyAddRelForce(plane, forward.x, -100.0, forward.z);
-		// dBodySetAngularVel (plane, 100.0, 100.0, 0.0);
-		dMatrix3 rot_matrix;
-		dRFromEulerAngles(rot_matrix, 100.0, 0.5, 0.2);
-		dBodySetRotation(plane, rot_matrix);
-	} else if (controller_verti < 0 ||
-			   vertical_input == -1) { // stick up, pull down
-		// dBodyAddRelTorque(plane, 0.0, -100.0, 0.0);
-		// dBodyAddRelForce(plane, forward.x, 100.0, forward.z);
-		// dBodyAddTorque(plane, 0.0, 1000.0, 1000.0);
-		dMatrix3 rot_matrix;
-		dRFromEulerAngles(rot_matrix, 00.0, 500.5, 0.2);
-		dBodySetRotation(plane, rot_matrix);
-	}
+	// first, get forwards movement (along the direction of the plane)
+	Vector3 movement =
+		Vector3Scale(forward, thrust ? PLANE_BOOST_SPEED : PLANE_MOVE_SPEED);
+	impulse = Vector3Add(impulse, movement);
 
-	// if left/right, apply roll
-	if (controller_hori > 0 || horizontal_input > 0) {
-		dBodyAddRelTorque(plane, 0.0, 0.0, 10.0);
-	} else if (controller_hori < 0 || horizontal_input > 0) {
-		dBodyAddRelTorque(plane, 0.0, 0.0, -10.0);
-	}
+	torque_impulse.y += 0.1f * horizontal_input;
+	torque_impulse.z += 0.1f * vertical_input;
 
-	// Check the state of the keys (for your player index)
-	int key_hori = keys.left - keys.right;
-	if (key_hori > 0) {
-		// dBodyAddRelTorque(plane, 100.0, 100.0, 100.0);
-	}
-	// if lb/rb, apply yaw
-
-	// Transform forward by the rotation matrix
-	// Apply force on the transformed forward vector
-
-	// Make this an impulse and apply it
-
-	// --- COPIED PLAYER MOVEMENT CODE FOR YOUR REFERENCE ---
-	// Vector3 impulse = {0};
-	// Vector2 input = total_input(inputstate, player_index);
-
-	// //impulse.x = sin(angle_x) * PLAYER_MOVE_IMPULSE;
-	// //impulse.z = cos(angle_x) * PLAYER_MOVE_IMPULSE;
-	// Vector3 h_impulse =
-	// 	Vector3CrossProduct(Vector3Normalize(impulse), (Vector3){0, 1, 0});
-
-	// impulse = Vector3Scale(impulse, input.y);
-
-	// // also grab left/right input
-	// h_impulse = Vector3Scale(h_impulse, input.x);
-
-	// impulse = Vector3Add(impulse, h_impulse);
-
-	// dBodyAddForce(plane, 1000.0, 000.0, 000.0);
+	dBodyAddRelForce(plane, impulse.x, impulse.y, impulse.z);
+	dBodyAddRelTorque(plane, torque_impulse.x, torque_impulse.y,
+					  torque_impulse.z);
 }
