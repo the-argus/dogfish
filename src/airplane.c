@@ -3,6 +3,7 @@
 #include "physics.h"
 #include "shorthand.h"
 #include "gameobject.h"
+#include "debug.h"
 
 #define AIRPLANE_DEBUG_CUBE_WIDTH 0.5
 #define AIRPLANE_DEBUG_CUBE_LENGTH 2
@@ -10,6 +11,8 @@
 #define AIRPLANE_MASS 5.4
 #define INITIAL_AIRPLANE_POS_P1 5, 10, 0
 #define INITIAL_AIRPLANE_POS_P2 -5, 10, 0
+
+#define DEBUG_CAMERA
 
 // Accept p1's input state from game state, and move accordingly
 static void airplane_update_p1(struct GameObject *self, Gamestate *gamestate,
@@ -98,9 +101,13 @@ static void airplane_update_p1(GameObject *self, Gamestate *gamestate,
 								  gamestate->input.controller);
 
 	// set the camera to be at the location of the plane
+#ifdef DEBUG_CAMERA
+	UseDebugCameraController(gamestate->p1_camera);
+#else
 	dBodyID body = self->physics.value.body.value;
 	Vector3 pos = to_raylib(dBodyGetPosition(body));
 	gamestate->p1_camera->position = pos;
+#endif
 
 	airplane_update_common(self, gamestate, delta_time);
 }

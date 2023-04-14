@@ -1,3 +1,7 @@
+# publish
+dogfish
+*.zip
+
 # windows people
 lib/
 ode-0.16.3/

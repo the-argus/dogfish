@@ -33,7 +33,9 @@ source_file_names = [
   'gameobject.c',
   'dynarray_implementation.c',
   'skybox.c',
-  'bullet.c'
+  'bullet.c',
+  'terrain.c',
+  'render_pipeline.c'
 ]
 
 sources = []
