@@ -183,22 +183,27 @@ static void apply_airplane_input_impulses(dBodyID plane, Keystate keys,
 										  ControllerState controls)
 {
 	// Get the current linear and angular velocity
-	dVector3 *forward = dBodyGetLinearVel(plane);
-	dBodyAddRelForce(plane, *forward[0], *forward[1], *forward[2]);
+	Vector3 forward = to_raylib(dBodyGetLinearVel(plane));
+	//dBodyAddRelForce(plane, forward.x, forward.y, forward.z);
 
 	// attempt to counteract gravity, doesn't work
 	// overwrites the add rel force above
-	// dBodyAddForce(plane, 0.0, 1.0, 0.0);
+	dBodyAddForce(plane, 0.0, 0.5, 0.0);
 
 	// Check the state of the stick inputs (for your player index)
 	int controller_verti = controls.joystick.y;
 	int controller_hori = controls.joystick.x;
 
 	// dBodySetAngularVel(plane, 100.0, 0.0, 0.0);	// if up/down, apply pitch
-	if (controller_verti > 0) {
-		dBodyAddRelTorque(plane, 0.0, 10.0, 0.0);
-	} else if (controller_verti < 0) {
-		dBodyAddRelTorque(plane, 0.0, -10.0, 0.0);
+	if (controller_verti > 0) { // stick down, pull up
+		//printf('a');
+		//dBodyAddRelTorque(plane, 0.0, 100.0, 0.0);
+		dBodyAddRelForce(plane, forward.x, -100.0, forward.z);
+		//dBodySetAngularVel (plane, 100.0, 100.0, 0.0);
+		//dBodySetRotation (dBodyID, const dMatrix3 R);
+	} else if (controller_verti < 0) { // stick up, pull down
+		//dBodyAddRelTorque(plane, 0.0, -100.0, 0.0);
+		dBodyAddRelForce(plane, forward.x, 100.0, forward.z);
 	}
 
 	// if left/right, apply roll
@@ -209,10 +214,10 @@ static void apply_airplane_input_impulses(dBodyID plane, Keystate keys,
 	}
 
 	// Check the state of the keys (for your player index)
-	// int key_hori = keys.left - keys.right;
-	// if (key_hori > 0) {
-	// 	dBodyAddRelTorque(plane, 100.0, 100.0, 100.0);
-	// }
+	int key_hori = keys.left - keys.right;
+	if (key_hori > 0) {
+		//dBodyAddRelTorque(plane, 100.0, 100.0, 100.0);
+	}
 	// if lb/rb, apply yaw
 
 	// Transform forward by the rotation matrix
