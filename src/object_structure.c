@@ -26,6 +26,17 @@ ObjectStructure object_structure_create()
 	return (ObjectStructure){._dynarray = array};
 }
 
+void object_structure_destroy(ObjectStructure *structure)
+{
+	for (int i = 0; i < object_structure_size(structure); i++) {
+		if (structure->_dynarray.head[i].cleanup.has) {
+			structure->_dynarray.head[i].cleanup.value(
+				&structure->_dynarray.head[i]);
+		}
+	}
+	dynarray_destroy_GameObject(&structure->_dynarray);
+}
+
 void object_structure_map(ObjectStructure *structure,
 						  void (*map_func)(GameObject *self, uint index))
 {

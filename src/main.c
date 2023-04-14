@@ -145,9 +145,7 @@ int main(void)
 	}
 
 	// cleanup
-	while (object_structure_size(&objects) > 0) {
-		object_structure_remove(&objects, 0);
-	}
+    object_structure_destroy(&objects);
 	free(gamestate.p1_camera);
 	free(gamestate.p2_camera);
 	close_physics();
