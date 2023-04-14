@@ -159,10 +159,10 @@ int main(void)
 /// Perform per-frame game logic.
 void update()
 {
-	fps_camera_update(gamestate.p1_camera, &(gamestate.p1_camera_data),
-					  gamestate.input.cursor);
-	fps_camera_update(gamestate.p2_camera, &(gamestate.p2_camera_data),
-					  gamestate.input.cursor_2);
+	// fps_camera_update(gamestate.p1_camera, &(gamestate.p1_camera_data),
+	// 				  gamestate.input.cursor);
+	// fps_camera_update(gamestate.p2_camera, &(gamestate.p2_camera_data),
+	// 				  gamestate.input.cursor_2);
 
 	update_physics(GetFrameTime());
 
