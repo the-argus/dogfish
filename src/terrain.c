@@ -16,13 +16,14 @@ static Mesh cube;
 static Material terrain_material;
 static Shader terrain_shader;
 static Matrix *transforms;
+static dGeomID *geoms;
 static uint transforms_size;
 
 static float perlin_3d(float x, float y, float z, float gain, int octaves,
 					   int hgrid);
 static float perlin_2d(float x, float y, float gain, int octaves, int hgrid);
 
-void load_terrain()
+void load_terrain(Gamestate gamestate)
 {
 	Dynarray_Vector3 terrain_nodes = dynarray_create_Vector3(100);
 	cube = GenMeshCube(scale, scale, scale);
@@ -72,10 +73,25 @@ void load_terrain()
 		sizeof(Matrix));	// Pre-multiplied transformations passed to rlgl
 	transforms_size = terrain_nodes.size;
 
+	// allocate space for physics geometry pointers
+	geoms = malloc(sizeof(dGeomID) * terrain_nodes.size);
+	if (geoms == NULL) {
+		printf("Memory allocation failure for terrain physics geometries\n");
+		exit(EXIT_FAILURE);
+	}
+	assert(gamestate.space != NULL);
+
 	for (uint i = 0; i < terrain_nodes.size; i++) {
-		transforms[i] =
-			MatrixTranslate(terrain_nodes.head[i].x, terrain_nodes.head[i].y,
-							terrain_nodes.head[i].z);
+		// create physics geometries
+		dGeomID geom = dCreateBox(gamestate.space, scale, scale, scale);
+		dGeomSetPosition(geom, terrain_nodes.head[i].x * scale,
+						 terrain_nodes.head[i].y * scale,
+						 terrain_nodes.head[i].z * scale);
+		geoms[i] = geom;
+		// create list of transforms
+		transforms[i] = MatrixTranslate(terrain_nodes.head[i].x * scale,
+										terrain_nodes.head[i].y * scale,
+										terrain_nodes.head[i].z * scale);
 	}
 
 	// initialize terrain material
@@ -101,6 +117,7 @@ void draw_terrain()
 
 void cleanup_terrain()
 {
+	free(geoms);
 	RL_FREE(transforms);
 	UnloadShader(terrain_shader);
 }
