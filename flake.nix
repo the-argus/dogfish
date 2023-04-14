@@ -64,6 +64,8 @@
           meson
           bear
           clang-tools
+
+          cmake
         ];
       };
   };
