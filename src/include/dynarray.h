@@ -27,7 +27,7 @@
 #endif
 
 // funny trick to call a macro with macro args
-#define _CALL(macro, ...)  macro(__VA_ARGS__)
+#define _CALL(macro, ...) macro(__VA_ARGS__)
 
 typedef struct DYNARRAY_TYPE_NAME
 {
@@ -38,6 +38,9 @@ typedef struct DYNARRAY_TYPE_NAME
 
 #define _DYNARRAY_CREATE_SIGNATURE(type) \
 	DYNARRAY_TYPE_NAME dynarray_create_##type(int initial_capacity)
+
+#define _DYNARRAY_DESTROY_SIGNATURE(type) \
+	void dynarray_destroy_##type(DYNARRAY_TYPE_NAME *dynarray)
 
 #define _DYNARRAY_INSERT_SIGNATURE(type) \
 	void dynarray_insert_##type(DYNARRAY_TYPE_NAME *dynarray, type new)
@@ -52,6 +55,7 @@ typedef struct DYNARRAY_TYPE_NAME
 
 #define _DYNARRAY_FUNCTION_DECLARATIONS(type) \
 	_DYNARRAY_CREATE_SIGNATURE(type);         \
+	_DYNARRAY_DESTROY_SIGNATURE(type);        \
 	_DYNARRAY_INSERT_SIGNATURE(type);         \
 	_DYNARRAY_REMOVE_SIGNATURE(type);         \
 	_DYNARRAY_MAP_SIGNATURE(type);
@@ -117,7 +121,8 @@ _CALL(_DYNARRAY_REMOVE_SIGNATURE, DYNARRAY_TYPE)
 	// to move everything after index back one
 	for (uint i = index; i < dynarray->size; i++) {
 		// move current index to index-1
-		memcpy(&dynarray->head[index], &dynarray->head[index + 1], sizeof(DYNARRAY_TYPE));
+		memcpy(&dynarray->head[index], &dynarray->head[index + 1],
+			   sizeof(DYNARRAY_TYPE));
 	}
 
 	// reduce size
@@ -130,6 +135,8 @@ _CALL(_DYNARRAY_MAP_SIGNATURE, DYNARRAY_TYPE)
 		map_func(&(dynarray->head[i]), i);
 	}
 }
+
+_CALL(_DYNARRAY_DESTROY_SIGNATURE, DYNARRAY_TYPE) { free(dynarray->head); }
 
 #endif
 

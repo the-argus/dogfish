@@ -59,6 +59,8 @@ typedef struct Gamestate {
     dWorldID world;
     dSpaceID space;
     float screen_scale;
+    Model *p1_model;
+    Model *p2_model;
 } Gamestate;
 
 struct GameObject;

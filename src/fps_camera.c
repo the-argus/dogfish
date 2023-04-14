@@ -82,7 +82,7 @@ void fps_camera_update(Camera *camera, CameraData *camera_data,
 	// Multiply translation and rotation matrices
 	Matrix matTransform = MatrixMultiply(matTranslation, matRotation);
 
-	camera->target.x = camera->position.x - matTransform.m12;
-	camera->target.y = camera->position.y - matTransform.m13;
-	camera->target.z = camera->position.z - matTransform.m14;
+	//camera->target.x = camera->position.x - matTransform.m12;
+	//camera->target.y = camera->position.y - matTransform.m13;
+	//camera->target.z = camera->position.z - matTransform.m14;
 }

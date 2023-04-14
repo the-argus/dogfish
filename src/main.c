@@ -42,7 +42,7 @@ int main(void)
 	// set windowing backend vars like title and size
 	window_settings();
 
-    init_render_pipeline();
+	init_render_pipeline();
 
 	// load skybox textures
 	load_skybox();
@@ -99,10 +99,7 @@ int main(void)
 	}
 
 	// cleanup
-	while (object_structure_size(&objects) > 0) {
-		object_structure_remove(&objects, 0);
-	}
-	free(objects._dynarray.head);
+	object_structure_destroy(&objects);
 	free(gamestate.p1_camera);
 	free(gamestate.p2_camera);
 	cleanup_terrain();
@@ -116,10 +113,10 @@ int main(void)
 /// Perform per-frame game logic.
 void update()
 {
-	fps_camera_update(gamestate.p1_camera, &(gamestate.p1_camera_data),
-					  gamestate.input.cursor);
-	fps_camera_update(gamestate.p2_camera, &(gamestate.p2_camera_data),
-					  gamestate.input.cursor_2);
+	// fps_camera_update(gamestate.p1_camera, &(gamestate.p1_camera_data),
+	// 				  gamestate.input.cursor);
+	// fps_camera_update(gamestate.p2_camera, &(gamestate.p2_camera_data),
+	// 				  gamestate.input.cursor_2);
 
 	update_physics(GetFrameTime());
 
