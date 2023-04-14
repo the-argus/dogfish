@@ -108,8 +108,6 @@ static void airplane_update_common(GameObject *self, Gamestate *gamestate,
 static void airplane_update_p1(GameObject *self, Gamestate *gamestate,
 							   float delta_time)
 {
-	UNUSED(delta_time);
-
 	// apply foces based on inputs
 	apply_airplane_input_impulses(self->physics.value.body.value,
 								  gamestate->input.keys,
@@ -126,8 +124,6 @@ static void airplane_update_p1(GameObject *self, Gamestate *gamestate,
 static void airplane_update_p2(GameObject *self, Gamestate *gamestate,
 							   float delta_time)
 {
-	UNUSED(delta_time);
-
 	// apply foces based on inputs
 	apply_airplane_input_impulses(self->physics.value.body.value,
 								  gamestate->input.keys_2,
@@ -191,27 +187,30 @@ static void apply_airplane_input_impulses(dBodyID plane, Keystate keys,
 	dBodyAddForce(plane, 0.0, 0.5, 0.0);
 
 	// Check the state of the stick inputs (for your player index)
-	int controller_verti = controls.joystick.y;
-	int controller_hori = controls.joystick.x;
+	float controller_verti = controls.joystick.y;
+	float controller_hori = controls.joystick.x;
+
+    int vertical_input = keys.up - keys.down;
+    int horizontal_input = keys.right - keys.left;
 
 	// dBodySetAngularVel(plane, 100.0, 0.0, 0.0);	// if up/down, apply pitch
-	if (controller_verti > 0) { // stick down, pull up
+	if (controller_verti > 0 || vertical_input == 1) { // stick down, pull up
 		//printf('a');
 		dBodyAddTorque(plane, 1000.0, 1000.0, 0.0);
 		//dBodyAddRelForce(plane, forward.x, -100.0, forward.z);
 		//dBodySetAngularVel (plane, 100.0, 100.0, 0.0);
 		//dBodySetRotation (plane, const dMatrix3 R);
 		//void dRFromEulerAngles (dMatrix3 R, dReal phi, dReal theta, dReal psi);
-	} else if (controller_verti < 0) { // stick up, pull down
+	} else if (controller_verti < 0 || vertical_input == -1) { // stick up, pull down
 		//dBodyAddRelTorque(plane, 0.0, -100.0, 0.0);
 		//dBodyAddRelForce(plane, forward.x, 100.0, forward.z);
 		dBodyAddTorque(plane, 0.0, 1000.0, 1000.0);
 	}
 
 	// if left/right, apply roll
-	if (controller_hori > 0) {
+	if (controller_hori > 0 || horizontal_input > 0) {
 		dBodyAddRelTorque(plane, 0.0, 0.0, 10.0);
-	} else if (controller_hori < 0) {
+	} else if (controller_hori < 0 || horizontal_input > 0) {
 		dBodyAddRelTorque(plane, 0.0, 0.0, -10.0);
 	}
 
