@@ -6,6 +6,7 @@
 #include "raymath.h"
 #include "debug.h"
 #include "bullet.h"
+#include "object_structure.h"
 
 #define AIRPLANE_DEBUG_CUBE_WIDTH 0.5
 #define AIRPLANE_DEBUG_CUBE_LENGTH 2
@@ -94,11 +95,24 @@ GameObject create_airplane(Gamestate gamestate, uint player)
 /// Code that should be run for both airplanes.
 ///
 static void airplane_update_common(GameObject *self, Gamestate *gamestate,
-								   float delta_time)
+								   float delta_time, int shooting)
 {
 	UNUSED(delta_time);
-	UNUSED(self);
 	UNUSED(gamestate);
+
+	if (shooting) {
+		dBodyID body = self->physics.value.body.value;
+		Vector3 pos = to_raylib(dBodyGetPosition(body));
+		Vector3 forward = to_raylib(dBodyGetLinearVel(body));
+		forward = Vector3Normalize(forward);
+		forward = Vector3Scale(forward, 10);
+
+		GameObject bullet = create_bullet(*gamestate);
+		dBodyID bullet_body = bullet.physics.value.body.value;
+		dBodySetLinearVel(bullet_body, forward.x, forward.y, forward.z);
+		dBodySetPosition(bullet_body, pos.x, pos.y, pos.z);
+		object_structure_queue_for_creation(gamestate->objects, bullet);
+	}
 }
 
 // Accept input state and move accordingly
@@ -149,7 +163,9 @@ static void airplane_update_p1(GameObject *self, Gamestate *gamestate,
 	gamestate->p1_camera->position = Vector3Add(pos, camera_diff);
 #endif
 
-	airplane_update_common(self, gamestate, delta_time);
+	airplane_update_common(self, gamestate, delta_time,
+						   gamestate->input.cursor.shoot ||
+							   gamestate->input.controller.shoot);
 }
 
 static void airplane_update_p2(GameObject *self, Gamestate *gamestate,
@@ -165,7 +181,8 @@ static void airplane_update_p2(GameObject *self, Gamestate *gamestate,
 	Vector3 pos = to_raylib(dBodyGetPosition(body));
 	gamestate->p2_camera->target = pos;
 
-	airplane_update_common(self, gamestate, delta_time);
+	airplane_update_common(self, gamestate, delta_time,
+						   gamestate->input.controller_2.shoot);
 }
 
 // Draw the p1 model at the p1 position

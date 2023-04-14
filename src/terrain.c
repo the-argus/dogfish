@@ -23,6 +23,8 @@ static Matrix *transforms;
 static dGeomID *geoms;
 static uint transforms_size;
 
+static Vector3 offset = {20, 0, 20};
+
 static float perlin_3d(float x, float y, float z, float gain, int octaves,
 					   int hgrid);
 static float perlin_2d(float x, float y, float gain, int octaves, int hgrid);
@@ -32,9 +34,9 @@ void load_terrain(dSpaceID space)
 	Dynarray_Vector3 terrain_nodes = dynarray_create_Vector3(100);
 	cube = GenMeshCube(scale, scale, scale);
 
-	for (int x = 0; x < size; x++) {
-		for (int y = 0; y < size; y++) {
-			for (int z = 0; z < size; z++) {
+	for (int x = offset.x; x < size + offset.x; x++) {
+		for (int y = offset.y; y < size + offset.y; y++) {
+			for (int z = offset.z; z < size + offset.y; z++) {
 				float this_perlin =
 					perlin_3d(x, y, z, NOISE_SETTINGS) + NOISE_OFFSET;
 				uchar this = this_perlin > threshhold;

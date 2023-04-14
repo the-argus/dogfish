@@ -54,6 +54,7 @@ int main(void)
 	// allocate memory for the object structure which will contain all
 	// gameobjects
 	objects = object_structure_create();
+	gamestate.objects = &objects;
 
 	// inialize gamestate struct -----------------------------------------------
 	gamestate.input.cursor.virtual_position = (Vector2){0};
@@ -126,6 +127,8 @@ void update()
 												   &gamestate, GetFrameTime());
 		}
 	}
+
+	object_structure_flush_create_queue(gamestate.objects);
 }
 
 /// Draw the in-game objects to a consistently sized rendertexture.

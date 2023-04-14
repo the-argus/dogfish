@@ -61,7 +61,7 @@ int object_structure_size(ObjectStructure *object)
 void object_structure_flush_create_queue(ObjectStructure *structure)
 {
 	int initial_size = structure->_create_queue.size;
-	for (int i = initial_size - 1; i <= 0; i++) {
+	for (int i = initial_size - 1; i >= 0; i--) {
 		object_structure_insert(structure, structure->_create_queue.head[i]);
 		dynarray_remove_GameObject(&structure->_create_queue, i);
 	}

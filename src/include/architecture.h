@@ -52,5 +52,5 @@ typedef struct Gamestate {
     float screen_scale;
     Model *p1_model;
     Model *p2_model;
-	Dynarray_GameObject *objects;
+	ObjectStructure *objects;
 } Gamestate;
