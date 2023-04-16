@@ -58,14 +58,8 @@
       {
         packages = with regularPkgs;
           [
-            # (ninja.override {python3 = python3Minimal;})
-            # pkg-config
-            # raylib
-            # ode
-            # meson
             bear
             clang-tools
-
             cmake
             gnumake
           ]
