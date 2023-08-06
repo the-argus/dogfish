@@ -1,0 +1,6 @@
+[submodule "build/deps/ode"]
+	path = build/deps/ode
+	url = https://bitbucket.org/odedevs/ode.git
+[submodule "build/deps/raylib"]
+	path = build/deps/raylib
+	url = https://github.com/raysan5/raylib

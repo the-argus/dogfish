@@ -1,5 +1,6 @@
-# cmake build system
-build/
+# zig
+zig-out/
+zig-cache/
 
 # publish
 dogfish
