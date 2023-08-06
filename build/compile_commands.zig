@@ -29,8 +29,8 @@ fn getCSources(allocator: std.mem.Allocator) ![]*CSourceFiles {
     while (index < compile_steps.?.items.len) {
         const step = compile_steps.?.items[index];
 
+        // no deinit / memory leak
         var shared_flags = std.ArrayList([]const u8).init(allocator);
-        defer shared_flags.deinit();
 
         // catch all the system libraries being linked, make flags out of them
         for (step.link_objects.items) |link_object| {
@@ -139,6 +139,17 @@ pub fn makeCdb(step: *std.Build.Step, prog_node: *std.Progress.Node) anyerror!vo
             try arguments.append(c_file);
             try arguments.appendSlice(&.{ "-o", try std.fmt.allocPrint(allocator, "{s}.o", .{c_file}) });
             try arguments.appendSlice(flags);
+
+            // add host native include dirs and libs
+            {
+                var native_paths = try std.zig.system.NativePaths.detect(allocator, step.owner.host);
+                defer native_paths.deinit();
+
+                // native_paths also has lib_dirs. probably not relevant to clangd and compile_commands.json
+                for (native_paths.include_dirs.items) |include_dir| {
+                    try arguments.append(try common.includeFlag(allocator, include_dir));
+                }
+            }
 
             const entry = CompileCommandEntry{
                 .arguments = try arguments.toOwnedSlice(),
