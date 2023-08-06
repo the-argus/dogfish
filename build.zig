@@ -2,8 +2,8 @@ const std = @import("std");
 const builtin = @import("builtin");
 const app_name = "dogfish";
 
-const release_flags = [_][]const u8{"-DNDEBUG"};
-const debug_flags = [_][]const u8{};
+const release_flags = [_][]const u8{ "-std=c11", "-DNDEBUG" };
+const debug_flags = [_][]const u8{"-std=c11"};
 var chosen_flags: ?[]const []const u8 = null;
 
 const common = @import("./build/common.zig");
@@ -74,9 +74,6 @@ pub fn build(b: *std.Build) !void {
     // this adds intellisense for any headers which are not present in
     // the source of dependencies, but are built and installed
     try flags.append(try includePrefixFlag(b.allocator, b.install_prefix));
-    // for some reason this is needed for clangd to proivde c stdlib
-    // intellisense when you have libc installed systemwide.
-    try flags.append("-std=c11");
 
     exe.?.addCSourceFiles(&c_sources, try flags.toOwnedSlice());
 

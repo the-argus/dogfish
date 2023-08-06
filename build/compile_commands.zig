@@ -40,6 +40,13 @@ fn getCSources(allocator: std.mem.Allocator) ![]*CSourceFiles {
             }
         }
 
+        if (step.is_linking_libc) {
+            try shared_flags.append(try common.linkFlag(allocator, "c"));
+        }
+        if (step.is_linking_libcpp) {
+            try shared_flags.append(try common.linkFlag(allocator, "c++"));
+        }
+
         // do the same for include directories
         for (step.include_dirs.items) |include_dir| {
             switch (include_dir) {
