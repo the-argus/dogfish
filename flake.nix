@@ -1,75 +1,37 @@
 {
   description = "game gaming";
 
-  inputs = {
-    nixpkgs.url = "nixpkgs/nixos-22.11";
-  };
+  inputs.nixpkgs.url = "nixpkgs/nixos-23.05";
 
-  outputs = {
-    self,
-    nixpkgs,
-    ...
-  }: let
+  outputs = {nixpkgs, ...}: let
     system = "x86_64-linux";
-    regularPkgs = import nixpkgs {localSystem = {inherit system;};};
-    clangMuslPkgs = import nixpkgs {
-      localSystem = {
-        inherit system;
-        libc = "musl";
-        config = "x86_64-unknown-linux-musl";
-      };
-      config.replaceStdenv = {pkgs, ...}:
-        pkgs.clangStdenv.override {
-          cc = regularPkgs.buildPackages.clang;
-        };
-      # make dogfish's build system and some deps come from standard packages
-      overlays = [
-        (_: _: {
-          cmake = regularPkgs.cmake;
-          pkg-config = regularPkgs.pkg-config;
-          raylib-games = regularPkgs.emptyDirectory;
-          gfortran = regularPkgs.gfortran;
-          libpulseaudio = regularPkgs.libpulseaudio;
-          mesa = regularPkgs.mesa;
-          gettext = regularPkgs.gettext;
-        })
-        (_: _: {
-          ninja = regularPkgs.ninja.override {python3 = regularPkgs.python3Minimal;};
-        })
-        (_: _: {
-          meson = regularPkgs.meson.override {python3 = regularPkgs.python3Minimal;};
-        })
-        (_: super: {
-          raylib = super.raylib.override {sharedLib = false;};
-        })
-      ];
+    pkgs = import nixpkgs {
+      localSystem = {inherit system;};
+      overlays = import ./build/nix/overlays.nix;
     };
   in {
-    packages.${system} = {
-      dogfishMusl = clangMuslPkgs.callPackage ./default.nix {};
-      dogfish = regularPkgs.callPackage ./default.nix {stdenv = regularPkgs.clangStdenv;};
-      default = self.packages.${system}.dogfish;
-    };
     devShell.${system} =
-      regularPkgs.mkShell.override
+      pkgs.mkShell.override
       {
-        stdenv = regularPkgs.gccStdenv;
+        # use gcc for libc headers in intellisense
+        stdenv = pkgs.gccStdenv;
       }
       {
-        packages = with regularPkgs;
-          [
-            bear
-            clang-tools
-            cmake
-            gnumake
-          ]
-          ++ (with regularPkgs.xorg; [
+        packages =
+          (with pkgs; [
+            gdb
+            valgrind
+            pkg-config
+            libGL
+            libGLU
+            zig
+          ])
+          ++ (with pkgs.xorg; [
             libX11
             libXrandr
             libXinerama
             libXcursor
             libXi
-            libGL
           ]);
       };
   };
