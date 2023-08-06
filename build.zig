@@ -3,7 +3,11 @@ const builtin = @import("builtin");
 const app_name = "dogfish";
 
 const release_flags = [_][]const u8{ "-std=c11", "-DNDEBUG" };
-const debug_flags = [_][]const u8{"-std=c11"};
+const debug_flags = [_][]const u8{
+    // TODO: remove this, noise_3d function relies on UB
+    "-fno-sanitize=undefined",
+    "-std=c11",
+};
 var chosen_flags: ?[]const []const u8 = null;
 
 const common = @import("./build/common.zig");
