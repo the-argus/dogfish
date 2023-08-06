@@ -1,9 +1,7 @@
 {
   description = "game gaming";
 
-  inputs = {
-    nixpkgs.url = "nixpkgs/nixos-23.05";
-  };
+  inputs.nixpkgs.url = "nixpkgs/nixos-23.05";
 
   outputs = {nixpkgs, ...}: let
     system = "x86_64-linux";
@@ -15,7 +13,8 @@
     devShell.${system} =
       pkgs.mkShell.override
       {
-        stdenv = pkgs.clangStdenv;
+        # use gcc for libc headers in intellisense
+        stdenv = pkgs.gccStdenv;
       }
       {
         packages =
