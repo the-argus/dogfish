@@ -10,6 +10,7 @@
 #include "render_pipeline.h"
 #include "skybox.h"
 #include "terrain.h"
+#include "threadutils.h"
 
 #include <raylib.h>
 #include <rlgl.h>
@@ -32,6 +33,8 @@ static void defer_update_once() { update_function = &update; }
 int main(void)
 {
 	// initialize miscellaneous things from other functions and files ----------
+
+	threadutils_init();
 
 	// set the update function to run once without doing anything
 	update_function = &defer_update_once;

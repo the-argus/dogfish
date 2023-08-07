@@ -7,7 +7,7 @@
 #define _DYNARRAY_HEADER
 
 #include "gameobject.h"
-#include "shorthand.h"
+#include "threadutils.h"
 #include <assert.h>
 #include <stdint.h>
 
@@ -73,9 +73,9 @@ _CALL(_DYNARRAY_CREATE_SIGNATURE, DYNARRAY_TYPE)
 {
 	DYNARRAY_TYPE *head = malloc(initial_capacity * sizeof(DYNARRAY_TYPE));
 	if (head == NULL) {
-		printf("Memory allocation for dynamic array of capacity %d failed.\n",
+		printf("Memory allocation for dynamic array of capacity %zu failed.\n",
 			   initial_capacity);
-		exit(EXIT_FAILURE);
+		threadutils_exit(EXIT_FAILURE);
 	}
 
 	return (DYNARRAY_TYPE_NAME){
@@ -91,9 +91,9 @@ _CALL(_DYNARRAY_INSERT_SIGNATURE, DYNARRAY_TYPE)
 			malloc((new_capacity) * sizeof(DYNARRAY_TYPE));
 		if (new_head == NULL) {
 			printf("Memory re-allocation failed for dynamic array of old size "
-				   "%d and new size %d.\n",
+				   "%zu and new size %zu.\n",
 				   dynarray->capacity, new_capacity);
-			exit(EXIT_FAILURE);
+			threadutils_exit(EXIT_FAILURE);
 		}
 
 		// copy over all of the old contents
@@ -113,9 +113,9 @@ _CALL(_DYNARRAY_REMOVE_SIGNATURE, DYNARRAY_TYPE)
 {
 	// assert that index is in range
 	if (index >= dynarray->size) {
-		printf("Index %d out of range of dynamic array of size %d\n", index,
+		printf("Index %zu out of range of dynamic array of size %zu\n", index,
 			   dynarray->size);
-		exit(EXIT_FAILURE);
+		threadutils_exit(EXIT_FAILURE);
 	}
 
 	// perform a memcpy on each induvidual item

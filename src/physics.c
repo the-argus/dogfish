@@ -1,6 +1,7 @@
 #include "constants.h"
 #include "architecture.h"
 #include "physics.h"
+#include "shorthand.h"
 #include <ode/ode.h>
 #include <raylib.h>
 #include <raymath.h>
