@@ -1,8 +1,8 @@
 #include "input.h"
-#include "raylib.h"
-#include "raymath.h"
 #include "architecture.h"
 #include "constants.h"
+#include <raylib.h>
+#include <raymath.h>
 
 /// Makes sure the location of the virtual cursor respects whatever the
 /// cursor's actual position is

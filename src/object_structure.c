@@ -5,7 +5,7 @@ void object_structure_insert(ObjectStructure *structure, GameObject new)
 	dynarray_insert_GameObject(&structure->_dynarray, new);
 }
 
-void object_structure_remove(ObjectStructure *structure, uint index)
+void object_structure_remove(ObjectStructure *structure, size_t index)
 {
 	// call the object's cleanup function if it has one
 	if (structure->_dynarray.head[index].cleanup.has) {
@@ -35,14 +35,14 @@ void object_structure_destroy(ObjectStructure *structure)
 }
 
 void object_structure_map(ObjectStructure *structure,
-						  void (*map_func)(GameObject *self, uint index))
+						  void (*map_func)(GameObject *self, size_t index))
 {
 	dynarray_map_GameObject(&structure->_dynarray, map_func);
 }
 
-int object_structure_remove_by_id(ObjectStructure *structure, ushort id)
+int object_structure_remove_by_id(ObjectStructure *structure, uint16_t id)
 {
-	for (uint i = 0; i < structure->_dynarray.size; i++) {
+	for (size_t i = 0; i < structure->_dynarray.size; i++) {
 		if (structure->_dynarray.head[i].id == id) {
 			// game object with matching id found
 			dynarray_remove_GameObject(&structure->_dynarray, i);
@@ -52,7 +52,7 @@ int object_structure_remove_by_id(ObjectStructure *structure, ushort id)
 	return 0;
 }
 
-int object_structure_size(ObjectStructure *object)
+size_t object_structure_size(ObjectStructure *object)
 {
 	return object->_dynarray.size;
 }
@@ -60,8 +60,8 @@ int object_structure_size(ObjectStructure *object)
 // add everything in the creation queue to the actual array
 void object_structure_flush_create_queue(ObjectStructure *structure)
 {
-	int initial_size = structure->_create_queue.size;
-	for (int i = initial_size - 1; i >= 0; i--) {
+	size_t initial_size = structure->_create_queue.size;
+	for (size_t i = initial_size - 1; i >= 0; --i) {
 		object_structure_insert(structure, structure->_create_queue.head[i]);
 		dynarray_remove_GameObject(&structure->_create_queue, i);
 	}

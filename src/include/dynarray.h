@@ -9,6 +9,7 @@
 #include "gameobject.h"
 #include "shorthand.h"
 #include <assert.h>
+#include <stdint.h>
 
 #ifndef DYNARRAY_TYPE
 #define DYNARRAY_TYPE GameObject
@@ -32,12 +33,12 @@
 typedef struct DYNARRAY_TYPE_NAME
 {
 	DYNARRAY_TYPE *head;
-	uint size;
-	uint capacity;
+	size_t size;
+	size_t capacity;
 } DYNARRAY_TYPE_NAME;
 
 #define _DYNARRAY_CREATE_SIGNATURE(type) \
-	DYNARRAY_TYPE_NAME dynarray_create_##type(int initial_capacity)
+	DYNARRAY_TYPE_NAME dynarray_create_##type(size_t initial_capacity)
 
 #define _DYNARRAY_DESTROY_SIGNATURE(type) \
 	void dynarray_destroy_##type(DYNARRAY_TYPE_NAME *dynarray)
@@ -46,21 +47,21 @@ typedef struct DYNARRAY_TYPE_NAME
 	void dynarray_insert_##type(DYNARRAY_TYPE_NAME *dynarray, type new)
 
 #define _DYNARRAY_REMOVE_SIGNATURE(type) \
-	void dynarray_remove_##type(DYNARRAY_TYPE_NAME *dynarray, uint index)
+	void dynarray_remove_##type(DYNARRAY_TYPE_NAME *dynarray, size_t index)
 
 #define _DYNARRAY_MAP_SIGNATURE(type) \
 	void dynarray_map_##type(         \
 		DYNARRAY_TYPE_NAME *dynarray, \
-		void (*map_func)(DYNARRAY_TYPE * item, uint index))
+		void (*map_func)(DYNARRAY_TYPE * item, size_t index))
 
-#define _DYNARRAY_FUNCTION_DECLARATIONS(type) \
-	_DYNARRAY_CREATE_SIGNATURE(type);         \
-	_DYNARRAY_DESTROY_SIGNATURE(type);        \
-	_DYNARRAY_INSERT_SIGNATURE(type);         \
-	_DYNARRAY_REMOVE_SIGNATURE(type);         \
+#define DYNARRAY_FUNCTION_DECLARATIONS(type) \
+	_DYNARRAY_CREATE_SIGNATURE(type);        \
+	_DYNARRAY_DESTROY_SIGNATURE(type);       \
+	_DYNARRAY_INSERT_SIGNATURE(type);        \
+	_DYNARRAY_REMOVE_SIGNATURE(type);        \
 	_DYNARRAY_MAP_SIGNATURE(type);
 
-_DYNARRAY_FUNCTION_DECLARATIONS(DYNARRAY_TYPE)
+DYNARRAY_FUNCTION_DECLARATIONS(DYNARRAY_TYPE)
 
 ///
 /// This provides the implementation of the functions in this header.
@@ -85,7 +86,7 @@ _CALL(_DYNARRAY_INSERT_SIGNATURE, DYNARRAY_TYPE)
 {
 	if (dynarray->size >= dynarray->capacity) {
 		// we dont have enough space, realloc
-		uint new_capacity = dynarray->capacity * 2;
+		size_t new_capacity = dynarray->capacity * 2;
 		DYNARRAY_TYPE *new_head =
 			malloc((new_capacity) * sizeof(DYNARRAY_TYPE));
 		if (new_head == NULL) {
@@ -119,7 +120,7 @@ _CALL(_DYNARRAY_REMOVE_SIGNATURE, DYNARRAY_TYPE)
 
 	// perform a memcpy on each induvidual item
 	// to move everything after index back one
-	for (uint i = index; i < dynarray->size; i++) {
+	for (size_t i = index; i < dynarray->size; i++) {
 		// move current index to index-1
 		memcpy(&dynarray->head[index], &dynarray->head[index + 1],
 			   sizeof(DYNARRAY_TYPE));
@@ -131,7 +132,7 @@ _CALL(_DYNARRAY_REMOVE_SIGNATURE, DYNARRAY_TYPE)
 
 _CALL(_DYNARRAY_MAP_SIGNATURE, DYNARRAY_TYPE)
 {
-	for (uint i = 0; i < dynarray->size; i++) {
+	for (size_t i = 0; i < dynarray->size; i++) {
 		map_func(&(dynarray->head[i]), i);
 	}
 }

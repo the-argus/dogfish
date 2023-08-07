@@ -1,9 +1,8 @@
 #include "fps_camera.h"
-#include "constants.h"
-#include "raylib.h"
-#include "raymath.h"
 #include "architecture.h"
 #include <math.h>
+#include <raylib.h>
+#include <raymath.h>
 #include <stdio.h>
 
 // Camera mouse movement sensitivity
@@ -37,10 +36,11 @@ void fps_camera_update(Camera *camera, CameraData *camera_data,
 		cursor.delta.y * CAMERA_MOUSE_MOVE_SENSITIVITY * GetFrameTime();
 
 	// Angle clamp
-	if (camera_data->angle.y > CAMERA_FIRST_PERSON_MIN_CLAMP * DEG2RAD)
+	if (camera_data->angle.y > CAMERA_FIRST_PERSON_MIN_CLAMP * DEG2RAD) {
 		camera_data->angle.y = CAMERA_FIRST_PERSON_MIN_CLAMP * DEG2RAD;
-	else if (camera_data->angle.y < CAMERA_FIRST_PERSON_MAX_CLAMP * DEG2RAD)
+	} else if (camera_data->angle.y < CAMERA_FIRST_PERSON_MAX_CLAMP * DEG2RAD) {
 		camera_data->angle.y = CAMERA_FIRST_PERSON_MAX_CLAMP * DEG2RAD;
+	}
 
 	// clamp X
 	camera_data->angle.x -= ((int)(camera_data->angle.x / (2 * PI))) * (2 * PI);

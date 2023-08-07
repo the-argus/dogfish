@@ -32,7 +32,7 @@ typedef enum
 #define ON_GROUND_THRESHHOLD 0.7f
 
 // physics constants
-#define GRAVITY 0.5
+#define GRAVITY 0.5f
 
 #define BULLET_MASK 0xFF
 #define BULLET_BIT 0x01

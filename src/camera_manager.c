@@ -1,17 +1,15 @@
-#include "raylib.h"
 #include "architecture.h"
 #include "constants.h"
-#include "fps_camera.h"
+#include <math.h>
+#include <raylib.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 
 // I have to just remember to free the camera that gets malloced here :(
 // player_index is either 0 (p1) or 1 (p2)
 void gamestate_new_fps_camera(struct Gamestate *gamestate, unsigned int player_index)
 {
-	Camera3D *camera;
-	camera = malloc(sizeof(Camera3D));
+	Camera3D *camera = malloc(sizeof(Camera3D));
 	if (camera == NULL) {
 		printf("Malloc for Camera3D failed\n");
 		return;

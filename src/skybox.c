@@ -1,19 +1,20 @@
-#include "raylib.h"
-#include "rlgl.h"
-#include "raymath.h"
-
 #include "constants.h"
-#include "shorthand.h"
+#include "include/shorthand.h"
+#include <raylib.h>
+#include <raymath.h>
+#include <rlgl.h>
+#include <stdint.h>
 
 static Model skybox;
 
 typedef struct SkyboxInfo
 {
 	const char path[100];
-	uchar hdr;
-	uchar use_gamma; // if hdr is false, this shouldnt be true. wont do anything
-	uchar flip_vertically;
-	uchar gen_texture_cubemap;
+	uint8_t hdr;
+	uint8_t
+		use_gamma; // if hdr is false, this shouldnt be true. wont do anything
+	uint8_t flip_vertically;
+	uint8_t gen_texture_cubemap;
 } SkyboxInfo;
 
 // TODO: remove whatever skybox we end up not using
@@ -22,8 +23,8 @@ static const SkyboxInfo industrial_hdr = {
 	.path = "assets/skybox/industrial/industrial_sunset_puresky_4k.hdr",
 	.hdr = 1,
 	.flip_vertically = 1,
-    // TODO: use gamma once we have postprocessing to apply bloom to the
-    // emissive sky.
+	// TODO: use gamma once we have postprocessing to apply bloom to the
+	// emissive sky.
 	.use_gamma = 0,
 	.gen_texture_cubemap = 1};
 
@@ -95,10 +96,12 @@ void load_skybox()
 				   GetShaderLocation(shdrCubemap, "equirectangularMap"),
 				   (int[1]){0}, SHADER_UNIFORM_INT);
 
+#define SKYBOX_SIZE 1024
+
 	if (skybox_info->gen_texture_cubemap) {
 		Texture2D panorama = LoadTexture(skybox_info->path);
 		skybox.materials[0].maps[MATERIAL_MAP_CUBEMAP].texture =
-			GenTextureCubemap(shdrCubemap, panorama, 1024,
+			GenTextureCubemap(shdrCubemap, panorama, SKYBOX_SIZE,
 							  PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
 		UnloadTexture(panorama);
 	} else {
@@ -108,6 +111,7 @@ void load_skybox()
 
 		UnloadImage(img);
 	}
+#undef SKYBOX_SIZE
 }
 
 // Generate cubemap texture from HDR texture
@@ -131,9 +135,10 @@ static TextureCubemap GenTextureCubemap(Shader shader, Texture2D panorama,
 						RL_ATTACHMENT_CUBEMAP_POSITIVE_X, 0);
 
 	// Check if framebuffer is complete with attachments (valid)
-	if (rlFramebufferComplete(fbo))
+	if (rlFramebufferComplete(fbo)) {
 		TraceLog(LOG_INFO,
 				 "FBO: [ID %i] Framebuffer object created successfully", fbo);
+	}
 	//------------------------------------------------------------------------------------------
 
 	// STEP 2: Draw to framebuffer
@@ -149,7 +154,7 @@ static TextureCubemap GenTextureCubemap(Shader shader, Texture2D panorama,
 					   matFboProjection);
 
 	// Define view matrix for every side of the cubemap
-	Matrix fboViews[6] = {
+	Matrix fboViews[] = {
 		MatrixLookAt((Vector3){0.0f, 0.0f, 0.0f}, (Vector3){1.0f, 0.0f, 0.0f},
 					 (Vector3){0.0f, -1.0f, 0.0f}),
 		MatrixLookAt((Vector3){0.0f, 0.0f, 0.0f}, (Vector3){-1.0f, 0.0f, 0.0f},
@@ -161,7 +166,8 @@ static TextureCubemap GenTextureCubemap(Shader shader, Texture2D panorama,
 		MatrixLookAt((Vector3){0.0f, 0.0f, 0.0f}, (Vector3){0.0f, 0.0f, 1.0f},
 					 (Vector3){0.0f, -1.0f, 0.0f}),
 		MatrixLookAt((Vector3){0.0f, 0.0f, 0.0f}, (Vector3){0.0f, 0.0f, -1.0f},
-					 (Vector3){0.0f, -1.0f, 0.0f})};
+					 (Vector3){0.0f, -1.0f, 0.0f}),
+	};
 
 	rlViewport(0, 0, size, size); // Set viewport to current fbo dimensions
 
@@ -169,7 +175,7 @@ static TextureCubemap GenTextureCubemap(Shader shader, Texture2D panorama,
 	rlActiveTextureSlot(0);
 	rlEnableTexture(panorama.id);
 
-	for (int i = 0; i < 6; i++) {
+	for (int i = 0; i < sizeof(fboViews) / sizeof(fboViews[0]); i++) {
 		// Set the view matrix for the current cube face
 		rlSetUniformMatrix(shader.locs[SHADER_LOC_MATRIX_VIEW], fboViews[i]);
 

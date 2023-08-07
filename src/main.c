@@ -1,24 +1,20 @@
+#include "bullet.h"
+#include "airplane.h"
+#include "architecture.h"
+#include "camera_manager.h"
+#include "constants.h"
+#include "gameobject.h"
+#include "input.h"
+#include "object_structure.h"
+#include "physics.h"
+#include "render_pipeline.h"
+#include "skybox.h"
+#include "terrain.h"
+
+#include <raylib.h>
+#include <rlgl.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#include "bullet.h"
-#include "raylib.h"
-#include "raymath.h"
-#include "render_pipeline.h"
-#include "rlgl.h"
-
-#include "constants.h"
-#include "architecture.h"
-#include "input.h"
-#include "camera_manager.h"
-#include "fps_camera.h"
-#include "physics.h"
-#include "skybox.h"
-#include "airplane.h"
-#include "gameobject.h"
-#include "object_structure.h"
-#include "terrain.h"
-#include "debug.h"
 
 // the big important things
 static Gamestate gamestate;		// stores miscellaneous variables
@@ -153,7 +149,7 @@ void main_draw()
 static void window_settings()
 {
 	SetTargetFPS(60);
-	SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
+	SetConfigFlags((uint32_t)FLAG_WINDOW_RESIZABLE | (uint32_t)FLAG_VSYNC_HINT);
 	InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "dogfish");
 	SetWindowMinSize(WINDOW_WIDTH, WINDOW_HEIGHT);
 }

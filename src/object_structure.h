@@ -10,7 +10,6 @@
 /// Iteration does not necessarily occur in insertion order.
 ///
 
-#include "shorthand.h"
 #include "gameobject.h"
 
 // define game object dynamic array
@@ -28,10 +27,10 @@ void object_structure_flush_create_queue(ObjectStructure *structure);
 void object_structure_queue_for_creation(ObjectStructure *structure,
 										 GameObject object);
 void object_structure_insert(ObjectStructure *structure, GameObject new);
-void object_structure_remove(ObjectStructure *structure, uint index);
-int object_structure_remove_by_id(ObjectStructure *structure, ushort id);
+void object_structure_remove(ObjectStructure *structure, size_t index);
+int object_structure_remove_by_id(ObjectStructure *structure, uint16_t id);
 ObjectStructure object_structure_create();
 void object_structure_map(ObjectStructure *structure,
-						  void (*map_func)(GameObject *self, uint index));
-int object_structure_size(ObjectStructure *object);
+						  void (*map_func)(GameObject *self, size_t index));
+size_t object_structure_size(ObjectStructure *object);
 void object_structure_destroy(ObjectStructure *structure);

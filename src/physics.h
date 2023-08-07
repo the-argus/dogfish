@@ -1,7 +1,7 @@
 #pragma once
-#include "ode/ode.h"
 #include "architecture.h"
-#include "raylib.h"
+#include <ode/ode.h>
+#include <raylib.h>
 
 Vector3 to_raylib(const dVector3 v3);
 

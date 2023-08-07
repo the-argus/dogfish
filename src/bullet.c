@@ -1,9 +1,8 @@
 #include "bullet.h"
-#include "physics.h"
-#include "raylib.h"
 #include "constants.h"
+#include "physics.h"
 #include "shorthand.h"
-#include "ode/ode.h"
+#include <raylib.h>
 
 #define BULLET_WIDTH 0.1f
 #define BULLET_LENGTH 0.5f
@@ -27,7 +26,7 @@ GameObject create_bullet(Gamestate gamestate)
 	initial_bullet.physics.value = create_physics_component();
 	initial_bullet.physics.value.mask = BULLET_MASK;
 	initial_bullet.physics.value.bit = BULLET_BIT;
-	// TODO set up later
+	// TODO: set up later
 	dBodyID body = dBodyCreate(gamestate.world);
 	initial_bullet.physics.value.body.value = body;
 

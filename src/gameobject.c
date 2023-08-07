@@ -1,4 +1,4 @@
-#include "architecture.h"
+#include "gameobject.h"
 
 static int unused_id = 1;
 
@@ -19,7 +19,8 @@ GameObject create_game_object()
 		.id = unused_id - 1,
 		.physics = {.has = 0, .value = create_physics_component()},
 		.draw = {.has = 0, .value = NULL},
-        .cleanup = {.has = 0, .value = NULL},
+		.cleanup = {.has = 0, .value = NULL},
 		.update = {.has = 0, .value = NULL},
-		.disabled = 0};
+		.disabled = 0,
+	};
 }

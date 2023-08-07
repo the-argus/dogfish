@@ -1,12 +1,11 @@
 #include "airplane.h"
+#include "bullet.h"
+#include "gameobject.h"
 #include "include/constants.h"
+#include "object_structure.h"
 #include "physics.h"
 #include "shorthand.h"
-#include "gameobject.h"
-#include "raymath.h"
-#include "debug.h"
-#include "bullet.h"
-#include "object_structure.h"
+#include <raymath.h>
 
 #define AIRPLANE_DEBUG_CUBE_WIDTH 0.5
 #define AIRPLANE_DEBUG_CUBE_LENGTH 2
@@ -34,7 +33,7 @@ static void airplane_cleanup_p1(struct GameObject *self);
 static void airplane_cleanup_p2(struct GameObject *self);
 static int sign(float value);
 
-GameObject create_airplane(Gamestate gamestate, uint player)
+GameObject create_airplane(Gamestate gamestate, uint32_t player)
 {
 	GameObject plane = create_game_object();
 	// Set up the values for the opts

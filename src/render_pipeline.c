@@ -1,8 +1,7 @@
-#include "raylib.h"
-#include "rlgl.h"
-
 #include "render_pipeline.h"
 #include "constants.h"
+#include <raylib.h>
+#include <rlgl.h>
 
 // useful for screen scaling
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
@@ -19,7 +18,11 @@ static Shader gather_shader;
 
 // make sure to take absolute values when using height...
 static const Rectangle splitScreenRect = {
-	.x = 0, .y = 0, .width = GAME_WIDTH, .height = (int)-(GAME_HEIGHT / 2)};
+	.x = 0,
+	.y = 0,
+	.width = GAME_WIDTH,
+	.height = -(GAME_HEIGHT / 2.0f),
+};
 
 static void init_rendertextures();
 static void window_draw(float screen_scale);
@@ -57,7 +60,11 @@ void render(Gamestate gamestate, void (*game_draw)())
 	ClearBackground(BLACK);
 	DrawTextureRec(rt1.texture, splitScreenRect, (Vector2){0, 0}, WHITE);
 	DrawTextureRec(rt2.texture, splitScreenRect,
-				   (Vector2){0, abs((int)splitScreenRect.height)}, WHITE);
+				   (Vector2){
+					   0,
+					   fabsf(splitScreenRect.height),
+				   },
+				   WHITE);
 	EndTextureMode();
 
 	// draw the game to the window at the correct size
@@ -110,8 +117,8 @@ static void init_rendertextures()
 {
 	// variable width screen
 	main_target = LoadRenderTexture(GAME_WIDTH, GAME_HEIGHT);
-	uint h = abs((int)splitScreenRect.height);
-	uint w = abs((int)splitScreenRect.width);
+	int h = abs((int)splitScreenRect.height);
+	int w = abs((int)splitScreenRect.width);
 	rt1 = LoadRenderTexture(w, h);
 	rt2 = LoadRenderTexture(w, h);
 	normals = (Texture){0};
@@ -143,12 +150,19 @@ static void window_draw(float screen_scale)
 	// draw the render texture scaled
 	DrawTexturePro(
 		main_target.texture,
-		(Rectangle){0.0f, 0.0f, (float)main_target.texture.width,
-					(float)-main_target.texture.height},
 		(Rectangle){
-			(GetScreenWidth() - ((float)GAME_WIDTH * screen_scale)) * 0.5f,
-			(GetScreenHeight() - ((float)GAME_HEIGHT * screen_scale)) * 0.5f,
+			0.0f,
+			0.0f,
+			(float)main_target.texture.width,
+			(float)-main_target.texture.height,
+		},
+		(Rectangle){
+			((float)GetScreenWidth() - ((float)GAME_WIDTH * screen_scale)) *
+				0.5f,
+			((float)GetScreenHeight() - ((float)GAME_HEIGHT * screen_scale)) *
+				0.5f,
 			(float)GAME_WIDTH * screen_scale,
-			(float)GAME_HEIGHT * screen_scale},
+			(float)GAME_HEIGHT * screen_scale,
+		},
 		(Vector2){0, 0}, 0.0f, WHITE);
 }

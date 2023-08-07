@@ -1,7 +1,7 @@
-#include "raylib.h"
-#include "raymath.h"
-
 #include "terrain.h"
+#include "threadutils.h"
+#include <raylib.h>
+#include <raymath.h>
 
 #define _IMPLEMENT_DYNARRAY
 #undef DYNARRAY_TYPE
@@ -21,7 +21,7 @@ static Material terrain_material;
 static Shader terrain_shader;
 static Matrix *transforms;
 static dGeomID *geoms;
-static uint transforms_size;
+static size_t transforms_size;
 
 static Vector3 offset = {20, 0, 20};
 
@@ -39,30 +39,30 @@ void load_terrain(dSpaceID space)
 			for (int z = offset.z; z < size + offset.y; z++) {
 				float this_perlin =
 					perlin_3d(x, y, z, NOISE_SETTINGS) + NOISE_OFFSET;
-				uchar this = this_perlin > threshhold;
-				uchar adj_1 =
+				uint8_t this = this_perlin > threshhold;
+				uint8_t adj_1 =
 					perlin_3d(x + 1, y, z, NOISE_SETTINGS) + NOISE_OFFSET >
 					threshhold;
-				uchar adj_2 =
+				uint8_t adj_2 =
 					perlin_3d(x - 1, y, z, NOISE_SETTINGS) + NOISE_OFFSET >
 					threshhold;
-				uchar adj_3 =
+				uint8_t adj_3 =
 					perlin_3d(x, y + 1, z, NOISE_SETTINGS) + NOISE_OFFSET >
 					threshhold;
-				uchar adj_4 =
+				uint8_t adj_4 =
 					perlin_3d(x, y - 1, z, NOISE_SETTINGS) + NOISE_OFFSET >
 					threshhold;
-				uchar adj_5 =
+				uint8_t adj_5 =
 					perlin_3d(x, y, z + 1, NOISE_SETTINGS) + NOISE_OFFSET >
 					threshhold;
-				uchar adj_6 =
+				uint8_t adj_6 =
 					perlin_3d(x, y, z - 1, NOISE_SETTINGS) + NOISE_OFFSET >
 					threshhold;
-				uchar surrounded =
+				uint8_t surrounded =
 					adj_1 && adj_2 && adj_3 && adj_4 && adj_5 && adj_6;
 
 				float groundh = perlin_2d(x, z, 5, 1, 1) + 12;
-				uchar ground = y < groundh;
+				uint8_t ground = y < groundh;
 				// printf("%f\n", this_perlin);
 
 				if (this && !surrounded && ground) {
@@ -83,11 +83,11 @@ void load_terrain(dSpaceID space)
 	geoms = malloc(sizeof(dGeomID) * terrain_nodes.size);
 	if (geoms == NULL) {
 		printf("Memory allocation failure for terrain physics geometries\n");
-		exit(EXIT_FAILURE);
+		threadutils_exit(EXIT_FAILURE);
 	}
 	assert(space != NULL);
 
-	for (uint i = 0; i < terrain_nodes.size; i++) {
+	for (size_t i = 0; i < terrain_nodes.size; i++) {
 		// create physics geometries
 		dGeomID geom = dCreateBox(space, scale, scale, scale);
 		dGeomSetPosition(geom, terrain_nodes.head[i].x * scale,
@@ -118,7 +118,7 @@ void load_terrain(dSpaceID space)
 
 void draw_terrain()
 {
-	DrawMeshInstanced(cube, terrain_material, transforms, transforms_size);
+	DrawMeshInstanced(cube, terrain_material, transforms, (int)transforms_size);
 }
 
 void cleanup_terrain()
@@ -135,9 +135,7 @@ void cleanup_terrain()
 ///
 static float noise_3d(float x, float y, float z)
 {
-	int n;
-
-	n = x + (y * 57);
+	int n = (int)(x + (y * 57));
 	float nf = *((float *)&n);
 	nf *= 373 * z;
 	n = *(int *)&nf;
@@ -148,9 +146,7 @@ static float noise_3d(float x, float y, float z)
 
 static float noise_2d(float x, float y)
 {
-	int n;
-
-	n = x + (y * 57);
+	int n = (int)(x + (y * 57));
 	n = (n << 13) ^ n;
 	return (1.0 - ((n * ((n * n * 15731) + 789221) + 1376312589) & 0x7fffffff) /
 					  1073741824.0);
@@ -183,9 +179,8 @@ static float perlin_3d(float x, float y, float z, float gain, int octaves,
 	float lacunarity = 2.0; // basically frequency multiplier
 
 	for (i = 0; i < octaves; i++) {
-		total += noise_3d((float)x * frequency, (float)y * frequency,
-						  (float)z * frequency) *
-				 amplitude;
+		total +=
+			noise_3d(x * frequency, y * frequency, z * frequency) * amplitude;
 		frequency *= lacunarity;
 		amplitude *= gain;
 	}
@@ -202,8 +197,7 @@ static float perlin_2d(float x, float y, float gain, int octaves, int hgrid)
 	float lacunarity = 2.0; // basically frequency multiplier
 
 	for (i = 0; i < octaves; i++) {
-		total +=
-			noise_2d((float)x * frequency, (float)y * frequency) * amplitude;
+		total += noise_2d(x * frequency, y * frequency) * amplitude;
 		frequency *= lacunarity;
 		amplitude *= gain;
 	}

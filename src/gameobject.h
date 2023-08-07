@@ -1,19 +1,21 @@
 #pragma once
-#include "ode/ode.h"
-#include "shorthand.h"
+#include <ode/ode.h>
+#include <stdint.h>
 
 struct GameObject;
 struct Gamestate;
 
-#define OPTIONAL(type) \
-typedef struct Opt_##type { \
-    unsigned char has; \
-    type value; \
-} Opt_##type;
+#define OPTIONAL(type)        \
+	typedef struct Opt_##type \
+	{                         \
+		unsigned char has;    \
+		type value;           \
+	} Opt_##type;
 
-typedef void (*UpdateFunction)(struct GameObject *self, struct Gamestate *gamestate,
-							   float delta_time);
-typedef void (*DrawFunction)(struct GameObject *self, struct Gamestate *gamestate);
+typedef void (*UpdateFunction)(struct GameObject *self,
+							   struct Gamestate *gamestate, float delta_time);
+typedef void (*DrawFunction)(struct GameObject *self,
+							 struct Gamestate *gamestate);
 typedef void (*CollisionHandler)(dGeomID self, dGeomID other);
 typedef void (*CleanupFunction)(struct GameObject *self);
 
@@ -28,8 +30,8 @@ OPTIONAL(CollisionHandler)
 // a physics component always has a geom but not necessarily a body
 typedef struct PhysicsComponent
 {
-	ushort mask; // 8 bits
-	ushort bit;	 // 8 bits
+	uint16_t mask; // 8 bits
+	uint16_t bit;  // 8 bits
 	PhysicsGeometry geom;
 	Opt_CollisionHandler collision_handler;
 	Opt_PhysicsBody body; // this body's UserData should be a pointer to the
@@ -54,9 +56,9 @@ typedef struct GameObject
 	Opt_DrawFunction draw;
 	Opt_UpdateFunction update;
 	Opt_CleanupFunction cleanup;
-	ushort id;
-	uchar disabled : 1;
-	uchar queued_for_cleanup : 1;
+	uint16_t id;
+	uint8_t disabled : 1;
+	uint8_t queued_for_cleanup : 1;
 } GameObject;
 
 ///

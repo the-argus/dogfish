@@ -1,12 +1,9 @@
-#include "input.h"
-#include "ode/ode.h"
 #include "constants.h"
 #include "architecture.h"
 #include "physics.h"
-#include "raylib.h"
-#include "raymath.h"
-
-#include "debug.h"
+#include <ode/ode.h>
+#include <raylib.h>
+#include <raymath.h>
 
 static dWorldID world;
 static dSpaceID space;
@@ -19,7 +16,7 @@ Vector3 to_raylib(const dVector3 v3) { return (Vector3){v3[0], v3[1], v3[2]}; }
 static void init_contact(dContact *contact)
 {
 	contact->surface.mode = 0;
-	contact->surface.mu = 0.5;
+	contact->surface.mu = 0.5f;
 	contact->surface.mu2 = 0;
 }
 
@@ -45,14 +42,16 @@ static void nearCallback(void *data, dGeomID o1, dGeomID o2)
 	// only collide things with the ground
 	int g1 = (o1 == ground);
 	int g2 = (o2 == ground);
-	if (!(g1 ^ g2))
+	if (!(g1 || g2)) {
 		return;
+	}
 
 	dBodyID b1 = dGeomGetBody(o1);
 	dBodyID b2 = dGeomGetBody(o2);
 
-	if (b1 && b2 && dAreConnected(b1, b2))
+	if (b1 && b2 && dAreConnected(b1, b2)) {
 		return;
+	}
 
 	dContact contact;
 	init_contact(&contact);
