@@ -3,7 +3,8 @@
 #include <raylib.h>
 
 // TODO: add struct __aligned__ attrs for better access speed, worse memory
-// usage.
+// usage. maybe more cache misses? do profiling. see clang-tidy
+// altera-struct-pack-align
 
 typedef struct
 {
