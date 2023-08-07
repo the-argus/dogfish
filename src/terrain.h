@@ -1,6 +1,4 @@
 #pragma once
-#include <ode/ode.h>
-
-void load_terrain(dSpaceID space);
-void draw_terrain();
-void cleanup_terrain();
+void terrain_load();
+void terrain_draw();
+void terrain_cleanup();

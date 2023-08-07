@@ -3,13 +3,8 @@
 #include <stdlib.h>
 
 static pthread_mutex_t exit_mutex;
-static pthread_mutexattr_t exit_mutex_attr;
 
-void threadutils_init()
-{
-	pthread_mutexattr_init(&exit_mutex_attr);
-	pthread_mutex_init(&exit_mutex, &exit_mutex_attr);
-}
+void threadutils_init() { pthread_mutex_init(&exit_mutex, NULL); }
 
 void threadutils_exit(int status)
 {

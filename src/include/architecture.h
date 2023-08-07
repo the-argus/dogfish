@@ -8,8 +8,9 @@
 
 typedef struct
 {
+	Camera3D camera;
 	Vector2 angle; // Camera angle in plane XZ
-} CameraData;
+} FullCamera;
 
 typedef struct Cursorstate
 {
@@ -46,18 +47,3 @@ typedef struct Inputstate
 	ControllerState controller;
 	ControllerState controller_2;
 } Inputstate;
-
-typedef struct Gamestate
-{
-	Inputstate input;
-	Camera *p1_camera;
-	CameraData p1_camera_data;
-	Camera *p2_camera;
-	CameraData p2_camera_data;
-	dWorldID world;
-	dSpaceID space;
-	float screen_scale;
-	Model *p1_model;
-	Model *p2_model;
-	ObjectStructure *objects;
-} Gamestate;

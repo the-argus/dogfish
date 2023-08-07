@@ -1,13 +1,13 @@
 #include "bullet.h"
 #include "airplane.h"
 #include "architecture.h"
-#include "camera_manager.h"
 #include "constants.h"
 #include "gameobject.h"
 #include "input.h"
 #include "object_structure.h"
 #include "physics.h"
 #include "render_pipeline.h"
+#include "gamestate.h"
 #include "skybox.h"
 #include "terrain.h"
 #include "threadutils.h"
@@ -16,10 +16,6 @@
 #include <rlgl.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-// the big important things
-static Gamestate gamestate;		// stores miscellaneous variables
-static ObjectStructure objects; // contains all the game objects
 
 // use a function pointer for the update loop so that we can change it
 static void (*update_function)();
@@ -36,37 +32,26 @@ int main(void)
 
 	threadutils_init();
 
-	// set the update function to run once without doing anything
-	update_function = &defer_update_once;
-	// set windowing backend vars like title and size
 	window_settings();
 
-	init_render_pipeline();
+	gamestate_init();
 
-	// initialize physics system
-	init_physics(&gamestate);
+	// set the update function to run once without doing anything
+	update_function = &defer_update_once;
+	// set window vars like title and size
+
+	render_pipeline_init();
+
+	physics_init();
 
 	// load skybox textures
-	load_skybox();
+	skybox_load();
 
-	load_terrain(gamestate.space);
-	// allocate memory for the object structure which will contain all
-	// gameobjects
-	objects = object_structure_create();
-	gamestate.objects = &objects;
-
-	// inialize gamestate struct -----------------------------------------------
-	gamestate.input.cursor.virtual_position = (Vector2){0};
-	gamestate.input.cursor_2.virtual_position = (Vector2){0};
-	// these initialize current_camera, which involves a malloc
-	// player 1
-	gamestate_new_fps_camera(&gamestate, 0);
-	// player 2
-	gamestate_new_fps_camera(&gamestate, 1);
+	terrain_load();
 
 	// initialization complete -------------------------------------------------
 
-	printf("dogfish...\n");
+	TraceLog(LOG_INFO, "dogfish...");
 
 	// create game objects
 	GameObject p1_plane = create_airplane(gamestate, 0);
@@ -87,24 +72,22 @@ int main(void)
 			window_open = false;
 		}
 
-		gather_screen_info(&gamestate);
+		render_pipeline_gather_screen_info();
 		// set the variables in gamestate to reflect input state
-		gather_input(&gamestate);
+		input_gather();
 
 		// update in-game elements before drawing
 		update_function();
 
 		// render both cameras to the window
-		render(gamestate, main_draw);
+		render(main_draw);
 	}
 
 	// cleanup
 	object_structure_destroy(&objects);
-	free(gamestate.p1_camera);
-	free(gamestate.p2_camera);
-	cleanup_terrain();
-	cleanup_render_pipeline();
-	close_physics();
+	terrain_cleanup();
+	render_pipeline_cleanup();
+	physics_close();
 	CloseWindow();
 
 	return 0;
@@ -118,7 +101,7 @@ void update()
 	// fps_camera_update(gamestate.p2_camera, &(gamestate.p2_camera_data),
 	// 				  gamestate.input.cursor_2);
 
-	update_physics(GetFrameTime());
+	physics_update(GetFrameTime());
 
 	for (int i = 0; i < object_structure_size(&objects); i++) {
 		if (objects._dynarray.head[i].update.has) {
@@ -133,9 +116,9 @@ void update()
 /// Draw the in-game objects to a consistently sized rendertexture.
 void main_draw()
 {
-	draw_skybox();
+	skybox_draw();
 
-	draw_terrain();
+	terrain_draw();
 
 	for (int i = 0; i < object_structure_size(&objects); i++) {
 		if (objects._dynarray.head[i].draw.has) {
@@ -155,4 +138,7 @@ static void window_settings()
 	SetConfigFlags((uint32_t)FLAG_WINDOW_RESIZABLE | (uint32_t)FLAG_VSYNC_HINT);
 	InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "dogfish");
 	SetWindowMinSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+
+	// Lock cursor for first person and third person cameras
+	DisableCursor();
 }

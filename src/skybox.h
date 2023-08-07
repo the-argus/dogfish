@@ -1,4 +1,4 @@
 #pragma once
 
-void draw_skybox();
-void load_skybox();
+void skybox_draw();
+void skybox_load();

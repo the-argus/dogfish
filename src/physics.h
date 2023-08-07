@@ -1,11 +1,4 @@
 #pragma once
-#include "architecture.h"
-#include <ode/ode.h>
-#include <raylib.h>
-
-Vector3 to_raylib(const dVector3 v3);
-
-void init_physics(Gamestate *gamestate);
-void update_physics(float delta_time);
-void close_physics();
-int on_ground(dBodyID body);
+void physics_init();
+void physics_update(float delta_time);
+void physics_close();

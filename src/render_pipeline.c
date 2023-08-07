@@ -1,4 +1,5 @@
 #include "render_pipeline.h"
+#include "gamestate.h"
 #include "constants.h"
 #include <raylib.h>
 #include <rlgl.h>
@@ -27,13 +28,14 @@ static const Rectangle splitScreenRect = {
 static void init_rendertextures();
 static void window_draw(float screen_scale);
 
-void render(Gamestate gamestate, void (*game_draw)())
+void render(void (*game_draw)())
 {
 	// Render Camera 1
 	BeginTextureMode(rt1);
 	// clang-format off
 		ClearBackground(RAYWHITE);
-        BeginMode3D(*gamestate.p1_camera);
+        const FullCamera *player_one = gamestate_get_p1_camera();
+        BeginMode3D(player_one->camera);
             // draw in-game objects
 	        BeginShaderMode(gather_shader);
             game_draw();
@@ -47,7 +49,8 @@ void render(Gamestate gamestate, void (*game_draw)())
 	BeginTextureMode(rt2);
 	// clang-format off
 		ClearBackground(RAYWHITE);
-        BeginMode3D(*gamestate.p2_camera);
+        const FullCamera *player_two = gamestate_get_p2_camera();
+        BeginMode3D(player_two->camera);
             // draw in-game objects
             game_draw();
 
@@ -69,11 +72,11 @@ void render(Gamestate gamestate, void (*game_draw)())
 
 	// draw the game to the window at the correct size
 	BeginDrawing();
-	window_draw(gamestate.screen_scale);
+	window_draw(gamestate_get_screen_scale());
 	EndDrawing();
 }
 
-void init_render_pipeline()
+void render_pipeline_init()
 {
 	init_rendertextures();
 	shader = LoadShader(0, "assets/postprocessing/edges.fs");
@@ -90,7 +93,7 @@ void init_render_pipeline()
 	SetShaderValue(shader, resolution, resolution_vec2, SHADER_UNIFORM_VEC2);
 }
 
-void cleanup_render_pipeline()
+void render_pipeline_cleanup()
 {
 	UnloadShader(shader);
 	UnloadRenderTexture(rt1);
@@ -103,12 +106,12 @@ void cleanup_render_pipeline()
 ///
 /// Populate a gamestate with information about the screen.
 ///
-void gather_screen_info(Gamestate *gamestate)
+void render_pipeline_gather_screen_info()
 {
 	// fraction of window resize that will occur this frame, basically the
 	// difference between current width/height ratio to target width/height
-	gamestate->screen_scale = MIN((float)GetScreenWidth() / GAME_WIDTH,
-								  (float)GetScreenHeight() / GAME_HEIGHT);
+	gamestate_set_screen_scale(MIN((float)GetScreenWidth() / GAME_WIDTH,
+								   (float)GetScreenHeight() / GAME_HEIGHT));
 }
 
 /// Initialize the main rendertexture to which the actual game elements are

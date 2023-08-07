@@ -9,6 +9,7 @@
 #include "gameobject.h"
 #include "threadutils.h"
 #include <assert.h>
+#include <raylib.h>
 #include <stdint.h>
 
 #ifndef DYNARRAY_TYPE
@@ -32,7 +33,7 @@
 
 typedef struct DYNARRAY_TYPE_NAME
 {
-	DYNARRAY_TYPE *head;
+	DYNARRAY_TYPE* head;
 	size_t size;
 	size_t capacity;
 } DYNARRAY_TYPE_NAME;
@@ -41,17 +42,17 @@ typedef struct DYNARRAY_TYPE_NAME
 	DYNARRAY_TYPE_NAME dynarray_create_##type(size_t initial_capacity)
 
 #define _DYNARRAY_DESTROY_SIGNATURE(type) \
-	void dynarray_destroy_##type(DYNARRAY_TYPE_NAME *dynarray)
+	void dynarray_destroy_##type(DYNARRAY_TYPE_NAME* dynarray)
 
 #define _DYNARRAY_INSERT_SIGNATURE(type) \
-	void dynarray_insert_##type(DYNARRAY_TYPE_NAME *dynarray, type new)
+	void dynarray_insert_##type(DYNARRAY_TYPE_NAME* dynarray, type new)
 
 #define _DYNARRAY_REMOVE_SIGNATURE(type) \
-	void dynarray_remove_##type(DYNARRAY_TYPE_NAME *dynarray, size_t index)
+	void dynarray_remove_##type(DYNARRAY_TYPE_NAME* dynarray, size_t index)
 
 #define _DYNARRAY_MAP_SIGNATURE(type) \
 	void dynarray_map_##type(         \
-		DYNARRAY_TYPE_NAME *dynarray, \
+		DYNARRAY_TYPE_NAME* dynarray, \
 		void (*map_func)(DYNARRAY_TYPE * item, size_t index))
 
 #define DYNARRAY_FUNCTION_DECLARATIONS(type) \
@@ -71,10 +72,11 @@ DYNARRAY_FUNCTION_DECLARATIONS(DYNARRAY_TYPE)
 #ifdef _IMPLEMENT_DYNARRAY
 _CALL(_DYNARRAY_CREATE_SIGNATURE, DYNARRAY_TYPE)
 {
-	DYNARRAY_TYPE *head = malloc(initial_capacity * sizeof(DYNARRAY_TYPE));
+	DYNARRAY_TYPE* head = malloc(initial_capacity * sizeof(DYNARRAY_TYPE));
 	if (head == NULL) {
-		printf("Memory allocation for dynamic array of capacity %zu failed.\n",
-			   initial_capacity);
+		TraceLog(LOG_FATAL,
+				 "Memory allocation for dynamic array of capacity %zu failed.",
+				 initial_capacity);
 		threadutils_exit(EXIT_FAILURE);
 	}
 
@@ -87,12 +89,14 @@ _CALL(_DYNARRAY_INSERT_SIGNATURE, DYNARRAY_TYPE)
 	if (dynarray->size >= dynarray->capacity) {
 		// we dont have enough space, realloc
 		size_t new_capacity = dynarray->capacity * 2;
-		DYNARRAY_TYPE *new_head =
+		DYNARRAY_TYPE* new_head =
 			malloc((new_capacity) * sizeof(DYNARRAY_TYPE));
 		if (new_head == NULL) {
-			printf("Memory re-allocation failed for dynamic array of old size "
-				   "%zu and new size %zu.\n",
-				   dynarray->capacity, new_capacity);
+			TraceLog(
+				LOG_FATAL,
+				"Memory re-allocation failed for dynamic array of old size "
+				"%zu and new size %zu.",
+				dynarray->capacity, new_capacity);
 			threadutils_exit(EXIT_FAILURE);
 		}
 
@@ -113,8 +117,9 @@ _CALL(_DYNARRAY_REMOVE_SIGNATURE, DYNARRAY_TYPE)
 {
 	// assert that index is in range
 	if (index >= dynarray->size) {
-		printf("Index %zu out of range of dynamic array of size %zu\n", index,
-			   dynarray->size);
+		TraceLog(LOG_FATAL,
+				 "Index %zu out of range of dynamic array of size %zu", index,
+				 dynarray->size);
 		threadutils_exit(EXIT_FAILURE);
 	}
 

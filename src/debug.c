@@ -8,7 +8,7 @@
 
 static Vector3 debug_camera_position = {0};
 
-void UseDebugCameraController(Camera *camera_to_move)
+void UseDebugCameraController(Camera* camera_to_move)
 {
 	Vector3 camera_forward =
 		Vector3Subtract(camera_to_move->target, camera_to_move->position);
@@ -35,16 +35,16 @@ void UseDebugCameraController(Camera *camera_to_move)
 	camera_to_move->position = debug_camera_position;
 }
 
-void Vector3Print(Vector3 vector, const char *name)
+void Vector3Print(Vector3 vector, const char* name)
 {
 #define VECMAXBUF 80
 	char vec[VECMAXBUF];
 	Vector3ToString(vec, VECMAXBUF, vector);
-	printf("%s: \t%s\n", name, vec);
+	TraceLog(LOG_INFO, "%s: \t%s", name, vec);
 #undef VECMAXBUF
 }
 
-void Vector3ToString(char *buffer, uint32_t size, Vector3 vector)
+void Vector3ToString(char* buffer, uint32_t size, Vector3 vector)
 {
 	const char xprefix[] = "X: ";
 	const char yprefix[] = "\tY: ";
@@ -59,7 +59,7 @@ void Vector3ToString(char *buffer, uint32_t size, Vector3 vector)
 		// NOLINTNEXTLINE
 		fprintf(stderr,
 				"Buffer size for vector3 string too small, must be at least "
-				"%d\n",
+				"%d",
 				size_min);
 		threadutils_exit(EXIT_FAILURE);
 	}

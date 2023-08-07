@@ -1,5 +1,4 @@
 #include "terrain.h"
-#include "threadutils.h"
 #include <raylib.h>
 #include <raymath.h>
 
@@ -19,8 +18,7 @@ static const float scale = 1;
 static Mesh cube;
 static Material terrain_material;
 static Shader terrain_shader;
-static Matrix *transforms;
-static dGeomID *geoms;
+static Matrix* transforms;
 static size_t transforms_size;
 
 static Vector3 offset = {20, 0, 20};
@@ -29,7 +27,7 @@ static float perlin_3d(float x, float y, float z, float gain, int octaves,
 					   int hgrid);
 static float perlin_2d(float x, float y, float gain, int octaves, int hgrid);
 
-void load_terrain(dSpaceID space)
+void terrain_load()
 {
 	Dynarray_Vector3 terrain_nodes = dynarray_create_Vector3(100);
 	cube = GenMeshCube(scale, scale, scale);
@@ -63,7 +61,6 @@ void load_terrain(dSpaceID space)
 
 				float groundh = perlin_2d(x, z, 5, 1, 1) + 12;
 				uint8_t ground = y < groundh;
-				// printf("%f\n", this_perlin);
 
 				if (this && !surrounded && ground) {
 					Vector3 node = {x * scale, y * scale, z * scale};
@@ -74,26 +71,12 @@ void load_terrain(dSpaceID space)
 	}
 
 	// convert terrain nodes into transforms to be uploaded to GPU for instances
-	transforms = (Matrix *)RL_CALLOC(
+	transforms = (Matrix*)RL_CALLOC(
 		terrain_nodes.size, // maximum possible instances
 		sizeof(Matrix));	// Pre-multiplied transformations passed to rlgl
 	transforms_size = terrain_nodes.size;
 
-	// allocate space for physics geometry pointers
-	geoms = malloc(sizeof(dGeomID) * terrain_nodes.size);
-	if (geoms == NULL) {
-		printf("Memory allocation failure for terrain physics geometries\n");
-		threadutils_exit(EXIT_FAILURE);
-	}
-	assert(space != NULL);
-
 	for (size_t i = 0; i < terrain_nodes.size; i++) {
-		// create physics geometries
-		dGeomID geom = dCreateBox(space, scale, scale, scale);
-		dGeomSetPosition(geom, terrain_nodes.head[i].x * scale,
-						 terrain_nodes.head[i].y * scale,
-						 terrain_nodes.head[i].z * scale);
-		geoms[i] = geom;
 		// create list of transforms
 		transforms[i] = MatrixTranslate(terrain_nodes.head[i].x * scale,
 										terrain_nodes.head[i].y * scale,
@@ -123,7 +106,6 @@ void draw_terrain()
 
 void cleanup_terrain()
 {
-	free(geoms);
 	RL_FREE(transforms);
 	UnloadShader(terrain_shader);
 }
@@ -136,9 +118,9 @@ void cleanup_terrain()
 static float noise_3d(float x, float y, float z)
 {
 	int n = (int)(x + (y * 57));
-	float nf = *((float *)&n);
+	float nf = *((float*)&n);
 	nf *= 373 * z;
-	n = *(int *)&nf;
+	n = *(int*)&nf;
 	n = (n << 13) ^ n;
 	return (1.0 - ((n * ((n * n * 15731) + 789221) + 1376312589) & 0x7fffffff) /
 					  1073741824.0);

@@ -46,7 +46,7 @@ static const SkyboxInfo working_example = {
 static TextureCubemap GenTextureCubemap(Shader shader, Texture2D panorama,
 										int size, int format);
 
-void draw_skybox()
+void skybox_draw()
 {
 	// We are inside the cube, we need to disable backface culling!
 	rlDisableBackfaceCulling();
@@ -56,10 +56,10 @@ void draw_skybox()
 	rlEnableDepthMask();
 }
 
-void load_skybox()
+void skybox_load()
 {
 	// choose which skybox to use
-	SkyboxInfo const *skybox_info = &industrial_hdr;
+	SkyboxInfo const* skybox_info = &industrial_hdr;
 	UNUSED(industrial);
 	UNUSED(industrial_hdr);
 	UNUSED(working_example);

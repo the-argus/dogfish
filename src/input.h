@@ -1,8 +1,9 @@
 #pragma once
-#include "architecture.h"
+#include <raylib.h>
+#include <stdint.h>
 
-void gather_input(Gamestate* gamestate);
+void input_gather();
 
 int exit_control_pressed();
 
-Vector2 total_input(Inputstate input, int player_index);
+Vector2 total_input(uint8_t player_index);
