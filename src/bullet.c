@@ -8,6 +8,7 @@
 AABBBatchOptions bullet_data_aabb_options;
 Vector3BatchOptions bullet_data_position_options;
 QuaternionBatchOptions bullet_data_velocity_options;
+ByteBatchOptions bullet_data_disabled_options;
 static AABB universal_aabb;
 static BulletData* bullet_data;
 static BulletCreationStack creation_stack;
@@ -62,6 +63,12 @@ void bullet_init()
 		.count = bullet_data->count,
 		.first = &bullet_data->items[0].velocity,
 		.stride = sizeof(Bullet),
+	};
+
+	bullet_data_disabled_options = (ByteBatchOptions){
+		.count = bullet_data->count,
+		.first = (uint8_t*)bullet_data->disabled,
+		.stride = sizeof(bullet_data->disabled[0]),
 	};
 
 	// debug mesh with no normal information
@@ -223,4 +230,22 @@ static void bullet_flush_create_stack()
 			bullet_data->count);
 		threadutils_exit(EXIT_FAILURE);
 	}
+}
+
+void bullet_move_and_collide_with(
+	const AABBBatchOptions* restrict other_aabb,
+	const Vector3BatchOptions* restrict other_position,
+	const QuaternionBatchOptions* restrict other_velocity,
+	CollisionHandler handler)
+{
+	assert((void*)other_position != (void*)other_velocity);
+	assert((void*)other_aabb != (void*)other_velocity);
+	assert((void*)other_aabb != (void*)other_position);
+	// TODO: maybe try swapping the bullet data to be the second batch so it's
+	// in the inner loop. has performance implications.
+	// TODO: consider using point-to-aabb collisions for bullets, may be cheaper
+	physics_batch_collide_and_move(
+		&bullet_data_aabb_options, other_aabb, &bullet_data_position_options,
+		other_position, &bullet_data_velocity_options, other_velocity,
+		&bullet_data_disabled_options, NULL, handler);
 }

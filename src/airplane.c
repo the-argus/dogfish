@@ -1,9 +1,8 @@
 #include "airplane.h"
 #include "bullet.h"
 #include "gamestate.h"
-#include "include/constants.h"
 #include "input.h"
-#include "shorthand.h"
+#include "threadutils.h"
 #include <raymath.h>
 
 #define AIRPLANE_DEBUG_WIDTH 0.5

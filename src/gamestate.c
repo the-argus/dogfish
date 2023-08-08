@@ -1,6 +1,8 @@
 #include "gamestate.h"
 #include "camera.h"
+#include "threadutils.h"
 #include <assert.h>
+#include <stdatomic.h>
 
 atomic_bool initialized = false;
 
@@ -70,3 +72,39 @@ void gamestate_init()
 			},
 	};
 }
+
+/// Get inputstate read-only
+const Inputstate* gamestate_get_inputstate() { return &private_inputs; }
+/// Get mutable ownership of inputstate
+Inputstate* gamestate_get_inputstate_mutable()
+{
+	if (private_inputs_owned) {
+		threadutils_exit(EXIT_FAILURE);
+	}
+	private_inputs_owned = true;
+	return &private_inputs;
+}
+/// Return ownership of the inputstate. Stop using it after this!
+void gamestate_return_inputstate_mutable() { private_inputs_owned = false; }
+
+/// Get screen scale copy
+float gamestate_get_screen_scale() { return private_screen_scale; }
+/// Set the screen scale
+void gamestate_set_screen_scale(float new_scale)
+{
+	private_screen_scale = new_scale;
+}
+
+/// Get player one camera read-only
+const FullCamera* gamestate_get_cameras() { return private_cameras; }
+/// Get mutable ownership of player one camera
+FullCamera* gamestate_get_cameras_mutable()
+{
+	if (private_cameras_owned) {
+		threadutils_exit(EXIT_FAILURE);
+	}
+	private_cameras_owned = true;
+	return private_cameras;
+}
+/// Return ownership of the player one camera. Stop using it after this!
+void gamestate_return_cameras_mutable() { private_cameras_owned = false; }
