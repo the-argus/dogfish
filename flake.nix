@@ -1,11 +1,14 @@
 {
   description = "game gaming";
 
-  inputs.nixpkgs.url = "nixpkgs/nixos-unstable";
+  inputs.nixpkgs.url = "nixpkgs/nixos-23.05";
 
   outputs = {nixpkgs, ...}: let
     system = "x86_64-linux";
-    pkgs = import nixpkgs {inherit system;};
+    pkgs = import nixpkgs {
+      localSystem = {inherit system;};
+      overlays = import ./build/nix/overlays.nix;
+    };
   in {
     devShell.${system} =
       pkgs.mkShell.override
@@ -21,7 +24,7 @@
             pkg-config
             libGL
             libGLU
-            zig_0_11
+            zig
           ])
           ++ (with pkgs.xorg; [
             libX11
