@@ -27,12 +27,12 @@ const c_sources = [_][]const u8{
     "src/bullet.c",
     "src/camera.c",
     "src/debug.c",
+    "src/gamestate.c",
     "src/fps_camera.c",
     "src/input.c",
     "src/main.c",
     "src/render_pipeline.c",
     "src/skybox.c",
-    "src/terrain.c",
     "src/threadutils.c",
 };
 
