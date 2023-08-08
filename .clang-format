@@ -2,6 +2,7 @@
 AlignEscapedNewlines: Left
 AlignTrailingComments: 'true'
 BreakBeforeBraces: Mozilla
+PointerBindsToType: true
 ConstructorInitializerIndentWidth: '4'
 ContinuationIndentWidth: '4'
 IncludeBlocks: Preserve

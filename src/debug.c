@@ -1,10 +1,14 @@
 #include "debug.h"
-#include "raylib.h"
-#include "raymath.h"
+#include "threadutils.h"
+#include <raylib.h>
+#include <raymath.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 static Vector3 debug_camera_position = {0};
 
-void UseDebugCameraController(Camera *camera_to_move)
+void UseDebugCameraController(Camera* camera_to_move)
 {
 	Vector3 camera_forward =
 		Vector3Subtract(camera_to_move->target, camera_to_move->position);
@@ -25,20 +29,22 @@ void UseDebugCameraController(Camera *camera_to_move)
 		delta = Vector3Scale(delta, 0.3f);
 
 		debug_camera_position = Vector3Add(debug_camera_position, delta);
-        camera_to_move->target = Vector3Add(camera_to_move->target, delta);
+		camera_to_move->target = Vector3Add(camera_to_move->target, delta);
 	}
 
 	camera_to_move->position = debug_camera_position;
 }
 
-void Vector3Print(Vector3 vector, const char *name)
+void Vector3Print(Vector3 vector, const char* name)
 {
-	char vec[80];
-	Vector3ToString(vec, 80, vector);
-	printf("%s: \t%s\n", name, vec);
+#define VECMAXBUF 80
+	char vec[VECMAXBUF];
+	Vector3ToString(vec, VECMAXBUF, vector);
+	TraceLog(LOG_INFO, "%s: \t%s", name, vec);
+#undef VECMAXBUF
 }
 
-void Vector3ToString(char *buffer, uint size, Vector3 vector)
+void Vector3ToString(char* buffer, uint32_t size, Vector3 vector)
 {
 	const char xprefix[] = "X: ";
 	const char yprefix[] = "\tY: ";
@@ -47,38 +53,28 @@ void Vector3ToString(char *buffer, uint size, Vector3 vector)
 	// number of characters taken up by a float formatted by num_format
 	const int num_length_max = 12;
 #ifndef RELEASE
-	uint size_min = size < (num_length_max * 3) + strlen(xprefix) +
-							   strlen(yprefix) + strlen(zprefix);
+	uint32_t size_min = size < ((long)num_length_max * 3) + strlen(xprefix) +
+								   strlen(yprefix) + strlen(zprefix);
 	if (size < size_min) {
-		printf("Buffer size for vector3 string too small, must be at least "
-			   "%d\n",
-			   size_min);
-		exit(EXIT_FAILURE);
+		// NOLINTNEXTLINE
+		fprintf(stderr,
+				"Buffer size for vector3 string too small, must be at least "
+				"%d",
+				size_min);
+		threadutils_exit(EXIT_FAILURE);
 	}
 #endif
 
-	uint i = 0;
-	UNUSED(i);
+	size_t bytes = snprintf(buffer, size, "%s%f4.2%s%f4.2%s%f4.2", xprefix,
+							vector.x, yprefix, vector.y, zprefix, vector.z);
 
-	sprintf(buffer, xprefix);
-	i = strlen(buffer);
+	if (bytes < 0) {
+		TraceLog(LOG_ERROR, "snprintf encoding err");
+		return;
+	}
 
-	sprintf(buffer + i, num_format, vector.x);
-	i = strlen(buffer);
-
-	sprintf(buffer + i, yprefix);
-	i = strlen(buffer);
-
-	sprintf(buffer + i, num_format, vector.y);
-	i = strlen(buffer);
-
-	sprintf(buffer + i, zprefix);
-	i = strlen(buffer);
-
-	sprintf(buffer + i, num_format, vector.z);
-	i = strlen(buffer);
-
-#ifndef RELEASE
-	assert(i <= size);
-#endif
+	if (bytes >= size) {
+		TraceLog(LOG_WARNING, "snprintf unable to write all characters of "
+							  "vector to buffer. developer error");
+	}
 }

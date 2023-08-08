@@ -1,6 +1,5 @@
 #pragma once
-#include "raylib.h"
-#include "architecture.h"
+#include "camera.h"
+#include "input.h"
 
-void fps_camera_update(Camera *camera, CameraData *camera_data,
-					   Cursorstate cursor);
+void fps_camera_update(FullCamera* player, Cursorstate cursor);

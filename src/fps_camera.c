@@ -1,9 +1,7 @@
 #include "fps_camera.h"
-#include "constants.h"
-#include "raylib.h"
-#include "raymath.h"
-#include "architecture.h"
 #include <math.h>
+#include <raylib.h>
+#include <raymath.h>
 #include <stdio.h>
 
 // Camera mouse movement sensitivity
@@ -27,23 +25,23 @@
 // Maximum left-right tilting distance when walking
 #define CAMERA_FIRST_PERSON_TILTING_DELTA 0.005f
 
-void fps_camera_update(Camera *camera, CameraData *camera_data,
-					   Cursorstate cursor)
+void fps_camera_update(FullCamera* player, Cursorstate cursor)
 {
 	// Camera orientation calculation
-	camera_data->angle.x -=
+	player->angle.x -=
 		cursor.delta.x * CAMERA_MOUSE_MOVE_SENSITIVITY * GetFrameTime();
-	camera_data->angle.y -=
+	player->angle.y -=
 		cursor.delta.y * CAMERA_MOUSE_MOVE_SENSITIVITY * GetFrameTime();
 
 	// Angle clamp
-	if (camera_data->angle.y > CAMERA_FIRST_PERSON_MIN_CLAMP * DEG2RAD)
-		camera_data->angle.y = CAMERA_FIRST_PERSON_MIN_CLAMP * DEG2RAD;
-	else if (camera_data->angle.y < CAMERA_FIRST_PERSON_MAX_CLAMP * DEG2RAD)
-		camera_data->angle.y = CAMERA_FIRST_PERSON_MAX_CLAMP * DEG2RAD;
+	if (player->angle.y > CAMERA_FIRST_PERSON_MIN_CLAMP * DEG2RAD) {
+		player->angle.y = CAMERA_FIRST_PERSON_MIN_CLAMP * DEG2RAD;
+	} else if (player->angle.y < CAMERA_FIRST_PERSON_MAX_CLAMP * DEG2RAD) {
+		player->angle.y = CAMERA_FIRST_PERSON_MAX_CLAMP * DEG2RAD;
+	}
 
 	// clamp X
-	camera_data->angle.x -= ((int)(camera_data->angle.x / (2 * PI))) * (2 * PI);
+	player->angle.x -= ((int)(player->angle.x / (2 * PI))) * (2 * PI);
 
 	// Calculate translation matrix
 	// clang-format off
@@ -64,10 +62,10 @@ void fps_camera_update(Camera *camera, CameraData *camera_data,
 
 	float cosz = cosf(0.0f);
 	float sinz = sinf(0.0f);
-	float cosy = cosf(-(PI * 2 - camera_data->angle.x));
-	float siny = sinf(-(PI * 2 - camera_data->angle.x));
-	float cosx = cosf(-(PI * 2 - camera_data->angle.y));
-	float sinx = sinf(-(PI * 2 - camera_data->angle.y));
+	float cosy = cosf(-(PI * 2 - player->angle.x));
+	float siny = sinf(-(PI * 2 - player->angle.x));
+	float cosx = cosf(-(PI * 2 - player->angle.y));
+	float sinx = sinf(-(PI * 2 - player->angle.y));
 
 	matRotation.m0 = cosz * cosy;
 	matRotation.m4 = (cosz * siny * sinx) - (sinz * cosx);
@@ -82,7 +80,7 @@ void fps_camera_update(Camera *camera, CameraData *camera_data,
 	// Multiply translation and rotation matrices
 	Matrix matTransform = MatrixMultiply(matTranslation, matRotation);
 
-	camera->target.x = camera->position.x - matTransform.m12;
-	camera->target.y = camera->position.y - matTransform.m13;
-	camera->target.z = camera->position.z - matTransform.m14;
+	player->camera.target.x = player->camera.position.x - matTransform.m12;
+	player->camera.target.y = player->camera.position.y - matTransform.m13;
+	player->camera.target.z = player->camera.position.z - matTransform.m14;
 }

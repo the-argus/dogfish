@@ -1,8 +1,6 @@
 #pragma once
 
-#include "architecture.h"
-
-void gather_screen_info(Gamestate *gamestate);
-void init_render_pipeline();
-void render(Gamestate gamestate, void (*game_draw)());
-void cleanup_render_pipeline();
+void render_pipeline_gather_screen_info();
+void render_pipeline_init();
+void render(void (*game_draw)());
+void render_pipeline_cleanup();

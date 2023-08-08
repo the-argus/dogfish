@@ -1,16 +1,13 @@
 #include "airplane.h"
-#include "include/constants.h"
-#include "physics.h"
-#include "shorthand.h"
-#include "gameobject.h"
-#include "raymath.h"
-#include "debug.h"
 #include "bullet.h"
-#include "object_structure.h"
+#include "gamestate.h"
+#include "input.h"
+#include "threadutils.h"
+#include <raymath.h>
 
-#define AIRPLANE_DEBUG_CUBE_WIDTH 0.5
-#define AIRPLANE_DEBUG_CUBE_LENGTH 2
-#define AIRPLANE_DEBUG_CUBE_COLOR RED
+#define AIRPLANE_DEBUG_WIDTH 0.5
+#define AIRPLANE_DEBUG_LENGTH 2
+#define AIRPLANE_DEBUG_COLOR RED
 #define AIRPLANE_MASS 5.4
 #define INITIAL_AIRPLANE_POS_P1 5, 10, 0
 #define INITIAL_AIRPLANE_POS_P2 -5, 10, 0
@@ -19,247 +16,172 @@
 #define CAMERA_FIRST_PERSON_MAX_CLAMP -179.0f
 #define CAMERA_MOUSE_MOVE_SENSITIVITY 0.5f
 
-static Model p1_model;
-static Model p2_model;
-
-static void airplane_update_p1(struct GameObject *self, Gamestate *gamestate,
-							   float delta_time);
-static void airplane_update_p2(struct GameObject *self, Gamestate *gamestate,
-							   float delta_time);
-static void apply_airplane_input_impulses(dBodyID plane, Keystate keys,
-										  ControllerState controls);
-static void airplane_draw_p1(struct GameObject *self, Gamestate *gamestate);
-static void airplane_draw_p2(struct GameObject *self, Gamestate *gamestate);
-static void airplane_cleanup_p1(struct GameObject *self);
-static void airplane_cleanup_p2(struct GameObject *self);
-static int sign(float value);
-
-GameObject create_airplane(Gamestate gamestate, uint player)
+typedef struct
 {
-	GameObject plane = create_game_object();
-	// Set up the values for the opts
+	AABB aabb;
+	Vector3 position;
+	Quaternion velocity;
+} Airplane;
 
-	// initialize physics
-	plane.physics.value = create_physics_component();
-	plane.physics.has = 1;
-	dGeomID geom;
-	dBodyID body;
-	dMass mass;
+#define NUM_PLANES 2
+static Airplane planes[NUM_PLANES];
+static Model models[NUM_PLANES];
+static Color colors[NUM_PLANES] = {BLUE, GREEN};
 
-	body = dBodyCreate(gamestate.world);
-	dMassSetBox(&mass, 1, AIRPLANE_DEBUG_CUBE_WIDTH, AIRPLANE_DEBUG_CUBE_WIDTH,
-				AIRPLANE_DEBUG_CUBE_LENGTH);
-	dMassAdjust(&mass, AIRPLANE_MASS);
+AABBBatchOptions airplane_data_aabb_options;
+Vector3BatchOptions airplane_data_position_options;
+QuaternionBatchOptions airplane_data_velocity_options;
 
-	geom = dCreateBox(gamestate.space, AIRPLANE_DEBUG_CUBE_WIDTH,
-					  AIRPLANE_DEBUG_CUBE_WIDTH, AIRPLANE_DEBUG_CUBE_LENGTH);
-	dGeomSetBody(geom, body);
+static void airplane_update_velocity(const Airplane* plane,
+									 const Keystate* keys,
+									 const ControllerState* controls);
+static inline void airplane_update_p1(float delta_time);
+static inline void airplane_update_p2(float delta_time);
 
-	plane.physics.value.body.value = body;
-	plane.physics.value.body.has = 1;
-	plane.physics.value.geom = geom;
+void airplane_init()
+{
+	for (uint8_t i = 0; i < NUM_PLANES; ++i) {
+		planes[i] = (Airplane){
+			.aabb =
+				(AABB){
+					.x = AIRPLANE_DEBUG_WIDTH,
+					.y = AIRPLANE_DEBUG_WIDTH,
+					.z = AIRPLANE_DEBUG_LENGTH,
+				},
+			.position = (Vector3){0.0f, 0.0f, 0.0f},
+			.velocity = QuaternionIdentity(),
+		};
 
-	plane.physics.value.collision_handler.has = 0; // just a reminder this exist
-
-	// UPDATE
-	if (player == 0) {
-		plane.update.value = &airplane_update_p1;
-		plane.draw.value = &airplane_draw_p1;
-		plane.cleanup.value = &airplane_cleanup_p1;
-		plane.physics.value.bit = P1_PLANE_BIT;
-		plane.physics.value.mask = P1_PLANE_MASK;
-		p1_model = LoadModelFromMesh(GenMeshCube(2.0f, 1.0f, 2.0f));
-		dBodySetPosition(body, INITIAL_AIRPLANE_POS_P1);
-	} else {
-		plane.update.value = &airplane_update_p2;
-		plane.draw.value = &airplane_draw_p2;
-		plane.cleanup.value = &airplane_cleanup_p2;
-		plane.physics.value.bit = P2_PLANE_BIT;
-		plane.physics.value.mask = P2_PLANE_MASK;
-		p2_model = LoadModelFromMesh(GenMeshCube(2.0f, 1.0f, 2.0f));
-		dBodySetPosition(body, INITIAL_AIRPLANE_POS_P2);
+		models[i] = LoadModelFromMesh(GenMeshCylinder(
+			AIRPLANE_DEBUG_WIDTH / 2.0f, AIRPLANE_DEBUG_LENGTH, 10));
 	}
 
-	dBodySetLinearDamping(body, 0.01f);
-	dBodySetAngularDamping(body, 0.0f);
+	planes[0].position = (Vector3){INITIAL_AIRPLANE_POS_P1};
+	planes[1].position = (Vector3){INITIAL_AIRPLANE_POS_P2};
 
-	// Say that it has them
-	plane.update.has = 1;
-	plane.draw.has = 1;
-	plane.cleanup.has = 1;
+	airplane_data_aabb_options = (AABBBatchOptions){
+		.count = NUM_PLANES,
+		.first = &planes[0].aabb,
+		.stride = sizeof(Airplane),
+	};
 
-	return plane;
+	airplane_data_position_options = (Vector3BatchOptions){
+		.count = NUM_PLANES,
+		.first = &planes[0].position,
+		.stride = sizeof(Airplane),
+	};
+
+	airplane_data_velocity_options = (QuaternionBatchOptions){
+		.count = NUM_PLANES,
+		.first = &planes[0].velocity,
+		.stride = sizeof(Airplane),
+	};
 }
 
-///
-/// Code that should be run for both airplanes.
-///
-static void airplane_update_common(GameObject *self, Gamestate *gamestate,
-								   float delta_time, int shooting)
+void airplane_cleanup()
 {
-	UNUSED(delta_time);
-	UNUSED(gamestate);
-
-	if (shooting) {
-		dBodyID body = self->physics.value.body.value;
-		Vector3 pos = to_raylib(dBodyGetPosition(body));
-		Vector3 forward = to_raylib(dBodyGetLinearVel(body));
-		forward = Vector3Normalize(forward);
-		forward = Vector3Scale(forward, 10);
-
-		GameObject bullet = create_bullet(*gamestate);
-		dBodyID bullet_body = bullet.physics.value.body.value;
-		dBodySetLinearVel(bullet_body, forward.x, forward.y, forward.z);
-		dBodySetPosition(bullet_body, pos.x, pos.y, pos.z);
-		object_structure_queue_for_creation(gamestate->objects, bullet);
+	for (uint8_t i = 0; i < NUM_PLANES; ++i) {
+		UnloadModel(models[i]);
 	}
 }
 
-// Accept input state and move accordingly
-static void airplane_update_p1(GameObject *self, Gamestate *gamestate,
-							   float delta_time)
+static CollisionHandlerReturnCode
+airplane_on_collision(uint16_t bullet_handle, uint16_t airplane_handle,
+					  Contact* contact)
 {
-	// apply foces based on inputs
-	apply_airplane_input_impulses(self->physics.value.body.value,
-								  gamestate->input.keys,
-								  gamestate->input.controller);
+	TraceLog(LOG_INFO, "Player %d hit by bullet", airplane_handle + 1);
+	return CONTINUE;
+}
 
-	// set the camera to be at the location of the plane
+void airplane_update(float delta_time)
+{
+	const Inputstate* input = gamestate_get_inputstate();
+	for (uint8_t i = 0; i < NUM_PLANES; ++i) {
+		// all planes shoot in the same way
+		if (input->cursor[i].shoot || input->controller[i].shoot) {
+			// bullet shoots in the direction you're moving...
+			Quaternion bullet_velocity =
+				QuaternionNormalize(planes[i].velocity);
+			bullet_create(&planes[i].position, &bullet_velocity, i);
+		}
+
+		// also update the plane's velocity
+		airplane_update_velocity(&planes[i], &input->keys[i],
+								 &input->controller[i]);
+
+		// player-specific changes
+		switch (i) {
+		case 0:
+			airplane_update_p1(delta_time);
+			break;
+		case 1:
+			airplane_update_p2(delta_time);
+			break;
+		default:
+			TraceLog(LOG_ERROR, "huh? %d", i);
+			threadutils_exit(EXIT_FAILURE);
+			break;
+		}
+	}
+
+	bullet_move_and_collide_with(
+		&airplane_data_aabb_options, &airplane_data_position_options,
+		&airplane_data_velocity_options, airplane_on_collision);
+}
+
+void airplane_draw()
+{
+	for (uint8_t i = 0; i < NUM_PLANES; ++i) {
+		// model rotates toward where it is moving
+		models[i].transform =
+			QuaternionToMatrix(QuaternionNormalize(planes[i].velocity));
+		DrawModel(models[i], planes[i].position, 1.0, colors[i]);
+	}
+}
+
+static inline void airplane_update_p1(float delta_time)
+{
+	FullCamera* camera = gamestate_get_cameras_mutable();
 #ifdef DEBUG_CAMERA
-	UseDebugCameraController(gamestate->p1_camera);
+	UseDebugCameraController(camera[0]);
 #else
-	dBodyID body = self->physics.value.body.value;
-	Vector3 pos = to_raylib(dBodyGetPosition(body));
-	gamestate->p1_camera->target = pos; // look at the plane
+	// set the camera to be at the location of the plane
+	Vector2 cursor_delta = total_cursor(0);
+	camera->camera.target = planes[0].position; // look at the plane
+
 	Vector3 camera_diff = {0, 5, 0};
+
 	// rotate by angles x and y
-	gamestate->p1_camera_data.angle.x -=
-		(gamestate->input.cursor.delta.x +
-		 gamestate->input.controller.joystick.x) *
-		CAMERA_MOUSE_MOVE_SENSITIVITY * delta_time;
-	gamestate->p1_camera_data.angle.y -=
-		(gamestate->input.cursor.delta.y +
-		 gamestate->input.controller.joystick.y) *
-		CAMERA_MOUSE_MOVE_SENSITIVITY * delta_time;
+	camera->angle =
+		Vector2Scale(cursor_delta, CAMERA_MOUSE_MOVE_SENSITIVITY * delta_time);
+
 	// clamp y
-	if (gamestate->p1_camera_data.angle.y >
-		CAMERA_FIRST_PERSON_MIN_CLAMP * DEG2RAD) {
-		gamestate->p1_camera_data.angle.y =
-			CAMERA_FIRST_PERSON_MIN_CLAMP * DEG2RAD;
-	} else if (gamestate->p1_camera_data.angle.y <
-			   CAMERA_FIRST_PERSON_MAX_CLAMP * DEG2RAD) {
-		gamestate->p1_camera_data.angle.y =
-			CAMERA_FIRST_PERSON_MAX_CLAMP * DEG2RAD;
+	if (camera->angle.y > CAMERA_FIRST_PERSON_MIN_CLAMP * DEG2RAD) {
+		camera->angle.y = CAMERA_FIRST_PERSON_MIN_CLAMP * DEG2RAD;
+	} else if (camera->angle.y < CAMERA_FIRST_PERSON_MAX_CLAMP * DEG2RAD) {
+		camera->angle.y = CAMERA_FIRST_PERSON_MAX_CLAMP * DEG2RAD;
 	}
+
 	// clamp x
-	gamestate->p1_camera_data.angle.x -=
-		((int)(gamestate->p1_camera_data.angle.x / (2 * PI))) * (2 * PI);
+	camera->angle.x -= ((int)(camera->angle.x / (2 * PI))) * (2 * PI);
 
 	// apply rotation to camera_diff
 	Quaternion camera_rot =
-		QuaternionFromEuler(gamestate->p1_camera_data.angle.y,
-							gamestate->p1_camera_data.angle.x, 0);
+		QuaternionFromEuler(camera->angle.y, camera->angle.x, 0);
 	camera_diff = Vector3RotateByQuaternion(camera_diff, camera_rot);
-	gamestate->p1_camera->position = Vector3Add(pos, camera_diff);
+	camera->camera.position = Vector3Add(camera->camera.position, camera_diff);
 #endif
-
-	airplane_update_common(self, gamestate, delta_time,
-						   gamestate->input.cursor.shoot ||
-							   gamestate->input.controller.shoot);
+	gamestate_return_cameras_mutable();
 }
 
-static void airplane_update_p2(GameObject *self, Gamestate *gamestate,
-							   float delta_time)
+static inline void airplane_update_p2(float delta_time) {}
+
+static void airplane_update_velocity(const Airplane* plane,
+									 const Keystate* keys,
+									 const ControllerState* controls)
 {
-	// apply foces based on inputs
-	apply_airplane_input_impulses(self->physics.value.body.value,
-								  gamestate->input.keys_2,
-								  gamestate->input.controller_2);
-
-	// set the camera to be at the location of the plane
-	dBodyID body = self->physics.value.body.value;
-	Vector3 pos = to_raylib(dBodyGetPosition(body));
-	gamestate->p2_camera->target = pos;
-
-	airplane_update_common(self, gamestate, delta_time,
-						   gamestate->input.controller_2.shoot);
-}
-
-// Draw the p1 model at the p1 position
-static void airplane_draw_p1(struct GameObject *self, Gamestate *gamestate)
-{
-	UNUSED(gamestate);
-
-	dBodyID body = self->physics.value.body.value;
-
-	// Tranformation matrix for rotations
-	Vector3 plane_rotation = to_raylib(dBodyGetRotation(body));
-	p1_model.transform = MatrixRotateXYZ(
-		(Vector3){plane_rotation.x, plane_rotation.y, plane_rotation.z});
-	DrawModel(p1_model, to_raylib(dBodyGetPosition(body)), 1.0, BLUE);
-}
-
-// Draw the p2 model at the p2 position
-static void airplane_draw_p2(struct GameObject *self, Gamestate *gamestate)
-{
-	UNUSED(gamestate);
-
-	dBodyID body = self->physics.value.body.value;
-
-	// Tranformation matrix for rotations
-	Vector3 plane_rotation = to_raylib(dBodyGetRotation(body));
-	p2_model.transform = MatrixRotateXYZ(
-		(Vector3){plane_rotation.x, plane_rotation.y, plane_rotation.z});
-	DrawModel(p2_model, to_raylib(dBodyGetPosition(body)), 1.0, BLUE);
-}
-
-static void airplane_cleanup_p1(struct GameObject *self)
-{
-	UnloadModel(p1_model);
-}
-
-static void airplane_cleanup_p2(struct GameObject *self)
-{
-	UnloadModel(p2_model);
-}
-
-static int sign(float value)
-{
-	if (value == 0) {
-		return 0;
-	} else if (value > 0) {
-		return 1;
-	} else {
-		return -1;
-	}
-}
-
-static void apply_airplane_input_impulses(dBodyID plane, Keystate keys,
-										  ControllerState controls)
-{
-	// Get the current linear and angular velocity
-	Vector3 forward = to_raylib(dBodyGetLinearVel(plane));
-	forward = Vector3Normalize(forward);
-
-	Vector3 impulse = {0, -1 * GRAVITY, 0};
-	Vector3 torque_impulse = {0, 0, 0};
-
-	int vertical_input = sign(keys.up - keys.down + sign(controls.joystick.y));
-	int horizontal_input =
-		sign(keys.right - keys.left + sign(controls.joystick.x));
-
-	int thrust = controls.boost || keys.boost;
-
-	// modify impulse and torque based on input
-
-	// first, get forwards movement (along the direction of the plane)
-	Vector3 movement =
-		Vector3Scale(forward, thrust ? PLANE_BOOST_SPEED : PLANE_MOVE_SPEED);
-	impulse = Vector3Add(impulse, movement);
-
-	torque_impulse.y += 0.1f * horizontal_input;
-	torque_impulse.z += 0.1f * vertical_input;
-
-	dBodySetForce(plane, impulse.x, impulse.y, impulse.z);
-	dBodySetTorque(plane, torque_impulse.x, torque_impulse.y, torque_impulse.z);
+	// Vector2 input = total_input(plane - planes);
+	// bool thrust = controls->boost || keys->boost;
+	// Vector3 movement =
+	// 	Vector3Scale(forward, thrust ? PLANE_BOOST_SPEED : PLANE_MOVE_SPEED);
 }

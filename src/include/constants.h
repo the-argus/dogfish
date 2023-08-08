@@ -32,8 +32,9 @@ typedef enum
 #define ON_GROUND_THRESHHOLD 0.7f
 
 // physics constants
-#define GRAVITY 0.5
+#define GRAVITY 0.5f
 
+// TODO: change physics to use this? or maybe it's fine as-is
 #define BULLET_MASK 0xFF
 #define BULLET_BIT 0x01
 #define P1_PLANE_MASK 0xFF

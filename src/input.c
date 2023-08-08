@@ -1,23 +1,25 @@
 #include "input.h"
-#include "raylib.h"
-#include "raymath.h"
-#include "architecture.h"
 #include "constants.h"
+#include "gamestate.h"
+#include <assert.h>
+#include <raylib.h>
+#include <raymath.h>
 
 /// Makes sure the location of the virtual cursor respects whatever the
 /// cursor's actual position is
-static void set_virtual_cursor_position(Cursorstate *cursor,
-										float screen_scale_fraction)
+static void set_virtual_cursor_position(Cursorstate* cursor)
 {
 	// get the mouse position as if the window was not scaled from render size
 	cursor->virtual_position.x =
 		(cursor->position.x -
-		 (GetScreenWidth() - (GAME_WIDTH * screen_scale_fraction)) * 0.5f) /
-		screen_scale_fraction;
+		 (GetScreenWidth() - (GAME_WIDTH * gamestate_get_screen_scale())) *
+			 0.5f) /
+		gamestate_get_screen_scale();
 	cursor->virtual_position.y =
 		(cursor->position.y -
-		 (GetScreenHeight() - (GAME_HEIGHT * screen_scale_fraction)) * 0.5f) /
-		screen_scale_fraction;
+		 (GetScreenHeight() - (GAME_HEIGHT * gamestate_get_screen_scale())) *
+			 0.5f) /
+		gamestate_get_screen_scale();
 
 	// clamp the virtual mouse position to the size of the rendertarget
 	cursor->virtual_position =
@@ -26,65 +28,59 @@ static void set_virtual_cursor_position(Cursorstate *cursor,
 }
 
 /// Make the gamestate reflect the actual system IO state.
-void gather_input(Gamestate *gamestate)
+void input_gather()
 {
+	Inputstate* input = gamestate_get_inputstate_mutable();
+
 	// collect keyboard information
 
 	// player 1 moves with WASD
-	gamestate->input.keys.right = IsKeyDown(KEY_D);
-	gamestate->input.keys.left = IsKeyDown(KEY_A);
-	gamestate->input.keys.up = IsKeyDown(KEY_W);
-	gamestate->input.keys.down = IsKeyDown(KEY_S);
-	gamestate->input.keys.boost = IsKeyDown(KEY_SPACE);
+	input->keys[0].right = IsKeyDown(KEY_D);
+	input->keys[0].left = IsKeyDown(KEY_A);
+	input->keys[0].up = IsKeyDown(KEY_W);
+	input->keys[0].down = IsKeyDown(KEY_S);
+	input->keys[0].boost = IsKeyDown(KEY_SPACE);
 
 	// player 2 moves with arrow keys
-	gamestate->input.keys_2.right = IsKeyDown(KEY_RIGHT);
-	gamestate->input.keys_2.left = IsKeyDown(KEY_LEFT);
-	gamestate->input.keys_2.up = IsKeyDown(KEY_UP);
-	gamestate->input.keys_2.down = IsKeyDown(KEY_DOWN);
-	gamestate->input.keys_2.boost = IsKeyDown(KEY_ENTER);
+	input->keys[1].right = IsKeyDown(KEY_RIGHT);
+	input->keys[1].left = IsKeyDown(KEY_LEFT);
+	input->keys[1].up = IsKeyDown(KEY_UP);
+	input->keys[1].down = IsKeyDown(KEY_DOWN);
+	input->keys[1].boost = IsKeyDown(KEY_ENTER);
 
 	// collect controller information
 
 	// player 1 uses d-pad and left joystick
-	gamestate->input.controller.boost =
+	input->controller[0].boost =
 		IsGamepadButtonDown(0, GAMEPAD_BUTTON_LEFT_FACE_UP);
-	gamestate->input.controller.shoot =
+	input->controller[0].shoot =
 		IsGamepadButtonDown(0, GAMEPAD_BUTTON_LEFT_FACE_RIGHT);
 
-	gamestate->input.controller.joystick.x =
+	input->controller[0].joystick.x =
 		GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_X);
-	gamestate->input.controller.joystick.y =
+	input->controller[0].joystick.y =
 		GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_Y);
 
 	// player 2 uses buttons (X Y A B) and right joystick
-	gamestate->input.controller_2.boost =
+	input->controller[1].boost =
 		IsGamepadButtonDown(0, GAMEPAD_BUTTON_RIGHT_FACE_UP);
-	gamestate->input.controller_2.shoot =
+	input->controller[1].shoot =
 		IsGamepadButtonDown(0, GAMEPAD_BUTTON_RIGHT_FACE_RIGHT);
 
-	gamestate->input.controller_2.joystick.x =
+	input->controller[1].joystick.x =
 		GetGamepadAxisMovement(0, GAMEPAD_AXIS_RIGHT_X);
-	gamestate->input.controller_2.joystick.y =
+	input->controller[1].joystick.y =
 		GetGamepadAxisMovement(0, GAMEPAD_AXIS_RIGHT_Y);
 
-	// collect cursor information (mouse input only affects player 1's cursor)
-	// *delta* is how much the cursor should move this frame. used by the first
-	// person cameras to determine how much to rotate.
-	gamestate->input.cursor.delta =
-		Vector2Add(GetMouseDelta(), gamestate->input.controller.joystick);
-	gamestate->input.cursor_2.delta = gamestate->input.controller_2.joystick;
+	// collect cursor information
+	// TODO: maybe remove the second cursorstate object if we continue to have
+	// the mouse only work for player 1
+	input->cursor[0].delta = GetMouseDelta();
+	input->cursor[0].position = GetMousePosition();
+	input->cursor[0].shoot = IsMouseButtonDown(MOUSE_BUTTON_LEFT);
+	set_virtual_cursor_position(&input->cursor[0]);
 
-	// *position* is where the cursor is on the screen. will be useful for
-	// things like pause menus.
-	gamestate->input.cursor.position = GetMousePosition();
-
-	gamestate->input.cursor.shoot = IsMouseButtonDown(MOUSE_BUTTON_LEFT);
-
-	set_virtual_cursor_position(&gamestate->input.cursor,
-								gamestate->screen_scale);
-	set_virtual_cursor_position(&gamestate->input.cursor_2,
-								gamestate->screen_scale);
+	gamestate_return_inputstate_mutable();
 }
 
 // return 1 if the controls to exit the game are being pressed, 0 otherwise
@@ -95,41 +91,39 @@ int exit_control_pressed()
 			IsGamepadButtonDown(0, GAMEPAD_BUTTON_MIDDLE_RIGHT));
 }
 
-static int key_vertical_input(Keystate keys);
-static int key_horizontal_input(Keystate keys);
-
-Vector2 total_input(Inputstate input, int player_index)
+static inline int key_vertical_input(const Keystate* keys)
 {
+	return keys->up - keys->down;
+}
+static inline int key_horizontal_input(const Keystate* keys)
+{
+	return keys->left - keys->right;
+}
+
+Vector2 total_input(uint8_t player_index)
+{
+	assert(player_index >= 0 && player_index <= 1);
+	const Inputstate* input = gamestate_get_inputstate();
 	Vector2 total = {0};
-	Vector2 raw = {0};
+	Vector2 raw = (Vector2){
+		.x = (float)key_horizontal_input(&input->keys[player_index]) +
+			 input->controller[player_index].joystick.x,
+		.y = (float)key_vertical_input(input->keys) +
+			 input->controller[player_index].joystick.y,
+	};
 
-	if (player_index == 0) {
-		// add all input together
-		raw = (Vector2){
-			.x = key_horizontal_input(input.keys) + input.controller.joystick.x,
-			.y = key_vertical_input(input.keys) + input.controller.joystick.y};
-	} else if (player_index == 1) {
-		// add all input together
-		raw = (Vector2){.x = key_horizontal_input(input.keys_2) +
-							 input.controller_2.joystick.x,
-						.y = key_vertical_input(input.keys_2) +
-							 input.controller_2.joystick.y};
-	}
-#ifndef RELEASE
-	else {
-		printf("ERROR: Unknown player index %d\n", player_index);
-		exit(EXIT_FAILURE);
-	}
-#endif
-
-	// clamp it and return it
 	total.x = Clamp(raw.x, -1, 1);
 	total.y = Clamp(raw.y, -1, 1);
 	return total;
 }
 
-static int key_vertical_input(Keystate keys) { return keys.up - keys.down; }
-static int key_horizontal_input(Keystate keys)
+Vector2 total_cursor(uint8_t player_index)
 {
-	return keys.left - keys.right;
+	const Inputstate* input = gamestate_get_inputstate();
+	return (Vector2){
+		input->cursor[player_index].delta.x +
+			input->controller[player_index].joystick.x,
+		input->cursor[player_index].delta.y +
+			input->controller[player_index].joystick.y,
+	};
 }

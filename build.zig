@@ -2,7 +2,7 @@ const std = @import("std");
 const builtin = @import("builtin");
 const app_name = "dogfish";
 
-const release_flags = [_][]const u8{ "-std=c11", "-DNDEBUG" };
+const release_flags = [_][]const u8{ "-std=c11", "-DNDEBUG", "-DRELEASE" };
 const debug_flags = [_][]const u8{
     // TODO: remove this, noise_3d function relies on UB
     "-fno-sanitize=undefined",
@@ -25,18 +25,16 @@ const makeCdb = cdb.makeCdb;
 const c_sources = [_][]const u8{
     "src/airplane.c",
     "src/bullet.c",
-    "src/camera_manager.c",
+    "src/camera.c",
     "src/debug.c",
-    "src/dynarray_implementation.c",
+    "src/gamestate.c",
     "src/fps_camera.c",
-    "src/gameobject.c",
     "src/input.c",
-    "src/main.c",
-    "src/object_structure.c",
     "src/physics.c",
+    "src/main.c",
     "src/render_pipeline.c",
     "src/skybox.c",
-    "src/terrain.c",
+    "src/threadutils.c",
 };
 
 pub fn build(b: *std.Build) !void {
