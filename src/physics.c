@@ -32,13 +32,13 @@ void physics_batch_collide(const AABBBatchOptions* restrict batch1,
 		   disabled_batch2->count == position_batch2->count);
 	assert(position_batch1->stride >= sizeof(Vector3));
 	assert(position_batch2->stride >= sizeof(Vector3));
-	assert(batch1->stride >= sizeof(AABB));
-	assert(batch2->stride >= sizeof(AABB));
+	assert(batch1_same_aabb || batch1->stride >= sizeof(AABB));
+	assert(batch2_same_aabb || batch2->stride >= sizeof(AABB));
 	// this is a check to see if the AABB stride (which we know to be aligned by
 	// float) is correctly aligned. unfortunately hardcoded... I miss
 	// std::alignment_of :(
-	assert(batch1->stride % sizeof(float) == 0);
-	assert(batch2->stride % sizeof(float) == 0);
+	assert(batch1_same_aabb || batch1->stride % sizeof(float) == 0);
+	assert(batch2_same_aabb || batch2->stride % sizeof(float) == 0);
 	assert(position_batch1->stride % sizeof(float) == 0);
 	assert(position_batch2->stride % sizeof(float) == 0);
 
@@ -140,13 +140,13 @@ void physics_batch_collide_and_move(
 	assert(position_batch2->stride >= sizeof(Vector3));
 	assert(velocity_batch1->stride >= sizeof(Vector3));
 	assert(velocity_batch2->stride >= sizeof(Vector3));
-	assert(batch1->stride >= sizeof(AABB));
-	assert(batch2->stride >= sizeof(AABB));
+	assert(batch1_same_aabb || batch1->stride >= sizeof(AABB));
+	assert(batch2_same_aabb || batch2->stride >= sizeof(AABB));
 	// this is a check to see if the AABB stride (which we know to be aligned by
 	// float) is correctly aligned. unfortunately hardcoded... I miss
 	// std::alignment_of :(
-	assert(batch1->stride % sizeof(float) == 0);
-	assert(batch2->stride % sizeof(float) == 0);
+	assert(batch1_same_aabb || batch1->stride % sizeof(float) == 0);
+	assert(batch2_same_aabb || batch2->stride % sizeof(float) == 0);
 	assert(position_batch1->stride % sizeof(float) == 0);
 	assert(position_batch2->stride % sizeof(float) == 0);
 	assert(velocity_batch1->stride % sizeof(float) == 0);
