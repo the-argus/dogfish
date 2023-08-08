@@ -31,7 +31,7 @@ void bullet_cleanup();
 /// Collide and move a set of AABBs, positions, and velocities with the bullets.
 /// The collision handler's index_batch1 argument can be cast to a BulletHandle
 /// for use with bullet_destroy.
-inline void bullet_move_and_collide_with(
+void bullet_move_and_collide_with(
 	const AABBBatchOptions* restrict other_aabb,
 	const Vector3BatchOptions* restrict other_position,
 	const QuaternionBatchOptions* restrict other_velocity,

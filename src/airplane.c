@@ -111,14 +111,14 @@ void airplane_update(float delta_time)
 
 		// player-specific changes
 		switch (i) {
-		case 1:
+		case 0:
 			airplane_update_p1(delta_time);
 			break;
-		case 2:
+		case 1:
 			airplane_update_p2(delta_time);
 			break;
 		default:
-			TraceLog(LOG_ERROR, "huh?");
+			TraceLog(LOG_ERROR, "huh? %d", i);
 			threadutils_exit(EXIT_FAILURE);
 			break;
 		}
