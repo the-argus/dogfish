@@ -1,77 +1,72 @@
 #include "gamestate.h"
 #include "camera.h"
+#include <assert.h>
 
 atomic_bool initialized = false;
 
-Inputstate private_input;
+Inputstate private_inputs;
 float private_screen_scale;
-ObjectStructure* private_objects;
-
-FullCamera private_p1_camera;
-FullCamera private_p2_camera;
-
-atomic_bool private_input_owned;
-atomic_bool private_objects_owned;
-atomic_bool private_p1_camera_owned;
-atomic_bool private_p2_camera_owned;
+FullCamera private_cameras[2];
+atomic_bool private_inputs_owned;
+atomic_bool private_cameras_owned;
 
 void gamestate_init()
 {
 	assert(!initialized);
 	initialized = true;
 
-	camera_new(&private_p1_camera);
-	camera_new(&private_p2_camera);
+	for (uint8_t i = 0; i < 2; ++i) {
+		camera_new(&private_cameras[i]);
+	}
 
-	private_input_owned = false;
-	private_objects_owned = false;
-	private_p1_camera_owned = false;
-	private_p2_camera_owned = false;
+	private_inputs_owned = false;
+	private_cameras_owned = false;
 
 	private_screen_scale = 0;
 
-	private_objects = NULL;
-
-	private_input = (Inputstate){
-		.keys =
-			(Keystate){
-				.up = false,
-				.down = false,
-				.left = false,
-				.right = false,
-			},
+	private_inputs = (Inputstate){
 		.cursor =
-			(Cursorstate){
-				.delta = 0,
-				.shoot = false,
-				.position = (Vector2){0, 0},
-				.virtual_position = (Vector2){0, 0},
+			{
+				(Cursorstate){
+					.delta = 0,
+					.shoot = false,
+					.position = (Vector2){0, 0},
+					.virtual_position = (Vector2){0, 0},
+				},
+				(Cursorstate){
+					.delta = 0,
+					.shoot = false,
+					.position = (Vector2){0, 0},
+					.virtual_position = (Vector2){0, 0},
+				},
 			},
-		.keys_2 =
-			(Keystate){
-				.up = false,
-				.down = false,
-				.left = false,
-				.right = false,
-			},
-		.cursor_2 =
-			(Cursorstate){
-				.delta = 0,
-				.shoot = false,
-				.position = (Vector2){0, 0},
-				.virtual_position = (Vector2){0, 0},
+		.keys =
+			{
+				(Keystate){
+					.up = false,
+					.down = false,
+					.left = false,
+					.right = false,
+				},
+				(Keystate){
+					.up = false,
+					.down = false,
+					.left = false,
+					.right = false,
+				},
 			},
 		.controller =
-			(ControllerState){
-				.shoot = false,
-				.boost = false,
-				.joystick = (Joystick){0, 0},
-			},
-		.controller_2 =
-			(ControllerState){
-				.shoot = false,
-				.boost = false,
-				.joystick = (Joystick){0, 0},
+			{
+				(ControllerState){
+					.shoot = false,
+					.boost = false,
+					.joystick = (Joystick){0, 0},
+				},
+				(ControllerState){
+					.shoot = false,
+					.boost = false,
+					.joystick = (Joystick){0, 0},
+				},
 			},
 	};
 }

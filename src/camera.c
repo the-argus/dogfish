@@ -1,4 +1,4 @@
-#include "architecture.h"
+#include "camera.h"
 #include "constants.h"
 #include <math.h>
 #include <raylib.h>

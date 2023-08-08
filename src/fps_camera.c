@@ -1,5 +1,4 @@
 #include "fps_camera.h"
-#include "architecture.h"
 #include <math.h>
 #include <raylib.h>
 #include <raymath.h>

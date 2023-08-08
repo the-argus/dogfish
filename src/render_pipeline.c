@@ -1,6 +1,7 @@
 #include "render_pipeline.h"
-#include "gamestate.h"
 #include "constants.h"
+#include "gamestate.h"
+#include <math.h>
 #include <raylib.h>
 #include <rlgl.h>
 
@@ -34,7 +35,7 @@ void render(void (*game_draw)())
 	BeginTextureMode(rt1);
 	// clang-format off
 		ClearBackground(RAYWHITE);
-        const FullCamera *player_one = gamestate_get_p1_camera();
+        const FullCamera *player_one = &gamestate_get_cameras()[0];
         BeginMode3D(player_one->camera);
             // draw in-game objects
 	        BeginShaderMode(gather_shader);
@@ -49,7 +50,7 @@ void render(void (*game_draw)())
 	BeginTextureMode(rt2);
 	// clang-format off
 		ClearBackground(RAYWHITE);
-        const FullCamera *player_two = gamestate_get_p2_camera();
+        const FullCamera *player_two = &gamestate_get_cameras()[1];
         BeginMode3D(player_two->camera);
             // draw in-game objects
             game_draw();

@@ -7,21 +7,19 @@
 /// Keep  this file small- it's included in a lot of places.
 ///
 
-#include "architecture.h"
 #include "threadutils.h"
+#include "camera.h"
+#include "input.h"
 #include <stdatomic.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 /// Do not touch these!!!
 extern Inputstate private_inputs;
 extern float private_screen_scale;
-extern ObjectStructure* private_objects;
-extern FullCamera private_p1_camera;
-extern FullCamera private_p2_camera;
+extern FullCamera private_cameras[2];
 extern atomic_bool private_inputs_owned;
-extern atomic_bool private_objects_owned;
-extern atomic_bool private_p1_camera_owned;
-extern atomic_bool private_p2_camera_owned;
+extern atomic_bool private_cameras_owned;
 
 /// Initialize global variables
 void gamestate_init();
@@ -51,64 +49,19 @@ inline void gamestate_set_screen_scale(float new_scale)
 	private_screen_scale = new_scale;
 }
 
-/// Get objects read-only
-inline const ObjectStructure* gamestate_get_objects()
-{
-	return private_objects;
-}
-
-/// Get mutable ownership of the objects
-inline ObjectStructure* gamestate_get_objects_mutable()
-{
-	if (private_objects_owned) {
-		threadutils_exit(EXIT_FAILURE);
-	}
-	private_objects_owned = true;
-	return private_objects;
-}
-
-/// Return ownership of the inputstate
-inline void gamestate_return_objects_mutable()
-{
-	private_objects_owned = false;
-}
-
 /// Get player one camera read-only
-inline const FullCamera* gamestate_get_p1_camera()
-{
-	return &private_p1_camera;
-}
+inline const FullCamera* gamestate_get_cameras() { return private_cameras; }
 /// Get mutable ownership of player one camera
-inline FullCamera* gamestate_get_p1_camera_mutable()
+inline FullCamera* gamestate_get_cameras_mutable()
 {
-	if (private_inputs_owned) {
+	if (private_cameras_owned) {
 		threadutils_exit(EXIT_FAILURE);
 	}
-	private_p1_camera_owned = true;
-	return &private_p1_camera;
+	private_cameras_owned = true;
+	return private_cameras;
 }
 /// Return ownership of the player one camera. Stop using it after this!
-inline void gamestate_return_p1_camera_mutable()
+inline void gamestate_return_cameras_mutable()
 {
-	private_p1_camera_owned = false;
-}
-
-/// Get player two camera read-only
-inline const FullCamera* gamestate_get_p2_camera()
-{
-	return &private_p2_camera;
-}
-/// Get mutable ownership of player two camera
-inline FullCamera* gamestate_get_p2_camera_mutable()
-{
-	if (private_inputs_owned) {
-		threadutils_exit(EXIT_FAILURE);
-	}
-	private_p2_camera_owned = true;
-	return &private_p2_camera;
-}
-/// Return ownership of the player two camera. Stop using it after this!
-inline void gamestate_return_p2_camera_mutable()
-{
-	private_p2_camera_owned = false;
+	private_cameras_owned = false;
 }

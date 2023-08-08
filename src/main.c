@@ -1,21 +1,12 @@
-#include "bullet.h"
 #include "airplane.h"
-#include "architecture.h"
+#include "bullet.h"
 #include "constants.h"
-#include "gameobject.h"
-#include "input.h"
-#include "object_structure.h"
-#include "physics.h"
-#include "render_pipeline.h"
 #include "gamestate.h"
+#include "input.h"
+#include "render_pipeline.h"
 #include "skybox.h"
 #include "terrain.h"
 #include "threadutils.h"
-
-#include <raylib.h>
-#include <rlgl.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 // use a function pointer for the update loop so that we can change it
 static void (*update_function)();
@@ -28,44 +19,26 @@ static void defer_update_once() { update_function = &update; }
 
 int main(void)
 {
-	// initialize miscellaneous things from other functions and files ----------
-
+	// intialize opengl context first
+	window_settings();
+	// initialize global mutexes (mutices?)
 	threadutils_init();
 
-	window_settings();
-
+	// actual game intialization
 	gamestate_init();
-
-	// set the update function to run once without doing anything
-	update_function = &defer_update_once;
-	// set window vars like title and size
-
 	render_pipeline_init();
-
-	physics_init();
-
-	// load skybox textures
+	bullet_init();
+	airplane_init();
 	skybox_load();
-
 	terrain_load();
 
-	// initialization complete -------------------------------------------------
+	// set the update function to run once without doing anything
+	update_function = defer_update_once;
+
+	// initialization complete
 
 	TraceLog(LOG_INFO, "dogfish...");
 
-	// create game objects
-	GameObject p1_plane = create_airplane(gamestate, 0);
-	GameObject p2_plane = create_airplane(gamestate, 1);
-	GameObject my_bullet = create_bullet(gamestate);
-
-	// copy the game objects into the object structure (the originals dont
-	// matter)
-	object_structure_insert(&objects, p1_plane);
-	object_structure_insert(&objects, p2_plane);
-	object_structure_insert(&objects, my_bullet);
-
-	// loop until player presses escape or close button, or both start/select
-	// buttons on a controller
 	bool window_open = true;
 	while (window_open) {
 		if (exit_control_pressed() || WindowShouldClose()) {
@@ -84,10 +57,10 @@ int main(void)
 	}
 
 	// cleanup
-	object_structure_destroy(&objects);
 	terrain_cleanup();
+	bullet_cleanup();
+	airplane_cleanup();
 	render_pipeline_cleanup();
-	physics_close();
 	CloseWindow();
 
 	return 0;
@@ -101,31 +74,17 @@ void update()
 	// fps_camera_update(gamestate.p2_camera, &(gamestate.p2_camera_data),
 	// 				  gamestate.input.cursor_2);
 
-	physics_update(GetFrameTime());
-
-	for (int i = 0; i < object_structure_size(&objects); i++) {
-		if (objects._dynarray.head[i].update.has) {
-			objects._dynarray.head[i].update.value(&objects._dynarray.head[i],
-												   &gamestate, GetFrameTime());
-		}
-	}
-
-	object_structure_flush_create_queue(gamestate.objects);
+	bullet_update();
+	airplane_update(GetFrameTime());
 }
 
 /// Draw the in-game objects to a consistently sized rendertexture.
 void main_draw()
 {
 	skybox_draw();
-
 	terrain_draw();
-
-	for (int i = 0; i < object_structure_size(&objects); i++) {
-		if (objects._dynarray.head[i].draw.has) {
-			objects._dynarray.head[i].draw.value(&objects._dynarray.head[i],
-												 &gamestate);
-		}
-	}
+	bullet_draw();
+	airplane_draw();
 
 	// grid for visual aid
 	DrawGrid(10, 1.0f);
