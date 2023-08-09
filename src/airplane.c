@@ -13,9 +13,11 @@
 #define INITIAL_AIRPLANE_POS_P1 5, 10, 0
 #define INITIAL_AIRPLANE_POS_P2 -5, 10, 0
 
-#define CAMERA_FIRST_PERSON_MIN_CLAMP -1.0f
-#define CAMERA_FIRST_PERSON_MAX_CLAMP -179.0f
+#define CAMERA_FIRST_PERSON_MIN_CLAMP 89.0f
+#define CAMERA_FIRST_PERSON_MAX_CLAMP -89.0f
+// radians per frame
 #define CAMERA_MOUSE_MOVE_SENSITIVITY 0.5f
+#define CAMERA_DISTANCE 5
 
 typedef struct
 {
@@ -85,6 +87,13 @@ void airplane_init()
 		.first = &planes[0].speed,
 		.stride = sizeof(Airplane),
 	};
+
+	FullCamera* cameras = gamestate_get_cameras_mutable();
+	for (uint8_t i = 0; i < NUM_PLANES; ++i) {
+		cameras[i].camera.target = planes[i].position;
+	}
+	cameras = NULL;
+	gamestate_return_cameras_mutable();
 }
 
 void airplane_cleanup()
@@ -152,19 +161,23 @@ void airplane_draw()
 
 static inline void airplane_update_p1(float delta_time)
 {
-	FullCamera* camera = gamestate_get_cameras_mutable();
+	// get the first camera
+	FullCamera* camera = &gamestate_get_cameras_mutable()[0];
 #ifdef DEBUG_CAMERA
 	UseDebugCameraController(camera[0]);
 #else
 	// set the camera to be at the location of the plane
 	Vector2 cursor_delta = total_cursor(0);
-	camera->camera.target = planes[0].position; // look at the plane
 
-	Vector3 camera_diff = {0, 5, 0};
+	// look at the plane
+	camera->camera.target = planes[0].position;
+	// this will change later
+	camera->camera.position = planes[0].position;
 
 	// rotate by angles x and y
-	camera->angle =
-		Vector2Scale(cursor_delta, CAMERA_MOUSE_MOVE_SENSITIVITY * delta_time);
+	camera->angle = Vector2Add(
+		camera->angle,
+		Vector2Scale(cursor_delta, CAMERA_MOUSE_MOVE_SENSITIVITY * delta_time));
 
 	// clamp y
 	if (camera->angle.y > CAMERA_FIRST_PERSON_MIN_CLAMP * DEG2RAD) {
@@ -176,11 +189,15 @@ static inline void airplane_update_p1(float delta_time)
 	// clamp x
 	camera->angle.x -= ((int)(camera->angle.x / (2 * PI))) * (2 * PI);
 
-	// apply rotation to camera_diff
-	Quaternion camera_rot =
-		QuaternionFromEuler(camera->angle.y, camera->angle.x, 0);
-	camera_diff = Vector3RotateByQuaternion(camera_diff, camera_rot);
-	camera->camera.position = Vector3Add(camera->camera.position, camera_diff);
+	// make the camera's position around the player respect angles
+	Vector3 move_by = {CAMERA_DISTANCE, 0, 0};
+	move_by =
+		Vector3RotateByAxisAngle(move_by, (Vector3){0, 1, 0}, camera->angle.x);
+
+	// right vector is the axis
+	Vector3 axis = Vector3CrossProduct((Vector3){0, 1, 0}, move_by);
+	move_by = Vector3RotateByAxisAngle(move_by, axis, camera->angle.y);
+	camera->camera.position = Vector3Add(camera->camera.position, move_by);
 #endif
 	gamestate_return_cameras_mutable();
 }
