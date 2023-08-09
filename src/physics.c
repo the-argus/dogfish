@@ -203,7 +203,6 @@ void physics_batch_collide_and_move(
 
 		assert(QuaternionEquals(QuaternionNormalize(*outer_direction),
 								*outer_direction));
-		assert(QuaternionLength(*outer_direction) == 1);
 
 		// TODO: profile this math
 		*outer_position = Vector3Add(
@@ -251,7 +250,6 @@ void physics_batch_collide_and_move(
 
 				assert(QuaternionEquals(QuaternionNormalize(*inner_direction),
 										*inner_direction));
-				assert(QuaternionLength(*inner_direction) == 1);
 
 				// TODO: profile this math
 				*inner_position =
