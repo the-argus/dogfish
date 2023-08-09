@@ -11,10 +11,16 @@ typedef enum : uint8_t
 	PLAYER_TWO,
 } Source;
 
+/// A bullet.
+typedef struct
+{
+	Vector3 position;
+	Quaternion direction;
+} Bullet;
+
 /// "Create" a new bullet (actually just queues it to be created)
-/// The direction is the direction of the bullet relative to the up vector
-void bullet_create(const Vector3* restrict position,
-				   const Quaternion* restrict direction, Source source);
+void bullet_create(const Bullet* bullet, Source source);
+
 Source bullet_get_source(BulletHandle bullet);
 /// Destroy a bullet (queues it for destruction)
 void bullet_destroy(BulletHandle bullet);
@@ -34,5 +40,5 @@ void bullet_cleanup();
 void bullet_move_and_collide_with(
 	const AABBBatchOptions* restrict other_aabb,
 	const Vector3BatchOptions* restrict other_position,
-	const QuaternionBatchOptions* restrict other_velocity,
-	CollisionHandler handler);
+	const QuaternionBatchOptions* restrict other_direction,
+	const FloatBatchOptions* restrict other_speed, CollisionHandler handler);

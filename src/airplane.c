@@ -2,6 +2,7 @@
 #include "bullet.h"
 #include "gamestate.h"
 #include "input.h"
+#include "physics.h"
 #include "threadutils.h"
 #include <raymath.h>
 
@@ -20,17 +21,18 @@ typedef struct
 {
 	AABB aabb;
 	Vector3 position;
-	Quaternion velocity;
+	float speed;
+	Quaternion direction;
 } Airplane;
 
 #define NUM_PLANES 2
 static Airplane planes[NUM_PLANES];
 static Model models[NUM_PLANES];
 static Color colors[NUM_PLANES] = {BLUE, GREEN};
-
-AABBBatchOptions airplane_data_aabb_options;
-Vector3BatchOptions airplane_data_position_options;
-QuaternionBatchOptions airplane_data_velocity_options;
+static AABBBatchOptions airplane_data_aabb_options;
+static Vector3BatchOptions airplane_data_position_options;
+static QuaternionBatchOptions airplane_data_direction_options;
+static FloatBatchOptions airplane_data_speed_options;
 
 static void airplane_update_velocity(const Airplane* plane,
 									 const Keystate* keys,
@@ -49,7 +51,8 @@ void airplane_init()
 					.z = AIRPLANE_DEBUG_LENGTH,
 				},
 			.position = (Vector3){0.0f, 0.0f, 0.0f},
-			.velocity = QuaternionIdentity(),
+			.direction = QuaternionIdentity(),
+			.speed = 0,
 		};
 
 		models[i] = LoadModelFromMesh(GenMeshCylinder(
@@ -71,9 +74,15 @@ void airplane_init()
 		.stride = sizeof(Airplane),
 	};
 
-	airplane_data_velocity_options = (QuaternionBatchOptions){
+	airplane_data_direction_options = (QuaternionBatchOptions){
 		.count = NUM_PLANES,
-		.first = &planes[0].velocity,
+		.first = &planes[0].direction,
+		.stride = sizeof(Airplane),
+	};
+
+	airplane_data_speed_options = (FloatBatchOptions){
+		.count = NUM_PLANES,
+		.first = &planes[0].speed,
 		.stride = sizeof(Airplane),
 	};
 }
@@ -100,9 +109,11 @@ void airplane_update(float delta_time)
 		// all planes shoot in the same way
 		if (input->cursor[i].shoot || input->controller[i].shoot) {
 			// bullet shoots in the direction you're moving...
-			Quaternion bullet_velocity =
-				QuaternionNormalize(planes[i].velocity);
-			bullet_create(&planes[i].position, &bullet_velocity, i);
+			Bullet new_bullet = {
+				.direction = planes[i].direction,
+				.position = planes[i].position,
+			};
+			bullet_create(&new_bullet, i);
 		}
 
 		// also update the plane's velocity
@@ -126,16 +137,16 @@ void airplane_update(float delta_time)
 
 	bullet_move_and_collide_with(
 		&airplane_data_aabb_options, &airplane_data_position_options,
-		&airplane_data_velocity_options, airplane_on_collision);
+		&airplane_data_direction_options, &airplane_data_speed_options,
+		airplane_on_collision);
 }
 
 void airplane_draw()
 {
 	for (uint8_t i = 0; i < NUM_PLANES; ++i) {
 		// model rotates toward where it is moving
-		models[i].transform =
-			QuaternionToMatrix(QuaternionNormalize(planes[i].velocity));
-		DrawModel(models[i], planes[i].position, 1.0, colors[i]);
+		models[i].transform = QuaternionToMatrix(planes[i].direction);
+		DrawModel(models[i], planes[i].position, 1.0f, colors[i]);
 	}
 }
 

@@ -1,5 +1,4 @@
 #pragma once
-#include "physics.h"
 #include <stdint.h>
 
 typedef uint8_t PlaneHandle;
@@ -12,7 +11,3 @@ void airplane_update(float delta_time);
 void airplane_draw();
 /// unload and deallocate plane resources
 void airplane_cleanup();
-
-extern AABBBatchOptions airplane_data_aabb_options;
-extern Vector3BatchOptions airplane_data_position_options;
-extern QuaternionBatchOptions airplane_data_velocity_options;

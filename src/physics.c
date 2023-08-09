@@ -113,33 +113,40 @@ void physics_batch_collide_and_move(
 	const AABBBatchOptions* restrict batch2,
 	const Vector3BatchOptions* restrict position_batch1,
 	const Vector3BatchOptions* restrict position_batch2,
-	const QuaternionBatchOptions* restrict velocity_batch1,
-	const QuaternionBatchOptions* restrict velocity_batch2,
+	const QuaternionBatchOptions* restrict direction_batch1,
+	const QuaternionBatchOptions* restrict direction_batch2,
+	const FloatBatchOptions* restrict speed_batch1,
+	const FloatBatchOptions* restrict speed_batch2,
 	const ByteBatchOptions* restrict disabled_batch1,
 	const ByteBatchOptions* restrict disabled_batch2, CollisionHandler handler)
 {
 	bool batch1_same_aabb = batch1->count == 1;
 	bool batch2_same_aabb = batch2->count == 1;
+	bool batch1_same_speed = speed_batch1->count == 1;
+	bool batch2_same_speed = speed_batch2->count == 1;
 	// you could do some pointer casts here to cause aliasing bugs.
 	// please don't :(
 	assert(batch1 != batch2);
 	assert(position_batch1 != position_batch2);
-	assert(velocity_batch1 != velocity_batch2);
+	assert(speed_batch1 != speed_batch2);
+	assert(direction_batch1 != direction_batch2);
 	assert(disabled_batch1 != disabled_batch2);
 	// either use the same size batches or use only one aabb definition for all
 	// bodies
 	assert(batch1_same_aabb || batch1->count == position_batch1->count);
 	assert(batch2_same_aabb || batch2->count == position_batch2->count);
-	assert(batch1_same_aabb || batch1->count == velocity_batch1->count);
-	assert(batch2_same_aabb || batch2->count == velocity_batch2->count);
+	assert(batch1_same_aabb || batch1->count == direction_batch1->count);
+	assert(batch2_same_aabb || batch2->count == direction_batch2->count);
+	assert(batch1_same_speed || batch1->count == speed_batch1->count);
+	assert(batch2_same_speed || batch2->count == speed_batch2->count);
 	assert(disabled_batch1 == NULL ||
 		   disabled_batch1->count == position_batch1->count);
 	assert(disabled_batch2 == NULL ||
 		   disabled_batch2->count == position_batch2->count);
 	assert(position_batch1->stride >= sizeof(Vector3));
 	assert(position_batch2->stride >= sizeof(Vector3));
-	assert(velocity_batch1->stride >= sizeof(Vector3));
-	assert(velocity_batch2->stride >= sizeof(Vector3));
+	assert(batch1_same_speed || speed_batch1->stride >= sizeof(float));
+	assert(batch2_same_speed || speed_batch2->stride >= sizeof(float));
 	assert(batch1_same_aabb || batch1->stride >= sizeof(AABB));
 	assert(batch2_same_aabb || batch2->stride >= sizeof(AABB));
 	// this is a check to see if the AABB stride (which we know to be aligned by
@@ -149,8 +156,12 @@ void physics_batch_collide_and_move(
 	assert(batch2_same_aabb || batch2->stride % sizeof(float) == 0);
 	assert(position_batch1->stride % sizeof(float) == 0);
 	assert(position_batch2->stride % sizeof(float) == 0);
-	assert(velocity_batch1->stride % sizeof(float) == 0);
-	assert(velocity_batch2->stride % sizeof(float) == 0);
+	assert(batch1_same_speed || speed_batch1->stride % sizeof(float) == 0);
+	assert(batch2_same_speed || speed_batch2->stride % sizeof(float) == 0);
+	assert(direction_batch1->stride % sizeof(float) == 0);
+	assert(direction_batch2->stride % sizeof(float) == 0);
+	assert(disabled_batch1 == NULL || disabled_batch1->stride != 0);
+	assert(disabled_batch2 == NULL || disabled_batch2->stride != 0);
 
 	Contact contact;
 
@@ -178,18 +189,26 @@ void physics_batch_collide_and_move(
 			(Vector3*)((uint8_t*)position_batch1->first +
 					   ((ptrdiff_t)outer * position_batch1->stride));
 
-		Quaternion* outer_velocity =
-			(Quaternion*)((uint8_t*)velocity_batch1->first +
-						  ((ptrdiff_t)outer * velocity_batch1->stride));
+		Quaternion* outer_direction =
+			(Quaternion*)((uint8_t*)direction_batch1->first +
+						  ((ptrdiff_t)outer * direction_batch1->stride));
+		float outer_speed = 0;
+
+		if (batch1_same_speed) {
+			outer_speed = *speed_batch1->first;
+		} else {
+			outer_speed = *(float*)((uint8_t*)speed_batch1->first +
+									((ptrdiff_t)outer * speed_batch1->stride));
+		}
+
+		assert(QuaternionEquals(QuaternionNormalize(*outer_direction),
+								*outer_direction));
+		assert(QuaternionLength(*outer_direction) == 1);
 
 		// TODO: profile this math
-
-		Vector3 outer_real_velocity = Vector3RotateByQuaternion(
-			(Vector3){0.0f, 1.0f, 0.0f}, *outer_velocity);
-		outer_real_velocity = Vector3Scale(outer_real_velocity,
-										   QuaternionLength(*outer_velocity));
-
-		*outer_position = Vector3Add(*outer_position, outer_real_velocity);
+		*outer_position = Vector3Add(
+			*outer_position,
+			Vector3Scale(QuaternionToEuler(*outer_direction), outer_speed));
 
 		for (uint16_t inner = 0; inner < batch2->count; ++inner) {
 			// may be necessary to skip this body
@@ -214,16 +233,32 @@ void physics_batch_collide_and_move(
 				(Vector3*)((uint8_t*)position_batch2->first +
 						   ((ptrdiff_t)inner * position_batch2->stride));
 
-			Quaternion* inner_velocity =
-				(Quaternion*)((uint8_t*)velocity_batch2->first +
-							  ((ptrdiff_t)inner * velocity_batch2->stride));
+			// also move all the inner bodies on the first run through
+			if (outer == 0) {
+				Quaternion* inner_direction =
+					(Quaternion*)((uint8_t*)direction_batch2->first +
+								  ((ptrdiff_t)inner *
+								   direction_batch2->stride));
 
-			Vector3 inner_real_velocity = Vector3RotateByQuaternion(
-				(Vector3){0.0f, 1.0f, 0.0f}, *inner_velocity);
-			inner_real_velocity = Vector3Scale(
-				inner_real_velocity, QuaternionLength(*inner_velocity));
+				float inner_speed = 0;
+				if (batch1_same_speed) {
+					inner_speed = *speed_batch2->first;
+				} else {
+					inner_speed =
+						*(float*)((uint8_t*)speed_batch2->first +
+								  ((ptrdiff_t)inner * speed_batch2->stride));
+				}
 
-			*inner_position = Vector3Add(*inner_position, inner_real_velocity);
+				assert(QuaternionEquals(QuaternionNormalize(*inner_direction),
+										*inner_direction));
+				assert(QuaternionLength(*inner_direction) == 1);
+
+				// TODO: profile this math
+				*inner_position =
+					Vector3Add(*inner_position,
+							   Vector3Scale(QuaternionToEuler(*inner_direction),
+											inner_speed));
+			}
 
 			if (physics_aabb_collide(outer_aabb, inner_aabb, outer_position,
 									 inner_position, &contact)) {

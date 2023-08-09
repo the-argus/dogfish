@@ -15,13 +15,6 @@
 // called (ie. per frame)
 #define BULLET_STACKS_MAX_SIZE 32
 
-/// A bullet.
-typedef struct
-{
-	Vector3 position;
-	Quaternion velocity;
-} Bullet;
-
 typedef struct
 {
 	uint16_t count;

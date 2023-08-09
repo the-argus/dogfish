@@ -5,11 +5,13 @@
 #include <string.h>
 
 // data
-AABBBatchOptions bullet_data_aabb_options;
-Vector3BatchOptions bullet_data_position_options;
-QuaternionBatchOptions bullet_data_velocity_options;
-ByteBatchOptions bullet_data_disabled_options;
+static AABBBatchOptions bullet_data_aabb_options;
+static Vector3BatchOptions bullet_data_position_options;
+static QuaternionBatchOptions bullet_data_direction_options;
+static FloatBatchOptions bullet_data_speed_options;
+static ByteBatchOptions bullet_data_disabled_options;
 static AABB universal_aabb;
+static float universal_speed;
 static BulletData* bullet_data;
 static BulletCreationStack creation_stack;
 static BulletDestructionStack destruction_stack;
@@ -34,10 +36,12 @@ void bullet_init()
 
 	bullet_data = RL_MALLOC(sizeof(BulletData) +
 							(sizeof(Bullet) * BULLET_POOL_SIZE_INITIAL));
+	CHECKMEM(bullet_data);
 	bullet_data->count = 0;
 	bullet_data->capacity = BULLET_POOL_SIZE_INITIAL;
 	bullet_data->sources = NULL;
 	bullet_data->disabled = RL_CALLOC(BULLET_POOL_SIZE_INITIAL, 1);
+	CHECKMEM(bullet_data->disabled);
 	// set disabled to true by default for all
 	for (size_t i = 0; i < BULLET_POOL_SIZE_INITIAL; ++i) {
 		bullet_data->disabled[i] = true;
@@ -47,8 +51,7 @@ void bullet_init()
 	destruction_stack.count = 0;
 
 	bullet_data_aabb_options = (AABBBatchOptions){
-		.stride = INFINITY, // this should cause a segfault if something goes
-							// wrong lol
+		.stride = NOSTRIDE, // arbitrary large prime number
 		.first = &universal_aabb,
 		.count = 1,
 	};
@@ -59,10 +62,16 @@ void bullet_init()
 		.stride = sizeof(Bullet),
 	};
 
-	bullet_data_velocity_options = (QuaternionBatchOptions){
+	bullet_data_direction_options = (QuaternionBatchOptions){
 		.count = bullet_data->count,
-		.first = &bullet_data->items[0].velocity,
+		.first = &bullet_data->items[0].direction,
 		.stride = sizeof(Bullet),
+	};
+
+	bullet_data_speed_options = (FloatBatchOptions){
+		.count = 1,
+		.first = &universal_speed,
+		.stride = NOSTRIDE,
 	};
 
 	bullet_data_disabled_options = (ByteBatchOptions){
@@ -100,8 +109,7 @@ void bullet_cleanup()
 }
 
 /// "Create" a new bullet (actually just queues it to be created)
-void bullet_create(const Vector3* restrict position,
-				   const Quaternion* restrict velocity, Source source)
+void bullet_create(const Bullet* bullet, Source source)
 {
 	if (creation_stack.count >=
 		sizeof(creation_stack.stack) / sizeof(creation_stack.stack[0])) {
@@ -111,8 +119,7 @@ void bullet_create(const Vector3* restrict position,
 		return;
 	}
 	// push the bullet onto the creation stack
-	creation_stack.stack[creation_stack.count].position = *position;
-	creation_stack.stack[creation_stack.count].velocity = *velocity;
+	creation_stack.stack[creation_stack.count] = *bullet;
 	++creation_stack.count;
 }
 
@@ -235,17 +242,18 @@ static void bullet_flush_create_stack()
 void bullet_move_and_collide_with(
 	const AABBBatchOptions* restrict other_aabb,
 	const Vector3BatchOptions* restrict other_position,
-	const QuaternionBatchOptions* restrict other_velocity,
-	CollisionHandler handler)
+	const QuaternionBatchOptions* restrict other_direction,
+	const FloatBatchOptions* restrict other_speed, CollisionHandler handler)
 {
-	assert((void*)other_position != (void*)other_velocity);
-	assert((void*)other_aabb != (void*)other_velocity);
+	assert((void*)other_position != (void*)other_direction);
+	assert((void*)other_aabb != (void*)other_speed);
 	assert((void*)other_aabb != (void*)other_position);
 	// TODO: maybe try swapping the bullet data to be the second batch so it's
 	// in the inner loop. has performance implications.
 	// TODO: consider using point-to-aabb collisions for bullets, may be cheaper
 	physics_batch_collide_and_move(
 		&bullet_data_aabb_options, other_aabb, &bullet_data_position_options,
-		other_position, &bullet_data_velocity_options, other_velocity,
-		&bullet_data_disabled_options, NULL, handler);
+		other_position, &bullet_data_direction_options, other_direction,
+		&bullet_data_speed_options, other_speed, &bullet_data_disabled_options,
+		NULL, handler);
 }

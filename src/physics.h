@@ -64,6 +64,17 @@ typedef struct
 	uint8_t stride;
 } QuaternionBatchOptions;
 
+/// options describing a pool of floats
+typedef struct
+{
+	float* first;
+	uint16_t count;
+	uint8_t stride;
+} FloatBatchOptions;
+
+// arbitrarily large prime number
+#define NOSTRIDE 101
+
 typedef struct
 {
 	Vector3 collision;
@@ -102,8 +113,10 @@ void physics_batch_collide_and_move(
 	const AABBBatchOptions* restrict batch2,
 	const Vector3BatchOptions* restrict position_batch1,
 	const Vector3BatchOptions* restrict position_batch2,
-	const QuaternionBatchOptions* restrict velocity_batch1,
-	const QuaternionBatchOptions* restrict velocity_batch2,
+	const QuaternionBatchOptions* restrict direction_batch1,
+	const QuaternionBatchOptions* restrict direction_batch2,
+	const FloatBatchOptions* restrict speed_batch1,
+	const FloatBatchOptions* restrict speed_batch2,
 	const ByteBatchOptions* restrict disabled_batch1,
 	const ByteBatchOptions* restrict disabled_batch2, CollisionHandler handler);
 
