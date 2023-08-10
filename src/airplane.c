@@ -5,6 +5,8 @@
 #include "physics.h"
 #include "threadutils.h"
 #include <raymath.h>
+#define RLIGHTS_IMPLEMENTATION
+#include "rlights.h"
 
 #define AIRPLANE_DEBUG_WIDTH 0.5
 #define AIRPLANE_DEBUG_LENGTH 2
@@ -19,6 +21,12 @@
 #define CAMERA_MOUSE_MOVE_SENSITIVITY 0.5f
 #define CAMERA_DISTANCE 5
 
+// rendering stuff
+#define MAX_LIGHTS 4
+
+#define LIGHT_DIRECTIONAL 0
+#define LIGHT_POINT 1
+
 typedef struct
 {
 	AABB aabb;
@@ -29,12 +37,30 @@ typedef struct
 
 #define NUM_PLANES 2
 static Airplane planes[NUM_PLANES];
+#define AIRPLANE_MODEL_SCALEFACTOR 0.1f
+static const char* model_filename = "assets/models/airplane.gltf";
+static const char* diffuse_texture_filenames[] = {
+	"assets/textures/airplane/hainan_diffuse.png",
+	"assets/textures/airplane/lufthansa_diffuse.png",
+};
+static const char* metallic_texture_filename =
+	"assets/textures/airplane/metallic.png";
+static const char* normal_texture_filename =
+	"assets/textures/airplane/normal.png";
+static const char* airplane_frag_shader_filename =
+	"assets/materials/airplane.fs";
+static Shader shader;
+static Material materials[NUM_PLANES];
 static Model models[NUM_PLANES];
-static Color colors[NUM_PLANES] = {BLUE, GREEN};
+static Texture2D diffuse[NUM_PLANES];
+static Texture2D metallic;
+static Texture2D normal;
 static AABBBatchOptions airplane_data_aabb_options;
 static Vector3BatchOptions airplane_data_position_options;
 static QuaternionBatchOptions airplane_data_direction_options;
 static FloatBatchOptions airplane_data_speed_options;
+static Light lights[MAX_LIGHTS] = {0};
+static const Vector4 ambientLight = {0.0f, 0.0f, 0.0f, 1.0f};
 
 static void airplane_update_velocity(const Airplane* plane,
 									 const Keystate* keys,
@@ -44,6 +70,20 @@ static inline void airplane_update_p2(float delta_time);
 
 void airplane_init()
 {
+	metallic = LoadTexture(metallic_texture_filename);
+	normal = LoadTexture(normal_texture_filename);
+	shader = LoadShader(0, airplane_frag_shader_filename);
+
+	shader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(shader, "viewPos");
+	// insert ambient light as uniform
+	ShaderLocationIndex ambientLoc = GetShaderLocation(shader, "ambient");
+	SetShaderValue(shader, ambientLoc, (float*)&ambientLight,
+				   SHADER_UNIFORM_VEC4);
+
+	// all lights are empty except one directional light
+	lights[0] = CreateLight(LIGHT_DIRECTIONAL, (Vector3){100.0f, 100.0f, 0},
+							Vector3Zero(), WHITE, shader);
+
 	for (uint8_t i = 0; i < NUM_PLANES; ++i) {
 		planes[i] = (Airplane){
 			.aabb =
@@ -57,8 +97,23 @@ void airplane_init()
 			.speed = 0,
 		};
 
-		models[i] = LoadModelFromMesh(GenMeshCylinder(
-			AIRPLANE_DEBUG_WIDTH / 2.0f, AIRPLANE_DEBUG_LENGTH, 10));
+		models[i] = LoadModel(model_filename);
+		diffuse[i] = LoadTexture(diffuse_texture_filenames[i]);
+		// TODO: it's possible for the gltf file to have relative texture paths
+		// embedded in it, so we could have the normal and specular specified
+		// there. raylib even loads them by default with LoadModel
+		// diffuse
+		SetMaterialTexture(&models[i].materials[0], MATERIAL_MAP_ALBEDO,
+						   diffuse[i]);
+		// specular
+		SetMaterialTexture(&models[i].materials[0], MATERIAL_MAP_METALNESS,
+						   metallic);
+		SetMaterialTexture(&models[i].materials[0], MATERIAL_MAP_NORMAL,
+						   normal);
+
+		// the airplane model has two materials
+		models[i].materials[0].shader = shader;
+		models[i].materials[1].shader = shader;
 	}
 
 	planes[0].position = (Vector3){INITIAL_AIRPLANE_POS_P1};
@@ -98,8 +153,11 @@ void airplane_init()
 
 void airplane_cleanup()
 {
+	UnloadTexture(normal);
+	UnloadTexture(metallic);
 	for (uint8_t i = 0; i < NUM_PLANES; ++i) {
 		UnloadModel(models[i]);
+		UnloadTexture(diffuse[i]);
 	}
 }
 
@@ -156,8 +214,11 @@ void airplane_draw()
 {
 	for (uint8_t i = 0; i < NUM_PLANES; ++i) {
 		// model rotates toward where it is moving
-		models[i].transform = QuaternionToMatrix(planes[i].direction);
-		DrawModel(models[i], planes[i].position, 1.0f, colors[i]);
+		models[i].transform = MatrixMultiply(
+			QuaternionToMatrix(planes[i].direction),
+			MatrixScale(AIRPLANE_MODEL_SCALEFACTOR, AIRPLANE_MODEL_SCALEFACTOR,
+						AIRPLANE_MODEL_SCALEFACTOR));
+		DrawModel(models[i], planes[i].position, 1.0f, WHITE);
 	}
 }
 
