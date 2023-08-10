@@ -29,6 +29,8 @@ typedef struct
 
 #define NUM_PLANES 2
 static Airplane planes[NUM_PLANES];
+static const char* model_filename = "assets/models/airplane.obj";
+static Material materials[NUM_PLANES];
 static Model models[NUM_PLANES];
 static Color colors[NUM_PLANES] = {BLUE, GREEN};
 static AABBBatchOptions airplane_data_aabb_options;
@@ -57,8 +59,7 @@ void airplane_init()
 			.speed = 0,
 		};
 
-		models[i] = LoadModelFromMesh(GenMeshCylinder(
-			AIRPLANE_DEBUG_WIDTH / 2.0f, AIRPLANE_DEBUG_LENGTH, 10));
+		models[i] = LoadModel(model_filename);
 	}
 
 	planes[0].position = (Vector3){INITIAL_AIRPLANE_POS_P1};
