@@ -10,3 +10,6 @@ at RIT from 04-07-2023 to 04-16-2023.
 
 `industrial_sunset_puresky_4k.hdr` placeholder skybox from Jarod Guest and
 Sergej Majboroda on [polyhaven](https://polyhaven.com/a/industrial_sunset_puresky)
+
+The airplane placeholder model is created by [Game Maker Dhaka](https://www.youtube.com/@Saiful22)
+on youtube.
