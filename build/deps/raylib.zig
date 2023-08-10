@@ -113,7 +113,10 @@ pub fn addLib(b: *std.Build, target: std.zig.CrossTarget, optimize: std.builtin.
     }
 
     raylib.addCSourceFiles(&c_sources, flags.items);
-    if (needs_glfw) raylib.addCSourceFile(srcdir ++ "rglfw.c", glfw_flags.items);
+    if (needs_glfw) raylib.addCSourceFile(std.Build.Step.Compile.CSourceFile{
+        .file = std.Build.LazyPath{ .path = srcdir ++ "rglfw.c" },
+        .flags = glfw_flags.items,
+    });
 
     for (targets.items) |t| {
         t.linkLibC();

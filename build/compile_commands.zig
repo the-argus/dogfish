@@ -21,7 +21,7 @@ pub fn registerCompileSteps(input_steps: std.ArrayList(*std.Build.CompileStep)) 
 
 // NOTE: some of the CSourceFiles pointed at by the elements of the returned
 // array are allocated with the allocator, some are not.
-fn getCSources(allocator: std.mem.Allocator) ![]*CSourceFiles {
+fn getCSources(b: *std.Build, allocator: std.mem.Allocator) ![]*CSourceFiles {
     var res = std.ArrayList(*CSourceFiles).init(allocator);
 
     var index: u32 = 0;
@@ -51,8 +51,8 @@ fn getCSources(allocator: std.mem.Allocator) ![]*CSourceFiles {
         for (step.include_dirs.items) |include_dir| {
             switch (include_dir) {
                 .other_step => |other_step| try compile_steps.?.append(other_step),
-                .raw_path => |path| try shared_flags.append(try common.includeFlag(allocator, path)),
-                .raw_path_system => |path| try shared_flags.append(try common.includeFlag(allocator, path)),
+                .path => |path| try shared_flags.append(try common.includeFlag(allocator, path.getPath(b))),
+                .path_system => |path| try shared_flags.append(try common.includeFlag(allocator, path.getPath(b))),
                 // TODO: support this
                 .config_header_step => {},
             }
@@ -74,14 +74,14 @@ fn getCSources(allocator: std.mem.Allocator) ![]*CSourceFiles {
                 },
                 .c_source_file => {
                     // convert C source file into c source fileS
-                    const path = link_object.c_source_file.source.path;
+                    const path = link_object.c_source_file.file.getPath(b);
                     var files_mem = try allocator.alloc([]const u8, 1);
                     files_mem[0] = path;
 
                     var source_file = try allocator.create(CSourceFiles);
 
                     var flags = std.ArrayList([]const u8).init(allocator);
-                    try flags.appendSlice(link_object.c_source_file.args);
+                    try flags.appendSlice(link_object.c_source_file.flags);
                     try flags.appendSlice(shared_flags.items);
 
                     source_file.* = CSourceFiles{
@@ -125,7 +125,7 @@ pub fn makeCdb(step: *std.Build.Step, prog_node: *std.Progress.Node) anyerror!vo
     defer file.close();
 
     const cwd_string = try toString(cwd, allocator);
-    const c_sources = try getCSources(allocator);
+    const c_sources = try getCSources(step.owner, allocator);
 
     // fill compile command entries, one for each file
     for (c_sources) |c_source_file_set| {
@@ -166,10 +166,7 @@ pub fn makeCdb(step: *std.Build.Step, prog_node: *std.Progress.Node) anyerror!vo
 
 fn writeCompileCommands(file: *std.fs.File, compile_commands: []CompileCommandEntry) !void {
     const options = std.json.StringifyOptions{
-        .whitespace = .{
-            .indent_level = 0,
-            .separator = true,
-        },
+        .whitespace = .indent_tab,
         .emit_null_optional_fields = false,
     };
 
