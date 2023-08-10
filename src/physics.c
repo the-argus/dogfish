@@ -108,6 +108,29 @@ void physics_batch_collide(const AABBBatchOptions* restrict batch1,
 	}
 }
 
+static void move(Vector3* restrict position, uint16_t index,
+				 const QuaternionBatchOptions* restrict direction_batch,
+				 const FloatBatchOptions* restrict speed_batch, bool same_speed)
+{
+	Quaternion* dir =
+		(Quaternion*)((uint8_t*)direction_batch->first +
+					  ((ptrdiff_t)index * direction_batch->stride));
+
+	float speed = 0;
+	if (same_speed == true) {
+		speed = *speed_batch->first;
+	} else {
+		speed = *(float*)((uint8_t*)speed_batch->first +
+						  ((ptrdiff_t)index * speed_batch->stride));
+	}
+
+	assert(QuaternionEquals(QuaternionNormalize(*dir), *dir));
+
+	// TODO: profile this math
+	*position = Vector3Add(
+		*position, Vector3RotateByQuaternion((Vector3){0, speed, 0}, *dir));
+}
+
 void physics_batch_collide_and_move(
 	const AABBBatchOptions* restrict batch1,
 	const AABBBatchOptions* restrict batch2,
@@ -165,8 +188,19 @@ void physics_batch_collide_and_move(
 
 	Contact contact;
 
+	// it's possible for the outer loop to never fire because there are no items
+	// in it. in that case the inner loop will also not fire, even if there are
+	// items. deal with that here
+	if (position_batch1->count == 0 && position_batch2->count != 0) {
+		for (uint16_t i = 0; i < position_batch2->count; ++i) {
+			Vector3* pos = (Vector3*)((uint8_t*)position_batch2->first +
+									  ((ptrdiff_t)i * position_batch2->stride));
+			move(pos, i, direction_batch2, speed_batch2, batch2_same_speed);
+		}
+	}
+
 	// hot hot HOT loop
-	for (uint16_t outer = 0; outer < batch1->count; ++outer) {
+	for (uint16_t outer = 0; outer < position_batch1->count; ++outer) {
 		// may be necessary to skip this body
 		if (disabled_batch1 != NULL) {
 			if (*(disabled_batch1->first +
@@ -189,27 +223,10 @@ void physics_batch_collide_and_move(
 			(Vector3*)((uint8_t*)position_batch1->first +
 					   ((ptrdiff_t)outer * position_batch1->stride));
 
-		Quaternion* outer_direction =
-			(Quaternion*)((uint8_t*)direction_batch1->first +
-						  ((ptrdiff_t)outer * direction_batch1->stride));
-		float outer_speed = 0;
+		move(outer_position, outer, direction_batch1, speed_batch1,
+			 batch1_same_speed);
 
-		if (batch1_same_speed) {
-			outer_speed = *speed_batch1->first;
-		} else {
-			outer_speed = *(float*)((uint8_t*)speed_batch1->first +
-									((ptrdiff_t)outer * speed_batch1->stride));
-		}
-
-		assert(QuaternionEquals(QuaternionNormalize(*outer_direction),
-								*outer_direction));
-
-		// TODO: profile this math
-		*outer_position = Vector3Add(
-			*outer_position,
-			Vector3Scale(QuaternionToEuler(*outer_direction), outer_speed));
-
-		for (uint16_t inner = 0; inner < batch2->count; ++inner) {
+		for (uint16_t inner = 0; inner < position_batch2->count; ++inner) {
 			// may be necessary to skip this body
 			if (disabled_batch2 != NULL) {
 				if (*(disabled_batch2->first +
@@ -234,28 +251,8 @@ void physics_batch_collide_and_move(
 
 			// also move all the inner bodies on the first run through
 			if (outer == 0) {
-				Quaternion* inner_direction =
-					(Quaternion*)((uint8_t*)direction_batch2->first +
-								  ((ptrdiff_t)inner *
-								   direction_batch2->stride));
-
-				float inner_speed = 0;
-				if (batch1_same_speed) {
-					inner_speed = *speed_batch2->first;
-				} else {
-					inner_speed =
-						*(float*)((uint8_t*)speed_batch2->first +
-								  ((ptrdiff_t)inner * speed_batch2->stride));
-				}
-
-				assert(QuaternionEquals(QuaternionNormalize(*inner_direction),
-										*inner_direction));
-
-				// TODO: profile this math
-				*inner_position =
-					Vector3Add(*inner_position,
-							   Vector3Scale(QuaternionToEuler(*inner_direction),
-											inner_speed));
+				move(inner_position, inner, direction_batch2, speed_batch2,
+					 batch2_same_speed);
 			}
 
 			if (physics_aabb_collide(outer_aabb, inner_aabb, outer_position,

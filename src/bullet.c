@@ -1,5 +1,6 @@
 #include "bullet.h"
 #include "bullet_internal.h"
+#include "bullet_render.h"
 #include "threadutils.h"
 #include <stdlib.h>
 #include <string.h>
@@ -28,6 +29,7 @@ static void bullet_flush_create_stack();
 /// initialize bullet data
 void bullet_init()
 {
+	universal_speed = 1;
 	universal_aabb = (AABB){
 		.x = BULLET_PHYSICS_WIDTH,
 		.y = BULLET_PHYSICS_WIDTH,
@@ -90,10 +92,11 @@ void bullet_init()
 	// Get shader locations
 	bullet_shader.locs[SHADER_LOC_MATRIX_MVP] =
 		GetShaderLocation(bullet_shader, "mvp");
-	// TODO: use shader locs to pass the bullet array to the gpu in DrawBullets
+	bullet_shader.locs[BULLET_SHADER_LOC_POSITION] =
+		GetShaderLocationAttrib(bullet_shader, "bulletPosition");
+	bullet_shader.locs[BULLET_SHADER_LOC_VELOCITY] =
+		GetShaderLocationAttrib(bullet_shader, "bulletVelocity");
 
-	// bullet_shader.locs[SHADER_LOC_MATRIX_MODEL] =
-	// 	GetShaderLocationAttrib(bullet_shader, "bullet");
 	bullet_material = LoadMaterialDefault();
 	bullet_material.shader = bullet_shader;
 	bullet_material.maps[MATERIAL_MAP_DIFFUSE].color = RED;
@@ -148,9 +151,28 @@ void bullet_update()
 	// to reallocate
 	bullet_flush_destroy_stack();
 	bullet_flush_create_stack();
+
+	// options that we pass to physics in the next frame must respect any newly
+	// created bullets
+	bullet_data_position_options.count = bullet_data->count;
+	bullet_data_direction_options.count = bullet_data->count;
+	// bullet_data_speed_options.count = 1;
+	// bullet_data_aabb_options.count = 1;
+	bullet_data_disabled_options.count = bullet_data->count;
+	if (bullet_data->count > 0) {
+		// bullet_data_speed_options.first = &universal_speed;
+		// bullet_data_aabb_options.first = &universal_aabb;
+		bullet_data_position_options.first = &bullet_data->items[0].position;
+		bullet_data_direction_options.first = &bullet_data->items[0].direction;
+		bullet_data_disabled_options.first = (uint8_t*)bullet_data->disabled;
+	}
 }
 
-void bullet_draw() {}
+void bullet_draw()
+{
+	DrawBullets(&bullet_mesh, &bullet_material, bullet_data->items,
+				bullet_data->count);
+}
 
 // maybe implement this with a queue, linear search is probs expensive
 static bool bullet_find_disabled(uint16_t* index)
@@ -183,6 +205,14 @@ static void bullet_flush_destroy_stack()
 	destruction_stack.count = 0;
 }
 
+static void pop_creation_stack_to(uint16_t index)
+{
+	memcpy(&bullet_data->items[index],
+		   &creation_stack.stack[creation_stack.count - 1], sizeof(Bullet));
+	bullet_data->disabled[index] = false;
+	--creation_stack.count;
+}
+
 static void bullet_flush_create_stack()
 {
 	/// creation is difficult. first try to append onto the end if there is
@@ -198,10 +228,7 @@ static void bullet_flush_create_stack()
 
 		for (uint16_t i = 0; i < available_spots; ++i) {
 			uint16_t index = bullet_data->count + i;
-			memcpy(&bullet_data->items[index],
-				   &creation_stack.stack[creation_stack.count], sizeof(Bullet));
-			bullet_data->disabled[index] = false;
-			--creation_stack.count;
+			pop_creation_stack_to(index);
 		}
 
 		bullet_data->count += available_spots;
@@ -219,11 +246,7 @@ static void bullet_flush_create_stack()
 				break; // this method isn't going to work anymore
 			}
 			// found an available disabled index!!
-			memcpy(&bullet_data->items[available_index],
-				   &creation_stack.stack[creation_stack.count - 1],
-				   sizeof(Bullet));
-			bullet_data->disabled[available_index] = false;
-			creation_stack.count -= 1;
+			pop_creation_stack_to(available_index);
 		}
 	}
 

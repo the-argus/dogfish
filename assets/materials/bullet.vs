@@ -5,13 +5,8 @@ in vec3 vertexPosition;
 in vec2 vertexTexCoord;
 in vec3 vertexNormal;
 
-struct Bullet {
-    vec3 position;
-    vec4 velocity; // quaternion
-};
-
-// per-instance values
-in Bullet bullet;
+in vec3 bulletPosition;
+in vec4 bulletVelocity; // quaternion
 
 // Input uniform values
 uniform mat4 mvp;
@@ -27,10 +22,11 @@ out vec3 fragNormal;
 void main()
 {
     // Compute MVP for current instance
-    mat4 mvpi = mvp*in;
+    // TODO: factor in bullet velocity
+    mat4 mvpi = mvp;
 
     // Send vertex attributes to fragment shader
-    vec3 pos = mvpi*vec4(vertexPosition, 1.0);
+    vec4 pos = mvpi*vec4(vertexPosition + bulletPosition, 1.0);
     fragPosition = vec3(pos);
     fragTexCoord = vertexTexCoord;
     fragNormal = normalize(vec3(matNormal*vec4(vertexNormal, 1.0)));

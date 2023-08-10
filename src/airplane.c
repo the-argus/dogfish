@@ -114,12 +114,14 @@ airplane_on_collision(uint16_t bullet_handle, uint16_t airplane_handle,
 void airplane_update(float delta_time)
 {
 	const Inputstate* input = gamestate_get_inputstate();
+	const FullCamera* cameras = gamestate_get_cameras();
 	for (uint8_t i = 0; i < NUM_PLANES; ++i) {
 		// all planes shoot in the same way
 		if (input->cursor[i].shoot || input->controller[i].shoot) {
 			// bullet shoots in the direction you're moving...
 			Bullet new_bullet = {
-				.direction = planes[i].direction,
+				.direction = QuaternionFromEuler(cameras[i].angle.y, 0,
+												 cameras[i].angle.x),
 				.position = planes[i].position,
 			};
 			bullet_create(&new_bullet, i);

@@ -6,12 +6,15 @@
 #include <rlgl.h>
 #include <stdlib.h>
 
+// NOTE: raylib defines shader locs up to 25. allows for a max of 32
+#define BULLET_SHADER_LOC_VELOCITY 26
+#define BULLET_SHADER_LOC_POSITION 27
+
 // Draw multiple mesh instances with material and different transforms
 void DrawBullets(const Mesh* mesh, const Material* material,
 				 const Bullet* bullets, uint16_t instances)
 {
 	// Instancing required variables
-	float16* instanceTransforms = NULL;
 	unsigned int instancesVboId = 0;
 
 	// Bind shader program
@@ -62,13 +65,6 @@ void DrawBullets(const Mesh* mesh, const Material* material,
 		rlSetUniformMatrix(material->shader.locs[SHADER_LOC_MATRIX_PROJECTION],
 						   matProjection);
 
-	// Create instances buffer
-	instanceTransforms = (float16*)RL_MALLOC(instances * sizeof(float16));
-
-	// Fill buffer with instances transformations as float16 arrays
-	// for (int i = 0; i < instances; i++)
-	// 	instanceTransforms[i] = MatrixToFloatV(transforms[i]);
-
 	// Enable mesh VAO to attach new buffer
 	rlEnableVertexArray(mesh->vaoId);
 
@@ -77,20 +73,29 @@ void DrawBullets(const Mesh* mesh, const Material* material,
 	// cases and on all platforms, anecdotally glMapBuffer() seems very slow
 	// (syncs) while glBufferSubData() seems no faster, since we're transferring
 	// all the transform matrices anyway
-	instancesVboId = rlLoadVertexBuffer(instanceTransforms,
-										instances * sizeof(float16), false);
+	static_assert(sizeof(Bullet) % sizeof(float) == 0,
+				  "Bullet incorrectly sized for transmission to gpu");
+	instancesVboId =
+		rlLoadVertexBuffer(bullets, (int)(instances * sizeof(Bullet)), false);
 
-	// Instances transformation matrices are send to shader attribute location:
-	// SHADER_LOC_MATRIX_MODEL
-	for (unsigned int i = 0; i < 4; i++) {
-		rlEnableVertexAttribute(material->shader.locs[SHADER_LOC_MATRIX_MODEL] +
-								i);
-		rlSetVertexAttribute(material->shader.locs[SHADER_LOC_MATRIX_MODEL] + i,
-							 4, RL_FLOAT, 0, sizeof(Matrix),
-							 (void*)(i * sizeof(Vector4)));
-		rlSetVertexAttributeDivisor(
-			material->shader.locs[SHADER_LOC_MATRIX_MODEL] + i, 1);
-	}
+	rlEnableVertexAttribute(material->shader.locs[BULLET_SHADER_LOC_POSITION]);
+	rlEnableVertexAttribute(material->shader.locs[BULLET_SHADER_LOC_VELOCITY]);
+
+	// TODO: figure out what this means
+	rlSetVertexAttributeDivisor(
+		material->shader.locs[BULLET_SHADER_LOC_POSITION], 1);
+	rlSetVertexAttributeDivisor(
+		material->shader.locs[BULLET_SHADER_LOC_VELOCITY], 1);
+
+	// pass in the position part of the buffer
+	// rlSetVertexAttribute(unsigned int index, int compSize, int type, bool
+	// normalized, int stride, const void *pointer);
+	rlSetVertexAttribute(material->shader.locs[BULLET_SHADER_LOC_POSITION], 3,
+						 RL_FLOAT, 0, sizeof(Bullet), 0);
+
+	// and the direction (offset by one vector3)
+	rlSetVertexAttribute(material->shader.locs[BULLET_SHADER_LOC_VELOCITY], 4,
+						 RL_FLOAT, 0, sizeof(Bullet), (void*)(sizeof(Vector3)));
 
 	rlDisableVertexBuffer();
 	rlDisableVertexArray();
@@ -261,5 +266,4 @@ void DrawBullets(const Mesh* mesh, const Material* material,
 
 	// Remove instance transforms buffer
 	rlUnloadVertexBuffer(instancesVboId);
-	RL_FREE(instanceTransforms);
 }
