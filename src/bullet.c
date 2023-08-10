@@ -25,6 +25,7 @@ static Shader bullet_shader;
 static bool bullet_find_disabled(uint16_t* index);
 static void bullet_flush_destroy_stack();
 static void bullet_flush_create_stack();
+static void bullet_set_batch_options_for_dynamically_allocated_memory();
 
 /// initialize bullet data
 void bullet_init()
@@ -42,7 +43,7 @@ void bullet_init()
 	bullet_data->count = 0;
 	bullet_data->capacity = BULLET_POOL_SIZE_INITIAL;
 	bullet_data->sources = NULL;
-	bullet_data->disabled = RL_CALLOC(BULLET_POOL_SIZE_INITIAL, 1);
+	bullet_data->disabled = RL_MALLOC(BULLET_POOL_SIZE_INITIAL);
 	CHECKMEM(bullet_data->disabled);
 	// set disabled to true by default for all
 	for (size_t i = 0; i < BULLET_POOL_SIZE_INITIAL; ++i) {
@@ -58,29 +59,13 @@ void bullet_init()
 		.count = 1,
 	};
 
-	bullet_data_position_options = (Vector3BatchOptions){
-		.count = bullet_data->count,
-		.first = &bullet_data->items[0].position,
-		.stride = sizeof(Bullet),
-	};
-
-	bullet_data_direction_options = (QuaternionBatchOptions){
-		.count = bullet_data->count,
-		.first = &bullet_data->items[0].direction,
-		.stride = sizeof(Bullet),
-	};
-
 	bullet_data_speed_options = (FloatBatchOptions){
 		.count = 1,
 		.first = &universal_speed,
 		.stride = NOSTRIDE,
 	};
 
-	bullet_data_disabled_options = (ByteBatchOptions){
-		.count = bullet_data->count,
-		.first = (uint8_t*)bullet_data->disabled,
-		.stride = sizeof(bullet_data->disabled[0]),
-	};
+	bullet_set_batch_options_for_dynamically_allocated_memory();
 
 	// debug mesh with no normal information
 	bullet_mesh = GenMeshCube(BULLET_PHYSICS_WIDTH, BULLET_PHYSICS_WIDTH,
@@ -109,6 +94,27 @@ void bullet_cleanup()
 	RL_FREE(bullet_data->disabled);
 	// RL_FREE(bullet_data->sources);
 	RL_FREE(bullet_data);
+}
+
+static void bullet_set_batch_options_for_dynamically_allocated_memory()
+{
+	bullet_data_position_options = (Vector3BatchOptions){
+		.count = bullet_data->count,
+		.first = &bullet_data->items[0].position,
+		.stride = sizeof(Bullet),
+	};
+
+	bullet_data_direction_options = (QuaternionBatchOptions){
+		.count = bullet_data->count,
+		.first = &bullet_data->items[0].direction,
+		.stride = sizeof(Bullet),
+	};
+
+	bullet_data_disabled_options = (ByteBatchOptions){
+		.count = bullet_data->count,
+		.first = (uint8_t*)bullet_data->disabled,
+		.stride = sizeof(bullet_data->disabled[0]),
+	};
 }
 
 /// "Create" a new bullet (actually just queues it to be created)
@@ -207,6 +213,7 @@ static void bullet_flush_destroy_stack()
 
 static void pop_creation_stack_to(uint16_t index)
 {
+	assert(creation_stack.count > 0);
 	memcpy(&bullet_data->items[index],
 		   &creation_stack.stack[creation_stack.count - 1], sizeof(Bullet));
 	bullet_data->disabled[index] = false;
@@ -215,6 +222,10 @@ static void pop_creation_stack_to(uint16_t index)
 
 static void bullet_flush_create_stack()
 {
+	static_assert(BULLET_POOL_SIZE_INITIAL / 2 > BULLET_STACKS_MAX_SIZE,
+				  "bullet pool must be bigger than potential maximum number of "
+				  "bullet creations so that at least reallocation is "
+				  "guaranteed to fit all queued bullets");
 	/// creation is difficult. first try to append onto the end if there is
 	/// empty space
 	{
@@ -247,18 +258,33 @@ static void bullet_flush_create_stack()
 			}
 			// found an available disabled index!!
 			pop_creation_stack_to(available_index);
+			// not increasing count here, this was already within the bulletdata
+			// pool, just disabled
 		}
 	}
 
 	{
-		// TODO: when implementing this, make sure to set the batch options to
-		// the newly allocated structs
-		TraceLog(
-			LOG_FATAL,
-			"Bullet data reallocation not implemented. Successfully allocated "
-			"%d bullets in initial buffer",
-			bullet_data->count);
-		threadutils_exit(EXIT_FAILURE);
+		size_t new_size = (long)bullet_data->capacity * 2;
+		bool* new_disabled_batch =
+			RL_REALLOC(bullet_data->disabled, new_size * sizeof(bool));
+		// set all the new memory to disabled by default
+		for (size_t i = bullet_data->capacity; i < new_size; ++i) {
+			new_disabled_batch[i] = true;
+		}
+
+		bullet_data = RL_REALLOC(bullet_data, sizeof(BulletData) +
+												  (sizeof(Bullet) * new_size));
+		bullet_data->disabled = new_disabled_batch;
+		bullet_data->capacity = new_size;
+
+		bullet_set_batch_options_for_dynamically_allocated_memory();
+
+		uint16_t end_count = bullet_data->count + creation_stack.count;
+		assert(end_count <= bullet_data->capacity);
+		for (uint16_t i = bullet_data->count; i < end_count; ++i) {
+			pop_creation_stack_to(i);
+		}
+		bullet_data->count = end_count;
 	}
 }
 
