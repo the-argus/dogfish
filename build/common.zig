@@ -16,7 +16,7 @@ pub fn include(
     path: []const u8,
 ) !void {
     for (targets.items) |target| {
-        target.addIncludePath(path);
+        target.addIncludePath(std.Build.LazyPath{ .path = path });
     }
 }
 
