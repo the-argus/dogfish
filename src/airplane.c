@@ -29,10 +29,21 @@ typedef struct
 
 #define NUM_PLANES 2
 static Airplane planes[NUM_PLANES];
-static const char* model_filename = "assets/models/airplane.obj";
+#define AIRPLANE_MODEL_SCALEFACTOR 0.1f
+static const char* model_filename = "assets/models/airplane.gltf";
+static const char* diffuse_texture_filenames[] = {
+	"assets/textures/airplane/hainan_diffuse.tga",
+	"assets/textures/airplane/lufthansa_diffuse.tga",
+};
+static const char* metallic_texture_filename =
+	"assets/textures/airplane/metallic.tga";
+static const char* normal_texture_filename =
+	"assets/textures/airplane/normal.tga";
 static Material materials[NUM_PLANES];
 static Model models[NUM_PLANES];
-static Color colors[NUM_PLANES] = {BLUE, GREEN};
+static Texture2D diffuse[NUM_PLANES];
+static Texture2D metallic;
+static Texture2D normal;
 static AABBBatchOptions airplane_data_aabb_options;
 static Vector3BatchOptions airplane_data_position_options;
 static QuaternionBatchOptions airplane_data_direction_options;
@@ -46,6 +57,9 @@ static inline void airplane_update_p2(float delta_time);
 
 void airplane_init()
 {
+	metallic = LoadTexture(metallic_texture_filename);
+	normal = LoadTexture(normal_texture_filename);
+
 	for (uint8_t i = 0; i < NUM_PLANES; ++i) {
 		planes[i] = (Airplane){
 			.aabb =
@@ -60,6 +74,15 @@ void airplane_init()
 		};
 
 		models[i] = LoadModel(model_filename);
+		diffuse[i] = LoadTexture(diffuse_texture_filenames[i]);
+		// diffuse
+		SetMaterialTexture(&models[i].materials[0], MATERIAL_MAP_ALBEDO,
+						   diffuse[i]);
+		// specular
+		SetMaterialTexture(&models[i].materials[0], MATERIAL_MAP_METALNESS,
+						   metallic);
+		SetMaterialTexture(&models[i].materials[0], MATERIAL_MAP_NORMAL,
+						   normal);
 	}
 
 	planes[0].position = (Vector3){INITIAL_AIRPLANE_POS_P1};
@@ -99,8 +122,11 @@ void airplane_init()
 
 void airplane_cleanup()
 {
+	UnloadTexture(normal);
+	UnloadTexture(metallic);
 	for (uint8_t i = 0; i < NUM_PLANES; ++i) {
 		UnloadModel(models[i]);
+		UnloadTexture(diffuse[i]);
 	}
 }
 
@@ -157,8 +183,11 @@ void airplane_draw()
 {
 	for (uint8_t i = 0; i < NUM_PLANES; ++i) {
 		// model rotates toward where it is moving
-		models[i].transform = QuaternionToMatrix(planes[i].direction);
-		DrawModel(models[i], planes[i].position, 1.0f, colors[i]);
+		models[i].transform = MatrixMultiply(
+			QuaternionToMatrix(planes[i].direction),
+			MatrixScale(AIRPLANE_MODEL_SCALEFACTOR, AIRPLANE_MODEL_SCALEFACTOR,
+						AIRPLANE_MODEL_SCALEFACTOR));
+		DrawModel(models[i], planes[i].position, 1.0f, WHITE);
 	}
 }
 
