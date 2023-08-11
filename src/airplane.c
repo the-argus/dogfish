@@ -178,8 +178,8 @@ void airplane_update(float delta_time)
 		if (input->cursor[i].shoot || input->controller[i].shoot) {
 			// bullet shoots in the direction you're moving...
 			Bullet new_bullet = {
-				.direction = QuaternionFromEuler(cameras[i].angle.y, 0,
-												 cameras[i].angle.x),
+				.direction = QuaternionFromEuler(0,
+												 cameras[i].angle.x + PI, cameras[i].angle.y),
 				.position = planes[i].position,
 			};
 			bullet_create(&new_bullet, i);

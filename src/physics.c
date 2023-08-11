@@ -127,8 +127,18 @@ static void move(Vector3* restrict position, uint16_t index,
 	assert(QuaternionEquals(QuaternionNormalize(*dir), *dir));
 
 	// TODO: profile this math
-	*position = Vector3Add(
-		*position, Vector3RotateByQuaternion((Vector3){0, speed, 0}, *dir));
+	// *position = Vector3Add(
+	// 	*position, Vector3RotateByQuaternion((Vector3){0, 0, speed}, *dir));
+
+	Vector3 move_by = {speed, 0, 0};
+	// move_by =
+	// 	Vector3RotateByAxisAngle(move_by, (Vector3){0, 1, 0}, camera->angle.x);
+    move_by = Vector3RotateByQuaternion(move_by, *dir);
+
+	// right vector is the axis
+	// Vector3 axis = Vector3CrossProduct((Vector3){0, 1, 0}, move_by);
+	// move_by = Vector3RotateByAxisAngle(move_by, axis, camera->angle.y);
+    *position = Vector3Add(*position, move_by);
 }
 
 void physics_batch_collide_and_move(
