@@ -265,6 +265,15 @@ static void bullet_flush_create_stack()
 
 	{
 		size_t new_size = (long)bullet_data->capacity * 2;
+
+		if (new_size >= BULLET_POOL_MAX_POSSIBLE_COUNT) {
+			TraceLog(LOG_FATAL,
+					 "More bullets fired than an unsigned 16 bit integer can "
+					 "describe. Increase the integer size used for array "
+					 "indices if you want more bullets");
+			threadutils_exit(EXIT_FAILURE);
+		}
+
 		bool* new_disabled_batch =
 			RL_REALLOC(bullet_data->disabled, new_size * sizeof(bool));
 		// set all the new memory to disabled by default

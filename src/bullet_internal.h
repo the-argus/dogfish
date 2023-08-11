@@ -11,6 +11,7 @@
 #define BULLET_PHYSICS_LENGTH 0.5f
 #define BULLET_MASS 1
 #define BULLET_POOL_SIZE_INITIAL 256
+#define BULLET_POOL_MAX_POSSIBLE_COUNT 65535
 // maximum number of bullets that can be created/destroyed until update is
 // called (ie. per frame)
 #define BULLET_STACKS_MAX_SIZE 32
