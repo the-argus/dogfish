@@ -71,8 +71,8 @@ void bullet_init()
 	bullet_mesh = GenMeshCube(BULLET_PHYSICS_WIDTH, BULLET_PHYSICS_WIDTH,
 							  BULLET_PHYSICS_LENGTH);
 	bullet_material = LoadMaterialDefault();
-	bullet_shader = LoadShader("assets/materials/bullet.vs",
-							   "assets/materials/instanced.fs");
+	bullet_shader = LoadShader("assets/materials/bullet.vert",
+							   "assets/materials/instanced.frag");
 
 	// Get shader locations
 	bullet_shader.locs[SHADER_LOC_MATRIX_MVP] =

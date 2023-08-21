@@ -80,9 +80,9 @@ void render(void (*game_draw)())
 void render_pipeline_init()
 {
 	init_rendertextures();
-	shader = LoadShader(0, "assets/postprocessing/edges.fs");
-	gather_shader = LoadShader("assets/postprocessing/gather.vs",
-							   "assets/postprocessing/gather.fs");
+	shader = LoadShader(0, "assets/postprocessing/edges.frag");
+	gather_shader = LoadShader("assets/postprocessing/gather.vert",
+							   "assets/postprocessing/gather.frag");
 
 	// add additional textures to rt1
 	rlFramebufferAttach(rt1.id, rt1.texture.id, 0, RL_ATTACHMENT_TEXTURE2D, 0);

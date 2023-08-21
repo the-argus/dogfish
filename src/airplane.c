@@ -47,8 +47,9 @@ static const char* metallic_texture_filename =
 	"assets/textures/airplane/metallic.png";
 static const char* normal_texture_filename =
 	"assets/textures/airplane/normal.png";
+// TODO: normals and stuff in here is the reason the plane model looks weird
 static const char* airplane_frag_shader_filename =
-	"assets/materials/airplane.fs";
+	"assets/materials/airplane.frag";
 static Shader shader;
 static Material materials[NUM_PLANES];
 static Model models[NUM_PLANES];
