@@ -9,6 +9,9 @@ typedef enum : uint8_t
 {
 	PLAYER_ONE = 0,
 	PLAYER_TWO,
+#ifndef NDEBUG
+	PLAYER_NULL,
+#endif
 } Source;
 
 /// A bullet.
@@ -18,9 +21,18 @@ typedef struct
 	Quaternion direction;
 } Bullet;
 
-/// "Create" a new bullet (actually just queues it to be created)
-void bullet_create(const Bullet* bullet, Source source);
+typedef struct
+{
+	Bullet bullet;
+	Source source;
+} BulletCreateOptions;
 
+/// "Create" a new bullet (actually just queues it to be created next frame)
+void bullet_create(const BulletCreateOptions* options);
+
+/// Get whether a bullet was fired by player one or two.
+/// Implemented in a cache-unfriendly way (doing this will likely read from
+/// cold memory)
 Source bullet_get_source(BulletHandle bullet);
 /// Destroy a bullet (queues it for destruction)
 void bullet_destroy(BulletHandle bullet);

@@ -26,6 +26,7 @@ static bool bullet_find_disabled(uint16_t* index);
 static void bullet_flush_destroy_stack();
 static void bullet_flush_create_stack();
 static void bullet_set_batch_options_for_dynamically_allocated_memory();
+static void bullet_despawn_old();
 
 /// initialize bullet data
 void bullet_init()
@@ -42,12 +43,18 @@ void bullet_init()
 	CHECKMEM(bullet_data);
 	bullet_data->count = 0;
 	bullet_data->capacity = BULLET_POOL_SIZE_INITIAL;
-	bullet_data->sources = NULL;
-	bullet_data->disabled = RL_MALLOC(BULLET_POOL_SIZE_INITIAL);
+	bullet_data->sources = RL_MALLOC(BULLET_POOL_SIZE_INITIAL * sizeof(Source));
+	bullet_data->disabled = RL_MALLOC(BULLET_POOL_SIZE_INITIAL * sizeof(bool));
+	bullet_data->create_times =
+		RL_MALLOC(BULLET_POOL_SIZE_INITIAL * sizeof(double));
 	CHECKMEM(bullet_data->disabled);
 	// set disabled to true by default for all
 	for (size_t i = 0; i < BULLET_POOL_SIZE_INITIAL; ++i) {
 		bullet_data->disabled[i] = true;
+#ifndef NDEBUG
+		bullet_data->sources[i] = PLAYER_NULL;
+		bullet_data->create_times[i] = INFINITY;
+#endif
 	}
 
 	creation_stack.count = 0;
@@ -92,7 +99,8 @@ void bullet_cleanup()
 	UnloadMesh(bullet_mesh);
 	UnloadMaterial(bullet_material); // will also clean up shader
 	RL_FREE(bullet_data->disabled);
-	// RL_FREE(bullet_data->sources);
+	RL_FREE(bullet_data->sources);
+	RL_FREE(bullet_data->create_times);
 	RL_FREE(bullet_data);
 }
 
@@ -118,7 +126,7 @@ static void bullet_set_batch_options_for_dynamically_allocated_memory()
 }
 
 /// "Create" a new bullet (actually just queues it to be created)
-void bullet_create(const Bullet* bullet, Source source)
+void bullet_create(const BulletCreateOptions* options)
 {
 	if (creation_stack.count >=
 		sizeof(creation_stack.stack) / sizeof(creation_stack.stack[0])) {
@@ -128,14 +136,15 @@ void bullet_create(const Bullet* bullet, Source source)
 		return;
 	}
 	// push the bullet onto the creation stack
-	creation_stack.stack[creation_stack.count] = *bullet;
+	creation_stack.stack[creation_stack.count] = *options;
 	++creation_stack.count;
 }
 
 Source bullet_get_source(BulletHandle bullet)
 {
-	TraceLog(LOG_FATAL, "function %s not implemented", __FUNCTION__);
-	threadutils_exit(EXIT_FAILURE);
+	// this is the only time we read from sources
+	assert(bullet_data->sources[bullet] != PLAYER_NULL);
+	return bullet_data->sources[bullet];
 }
 
 void bullet_destroy(BulletHandle bullet)
@@ -165,17 +174,18 @@ void bullet_update()
 	// bullet_data_speed_options.count = 1;
 	// bullet_data_aabb_options.count = 1;
 	bullet_data_disabled_options.count = bullet_data->count;
-	if (bullet_data->count > 0) {
-		// bullet_data_speed_options.first = &universal_speed;
-		// bullet_data_aabb_options.first = &universal_aabb;
-		bullet_data_position_options.first = &bullet_data->items[0].position;
-		bullet_data_direction_options.first = &bullet_data->items[0].direction;
-		bullet_data_disabled_options.first = (uint8_t*)bullet_data->disabled;
-	}
+
+	// NOTE: if (bullet_data->count > 0)... but eh branchless is probably better
+	bullet_data_position_options.first = &bullet_data->items[0].position;
+	bullet_data_direction_options.first = &bullet_data->items[0].direction;
+	bullet_data_disabled_options.first = (uint8_t*)bullet_data->disabled;
+	// bullet_data_speed_options.first = &universal_speed;
+	// bullet_data_aabb_options.first = &universal_aabb;
 }
 
 void bullet_draw()
 {
+	// TODO: don't draw disabled bullets
 	DrawBullets(&bullet_mesh, &bullet_material, bullet_data->items,
 				bullet_data->count);
 }
@@ -183,6 +193,7 @@ void bullet_draw()
 // maybe implement this with a queue, linear search is probs expensive
 static bool bullet_find_disabled(uint16_t* index)
 {
+	// TODO: this seems to always return false?
 	for (uint16_t i = 0; i < bullet_data->count; ++i) {
 		if (bullet_data->disabled[i]) {
 			*index = i;
@@ -214,9 +225,12 @@ static void bullet_flush_destroy_stack()
 static void pop_creation_stack_to(uint16_t index)
 {
 	assert(creation_stack.count > 0);
-	memcpy(&bullet_data->items[index],
-		   &creation_stack.stack[creation_stack.count - 1], sizeof(Bullet));
+	BulletCreateOptions* create_options =
+		&creation_stack.stack[creation_stack.count - 1];
+	memcpy(&bullet_data->items[index], &create_options->bullet, sizeof(Bullet));
 	bullet_data->disabled[index] = false;
+	bullet_data->sources[index] = create_options->source;
+	bullet_data->create_times[index] = GetTime();
 	--creation_stack.count;
 }
 
@@ -254,8 +268,11 @@ static void bullet_flush_create_stack()
 				return; // done
 			}
 			if (!bullet_find_disabled(&available_index)) {
+				TraceLog(LOG_WARNING,
+						 "no disabled bullets exist... going to reallocate");
 				break; // this method isn't going to work anymore
 			}
+			TraceLog(LOG_WARNING, "found disabled bullet to replace!");
 			// found an available disabled index!!
 			pop_creation_stack_to(available_index);
 			// not increasing count here, this was already within the bulletdata
@@ -264,9 +281,10 @@ static void bullet_flush_create_stack()
 	}
 
 	{
-		size_t new_size = (long)bullet_data->capacity * 2;
+		size_t new_size =
+			(long)bullet_data->capacity * BULLET_ALLOCATION_SCALE_FACTOR;
 
-		if (new_size >= BULLET_POOL_MAX_POSSIBLE_COUNT) {
+		if (new_size > BULLET_POOL_MAX_POSSIBLE_COUNT) {
 			TraceLog(LOG_FATAL,
 					 "More bullets fired than an unsigned 16 bit integer can "
 					 "describe. Increase the integer size used for array "
@@ -274,16 +292,25 @@ static void bullet_flush_create_stack()
 			threadutils_exit(EXIT_FAILURE);
 		}
 
-		bool* new_disabled_batch =
-			RL_REALLOC(bullet_data->disabled, new_size * sizeof(bool));
-		// set all the new memory to disabled by default
-		for (size_t i = bullet_data->capacity; i < new_size; ++i) {
-			new_disabled_batch[i] = true;
-		}
-
 		bullet_data = RL_REALLOC(bullet_data, sizeof(BulletData) +
 												  (sizeof(Bullet) * new_size));
-		bullet_data->disabled = new_disabled_batch;
+
+		bullet_data->disabled =
+			RL_REALLOC(bullet_data->disabled, new_size * sizeof(bool));
+		bullet_data->sources =
+			RL_REALLOC(bullet_data->sources, new_size * sizeof(Source));
+		bullet_data->create_times =
+			RL_REALLOC(bullet_data->create_times, new_size * sizeof(double));
+		// set all the new memory to defaults
+		for (size_t i = bullet_data->capacity; i < new_size; ++i) {
+			bullet_data->disabled[i] = true;
+#ifndef NDEBUG
+			bullet_data->sources[i] = PLAYER_NULL;
+			// this we can check by doing asserts that the creation time is less
+			// than the current time
+			bullet_data->create_times[i] = INFINITY;
+#endif
+		}
 		bullet_data->capacity = new_size;
 
 		bullet_set_batch_options_for_dynamically_allocated_memory();
@@ -314,4 +341,28 @@ void bullet_move_and_collide_with(
 		other_position, &bullet_data_direction_options, other_direction,
 		&bullet_data_speed_options, other_speed, &bullet_data_disabled_options,
 		NULL, handler);
+}
+
+static void bullet_despawn_old()
+{
+	static size_t times_called;
+	++times_called;
+
+	if (times_called < CALLS_PER_DESPAWN) {
+		return;
+	}
+
+	double current = GetTime();
+	for (size_t i = 0; i < bullet_data->count; ++i) {
+		if (bullet_data->disabled[i]) {
+			continue;
+		}
+		// times initialized to INFINITY, make sure its not that
+		assert(bullet_data->create_times[i] < current);
+		if (current - bullet_data->create_times[i] >= DESPAWN_TIME_SECONDS) {
+			bullet_data->disabled[i] = true;
+		}
+	}
+
+	times_called = 0;
 }

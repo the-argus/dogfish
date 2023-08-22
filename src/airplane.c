@@ -3,6 +3,7 @@
 #include "gamestate.h"
 #include "input.h"
 #include "physics.h"
+#include "shorthand.h"
 #include "threadutils.h"
 #include <raymath.h>
 #define RLIGHTS_IMPLEMENTATION
@@ -166,7 +167,10 @@ static CollisionHandlerReturnCode
 airplane_on_collision(uint16_t bullet_handle, uint16_t airplane_handle,
 					  Contact* contact)
 {
-	TraceLog(LOG_INFO, "Player %d hit by bullet", airplane_handle + 1);
+	UNUSED(contact);
+	uint8_t player_who_fired = bullet_get_source(bullet_handle);
+	TraceLog(LOG_INFO, "Player %d hit by bullet from player %d",
+			 airplane_handle + 1, player_who_fired);
 	return CONTINUE;
 }
 
@@ -178,12 +182,16 @@ void airplane_update(float delta_time)
 		// all planes shoot in the same way
 		if (input->cursor[i].shoot || input->controller[i].shoot) {
 			// bullet shoots in the direction you're moving...
-			Bullet new_bullet = {
-				.direction = QuaternionFromEuler(0,
-												 cameras[i].angle.x + PI, cameras[i].angle.y),
-				.position = planes[i].position,
+			BulletCreateOptions bullet_options = {
+				.bullet =
+					(Bullet){
+						.direction = QuaternionFromEuler(
+							0, cameras[i].angle.x + PI, cameras[i].angle.y),
+						.position = planes[i].position,
+					},
+				.source = (Source)i,
 			};
-			bullet_create(&new_bullet, i);
+			bullet_create(&bullet_options);
 		}
 
 		// also update the plane's velocity
