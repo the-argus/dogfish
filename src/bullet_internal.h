@@ -28,8 +28,6 @@ typedef struct
 	uint16_t count;
 	uint16_t capacity;
 	Source* sources; // the source of each bullet, ie PLAYER_ONE or TWO
-	bool* disabled;	 // array of bools, true if the bullet is disabled, false
-					 // otherwise
 	double* create_times;
 	Bullet items[0];
 } BulletData;

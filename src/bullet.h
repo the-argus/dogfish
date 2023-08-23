@@ -3,6 +3,8 @@
 #include <raylib.h>
 #include <stdint.h>
 
+/// Way of addressing a certain bullet on a particular frame. Invalid after
+/// frame ends.
 typedef struct
 {
 	uint16_t raw;
