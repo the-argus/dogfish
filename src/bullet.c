@@ -5,6 +5,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+// TODO: make thread safe- when create or destroy stacks are being modified,
+// don't read from bullet data. (those are the only writers to the data so
+// otherwise it should be safe)
+
 // data
 static AABBBatchOptions bullet_data_aabb_options;
 static Vector3BatchOptions bullet_data_position_options;
@@ -143,8 +147,8 @@ void bullet_create(const BulletCreateOptions* options)
 Source bullet_get_source(BulletHandle bullet)
 {
 	// this is the only time we read from sources
-	assert(bullet_data->sources[bullet] != PLAYER_NULL);
-	return bullet_data->sources[bullet];
+	assert(bullet_data->sources[bullet.raw] != PLAYER_NULL);
+	return bullet_data->sources[bullet.raw];
 }
 
 void bullet_destroy(BulletHandle bullet)
@@ -209,7 +213,7 @@ static void bullet_flush_destroy_stack()
 	// the operation of setting disabled to true
 	for (uint16_t i = 0; i < destruction_stack.count; ++i) {
 #ifndef NDEBUG
-		if (destruction_stack.stack[i] > bullet_data->count) {
+		if (destruction_stack.stack[i].raw > bullet_data->count) {
 			TraceLog(LOG_ERROR,
 					 "Queued bullet destruction handle %d out of range of "
 					 "bullet pool with count %d",
@@ -217,7 +221,7 @@ static void bullet_flush_destroy_stack()
 			continue;
 		}
 #endif
-		bullet_data->disabled[destruction_stack.stack[i]] = true;
+		bullet_data->disabled[destruction_stack.stack[i].raw] = true;
 	}
 	destruction_stack.count = 0;
 }

@@ -168,9 +168,17 @@ airplane_on_collision(uint16_t bullet_handle, uint16_t airplane_handle,
 					  Contact* contact)
 {
 	UNUSED(contact);
-	uint8_t player_who_fired = bullet_get_source(bullet_handle);
+	static_assert(sizeof(bullet_handle) == sizeof(BulletHandle),
+				  "Pointer cast on the next line could cause bugs");
+	uint8_t player_who_fired =
+		bullet_get_source(*(BulletHandle*)&bullet_handle);
 	TraceLog(LOG_INFO, "Player %d hit by bullet from player %d",
 			 airplane_handle + 1, player_who_fired);
+#ifndef NDEBUG
+	if (airplane_handle + 1 == player_who_fired) {
+		TraceLog(LOG_WARNING, "Player %d shot themselves.", player_who_fired);
+	}
+#endif
 	return CONTINUE;
 }
 

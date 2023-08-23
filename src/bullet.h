@@ -3,7 +3,10 @@
 #include <raylib.h>
 #include <stdint.h>
 
-typedef uint16_t BulletHandle;
+typedef struct
+{
+	uint16_t raw;
+} BulletHandle;
 
 typedef enum : uint8_t
 {
@@ -48,7 +51,9 @@ void bullet_cleanup();
 
 /// Collide and move a set of AABBs, positions, and velocities with the bullets.
 /// The collision handler's index_batch1 argument can be cast to a BulletHandle
-/// for use with bullet_destroy.
+/// for use with bullet_destroy or bullet_get_source.
+/// Do NOT store the bullet handle recieved from the collision handler across
+/// frame boundaries. May be invalidated if the bullet is destroyed.
 void bullet_move_and_collide_with(
 	const AABBBatchOptions* restrict other_aabb,
 	const Vector3BatchOptions* restrict other_position,

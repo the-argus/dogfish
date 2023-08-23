@@ -87,9 +87,8 @@ typedef enum : uint8_t
 	CONTINUE
 } CollisionHandlerReturnCode;
 
-typedef CollisionHandlerReturnCode (*CollisionHandler)(uint16_t index_batch1,
-													   uint16_t index_batch2,
-													   Contact* contact);
+typedef CollisionHandlerReturnCode (*const CollisionHandler)(
+	uint16_t index_batch1, uint16_t index_batch2, Contact* contact);
 
 AABB physics_aabb_from_sphere(float radius);
 
