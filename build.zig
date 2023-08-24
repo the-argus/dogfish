@@ -35,6 +35,7 @@ const c_sources = [_][]const u8{
     "src/render_pipeline.c",
     "src/skybox.c",
     "src/threadutils.c",
+    "src/quicksort.c",
 };
 
 pub fn build(b: *std.Build) !void {

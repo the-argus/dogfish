@@ -1,7 +1,9 @@
 #include "bullet.h"
 #include "bullet_internal.h"
 #include "bullet_render.h"
+#include "quicksort.h"
 #include "threadutils.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -198,8 +200,28 @@ void bullet_draw()
 
 static void bullet_flush_destroy_stack()
 {
-	// TODO: sort the destroy stack before doing this
-	for (uint16_t i = 0; i < destruction_stack.count; ++i) {
+	if (destruction_stack.count == 0) {
+		return;
+	}
+	// sort destroy operations by index
+	printf("original stack: ");
+	for (size_t i = 0; i < destruction_stack.count; ++i) {
+		printf("%d, ", destruction_stack.stack[i].raw);
+	}
+	printf("\n");
+
+	quicksort_inplace_uint16(&destruction_stack.stack[0].raw,
+							 destruction_stack.count, sizeof(BulletHandle));
+
+	printf("sorted stack: ");
+	for (size_t i = 0; i < destruction_stack.count; ++i) {
+		printf("%d, ", destruction_stack.stack[i].raw);
+	}
+	printf("\n");
+
+	// traverse backwards because quicksort sorts low to high, but we want
+	// to remove the items at the end first
+	for (int i = destruction_stack.count - 1; i >= 0; --i) {
 		const uint16_t index = destruction_stack.stack[i].raw;
 #ifndef NDEBUG
 		if (index > bullet_data->count) {
