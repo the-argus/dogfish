@@ -186,6 +186,9 @@ void airplane_update(float delta_time)
 {
 	const Inputstate* input = gamestate_get_inputstate();
 	const FullCamera* cameras = gamestate_get_cameras();
+	static_assert((sizeof(input->cursor) / sizeof(input->cursor[0])) ==
+					  NUM_PLANES,
+				  "Different number of planes and sets of controls.");
 	for (uint8_t i = 0; i < NUM_PLANES; ++i) {
 		// all planes shoot in the same way
 		if (input->cursor[i].shoot || input->controller[i].shoot) {
