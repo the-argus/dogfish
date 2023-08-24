@@ -204,20 +204,8 @@ static void bullet_flush_destroy_stack()
 		return;
 	}
 	// sort destroy operations by index
-	printf("original stack: ");
-	for (size_t i = 0; i < destruction_stack.count; ++i) {
-		printf("%d, ", destruction_stack.stack[i].raw);
-	}
-	printf("\n");
-
 	quicksort_inplace_uint16(&destruction_stack.stack[0].raw,
 							 destruction_stack.count, sizeof(BulletHandle));
-
-	printf("sorted stack: ");
-	for (size_t i = 0; i < destruction_stack.count; ++i) {
-		printf("%d, ", destruction_stack.stack[i].raw);
-	}
-	printf("\n");
 
 	// traverse backwards because quicksort sorts low to high, but we want
 	// to remove the items at the end first
@@ -258,6 +246,10 @@ static void bullet_flush_create_stack()
 	static const uint8_t max_reallocs = 1;
 	for (uint8_t i = 0; i < max_reallocs + 1; ++i) {
 		if (creation_stack.count > available_spots) {
+			// NOTE: thanks to despawning bullets, this code almost never
+			// runs. given a known player count reallocation could be
+			// removed altogether due to the theoretical limits of how many
+			// bullets the players can shoot
 			bullet_increase_allocation();
 			available_spots = bullet_data->capacity - bullet_data->count;
 		} else {
