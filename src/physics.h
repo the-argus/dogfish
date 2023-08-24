@@ -87,13 +87,15 @@ typedef enum : uint8_t
 	CONTINUE
 } CollisionHandlerReturnCode;
 
-typedef CollisionHandlerReturnCode (*CollisionHandler)(uint16_t index_batch1,
-													   uint16_t index_batch2,
-													   Contact* contact);
+typedef CollisionHandlerReturnCode (*const CollisionHandler)(
+	uint16_t index_batch1, uint16_t index_batch2, Contact* contact);
 
 AABB physics_aabb_from_sphere(float radius);
 
 /// DO NOT pass in the same pointer to any of these options
+/// Call a collision handler for overlapping AABBs. If you don't want to pass in
+/// a batch (say, if all your items share the same AABB) then make the batch
+/// point to just one item and set the count to 0.
 /// TODO: change the names from batch1, batch2, etc to batch_big and batch_small
 void physics_batch_collide(const AABBBatchOptions* restrict batch1,
 						   const AABBBatchOptions* restrict batch2,

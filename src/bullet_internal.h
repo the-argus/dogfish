@@ -11,17 +11,24 @@
 #define BULLET_PHYSICS_LENGTH 0.5f
 #define BULLET_MASS 1
 #define BULLET_POOL_SIZE_INITIAL 256
+#define BULLET_POOL_MAX_POSSIBLE_COUNT 65535
 // maximum number of bullets that can be created/destroyed until update is
 // called (ie. per frame)
 #define BULLET_STACKS_MAX_SIZE 32
+// hoe many update calls should happen before looping through bullets and
+// disabling
+#define CALLS_PER_DESPAWN 20
+// time in seconds before a bullet is considered old and in need of freeing
+#define DESPAWN_TIME_SECONDS 2.0f
+// vector reallocation coefficient
+#define BULLET_ALLOCATION_SCALE_FACTOR 2
 
 typedef struct
 {
 	uint16_t count;
 	uint16_t capacity;
 	Source* sources; // the source of each bullet, ie PLAYER_ONE or TWO
-	bool* disabled;	 // array of bools, true if the bullet is disabled, false
-					 // otherwise
+	double* create_times;
 	Bullet items[0];
 } BulletData;
 
@@ -29,7 +36,7 @@ typedef struct
 typedef struct
 {
 	uint16_t count;
-	Bullet stack[BULLET_STACKS_MAX_SIZE];
+	BulletCreateOptions stack[BULLET_STACKS_MAX_SIZE];
 } BulletCreationStack;
 typedef struct
 {

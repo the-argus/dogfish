@@ -71,8 +71,8 @@ void skybox_load()
 	// Load skybox shader and set required locations
 	// NOTE Some locations are automatically set at shader loading
 	skybox.materials[0].shader = LoadShader(
-		TextFormat("%s/skybox/common/shaders/skybox.vs", ASSETS_FOLDER),
-		TextFormat("%s/skybox/common/shaders/skybox.fs", ASSETS_FOLDER));
+		TextFormat("%s/skybox/common/shaders/skybox.vert", ASSETS_FOLDER),
+		TextFormat("%s/skybox/common/shaders/skybox.frag", ASSETS_FOLDER));
 
 	SetShaderValue(
 		skybox.materials[0].shader,
@@ -89,8 +89,8 @@ void skybox_load()
 
 	// Load cubemap shader and setup required shader locations
 	Shader shdrCubemap = LoadShader(
-		TextFormat("%s/skybox/common/shaders/cubemap.vs", ASSETS_FOLDER),
-		TextFormat("%s/skybox/common/shaders/cubemap.fs", ASSETS_FOLDER));
+		TextFormat("%s/skybox/common/shaders/cubemap.vert", ASSETS_FOLDER),
+		TextFormat("%s/skybox/common/shaders/cubemap.frag", ASSETS_FOLDER));
 
 	SetShaderValue(shdrCubemap,
 				   GetShaderLocation(shdrCubemap, "equirectangularMap"),

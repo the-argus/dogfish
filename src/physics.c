@@ -15,8 +15,8 @@ void physics_batch_collide(const AABBBatchOptions* restrict batch1,
 						   const ByteBatchOptions* restrict disabled_batch2,
 						   CollisionHandler handler)
 {
-	bool batch1_same_aabb = batch1->count == 1;
-	bool batch2_same_aabb = batch2->count == 1;
+	bool batch1_same_aabb = batch1->count == 0;
+	bool batch2_same_aabb = batch2->count == 0;
 	// you could do some pointer casts here to cause aliasing bugs.
 	// please don't :(
 	assert(batch1 != batch2);
@@ -116,19 +116,29 @@ static void move(Vector3* restrict position, uint16_t index,
 		(Quaternion*)((uint8_t*)direction_batch->first +
 					  ((ptrdiff_t)index * direction_batch->stride));
 
+	assert(QuaternionEquals(QuaternionNormalize(*dir), *dir));
+
 	float speed = 0;
-	if (same_speed == true) {
+	if (same_speed) {
 		speed = *speed_batch->first;
 	} else {
 		speed = *(float*)((uint8_t*)speed_batch->first +
 						  ((ptrdiff_t)index * speed_batch->stride));
 	}
 
-	assert(QuaternionEquals(QuaternionNormalize(*dir), *dir));
-
 	// TODO: profile this math
-	*position = Vector3Add(
-		*position, Vector3RotateByQuaternion((Vector3){0, speed, 0}, *dir));
+	// *position = Vector3Add(
+	// 	*position, Vector3RotateByQuaternion((Vector3){0, 0, speed}, *dir));
+
+	Vector3 move_by = {speed, 0, 0};
+	// move_by =
+	// 	Vector3RotateByAxisAngle(move_by, (Vector3){0, 1, 0}, camera->angle.x);
+	move_by = Vector3RotateByQuaternion(move_by, *dir);
+
+	// right vector is the axis
+	// Vector3 axis = Vector3CrossProduct((Vector3){0, 1, 0}, move_by);
+	// move_by = Vector3RotateByAxisAngle(move_by, axis, camera->angle.y);
+	*position = Vector3Add(*position, move_by);
 }
 
 void physics_batch_collide_and_move(
@@ -143,17 +153,18 @@ void physics_batch_collide_and_move(
 	const ByteBatchOptions* restrict disabled_batch1,
 	const ByteBatchOptions* restrict disabled_batch2, CollisionHandler handler)
 {
-	bool batch1_same_aabb = batch1->count == 1;
-	bool batch2_same_aabb = batch2->count == 1;
-	bool batch1_same_speed = speed_batch1->count == 1;
-	bool batch2_same_speed = speed_batch2->count == 1;
+	const bool batch1_same_aabb = batch1->count == 0;
+	const bool batch2_same_aabb = batch2->count == 0;
+	const bool batch1_same_speed = speed_batch1->count == 0;
+	const bool batch2_same_speed = speed_batch2->count == 0;
 	// you could do some pointer casts here to cause aliasing bugs.
 	// please don't :(
 	assert(batch1 != batch2);
 	assert(position_batch1 != position_batch2);
 	assert(speed_batch1 != speed_batch2);
 	assert(direction_batch1 != direction_batch2);
-	assert(disabled_batch1 != disabled_batch2);
+	assert((disabled_batch1 == NULL && disabled_batch2 == NULL) ||
+		   disabled_batch1 != disabled_batch2);
 	// either use the same size batches or use only one aabb definition for all
 	// bodies
 	assert(batch1_same_aabb || batch1->count == position_batch1->count);

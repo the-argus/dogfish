@@ -3,6 +3,7 @@
 #include "gamestate.h"
 #include "input.h"
 #include "physics.h"
+#include "shorthand.h"
 #include "threadutils.h"
 #include <raymath.h>
 #define RLIGHTS_IMPLEMENTATION
@@ -47,8 +48,9 @@ static const char* metallic_texture_filename =
 	"assets/textures/airplane/metallic.png";
 static const char* normal_texture_filename =
 	"assets/textures/airplane/normal.png";
+// TODO: normals and stuff in here is the reason the plane model looks weird
 static const char* airplane_frag_shader_filename =
-	"assets/materials/airplane.fs";
+	"assets/materials/airplane.frag";
 static Shader shader;
 static Material materials[NUM_PLANES];
 static Model models[NUM_PLANES];
@@ -165,7 +167,18 @@ static CollisionHandlerReturnCode
 airplane_on_collision(uint16_t bullet_handle, uint16_t airplane_handle,
 					  Contact* contact)
 {
-	TraceLog(LOG_INFO, "Player %d hit by bullet", airplane_handle + 1);
+	UNUSED(contact);
+	static_assert(sizeof(bullet_handle) == sizeof(BulletHandle),
+				  "Pointer cast on the next line could cause bugs");
+	uint8_t player_who_fired =
+		bullet_get_source(*(BulletHandle*)&bullet_handle);
+	TraceLog(LOG_INFO, "Player %d hit by bullet from player %d",
+			 airplane_handle + 1, player_who_fired);
+#ifndef NDEBUG
+	if (airplane_handle + 1 == player_who_fired) {
+		TraceLog(LOG_WARNING, "Player %d shot themselves.", player_who_fired);
+	}
+#endif
 	return CONTINUE;
 }
 
@@ -177,12 +190,16 @@ void airplane_update(float delta_time)
 		// all planes shoot in the same way
 		if (input->cursor[i].shoot || input->controller[i].shoot) {
 			// bullet shoots in the direction you're moving...
-			Bullet new_bullet = {
-				.direction = QuaternionFromEuler(cameras[i].angle.y, 0,
-												 cameras[i].angle.x),
-				.position = planes[i].position,
+			BulletCreateOptions bullet_options = {
+				.bullet =
+					(Bullet){
+						.direction = QuaternionFromEuler(
+							0, cameras[i].angle.x + PI, cameras[i].angle.y),
+						.position = planes[i].position,
+					},
+				.source = (Source)i,
 			};
-			bullet_create(&new_bullet, i);
+			bullet_create(&bullet_options);
 		}
 
 		// also update the plane's velocity
