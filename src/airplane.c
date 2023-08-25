@@ -15,6 +15,7 @@
 #define AIRPLANE_MOVE_SPEED 0.1f
 #define AIRPLANE_BOOST_SPEED 0.15f
 #define AIRPLANE_MASS 5.4
+#define AIRPLANE_ROTATION_CONTROL_SENSITIVITY 0.01f
 #define INITIAL_AIRPLANE_POS_P1 5, 10, 0
 #define INITIAL_AIRPLANE_POS_P2 -5, 10, 0
 
@@ -196,15 +197,15 @@ void airplane_update(float delta_time)
 	for (uint8_t i = 0; i < NUM_PLANES; ++i) {
 		// all planes shoot in the same way
 		if (input->cursor[i].shoot || input->controller[i].shoot) {
-			const Vector3 camera_diff = Vector3Subtract(
-				cameras[i].camera.target, cameras[i].camera.position);
-			const Quaternion dir =
-				QuaternionFromVector3ToVector3((Vector3){1, 0, 0}, Vector3Normalize(camera_diff));
-			// bullet shoots in the direction you're moving...
+			// use this to shoot in direction of camera
+			// const Vector3 camera_diff = Vector3Subtract(
+			// 	cameras[i].camera.target, cameras[i].camera.position);
+			// const Quaternion dir = QuaternionFromVector3ToVector3(
+			// 	(Vector3){1, 0, 0}, Vector3Normalize(camera_diff));
 			BulletCreateOptions bullet_options = {
 				.bullet =
 					(Bullet){
-						.direction = dir,
+						.direction = planes[i].direction,
 						.position = planes[i].position,
 					},
 				.source = (Source)i,
@@ -301,4 +302,12 @@ static void airplane_update_velocity(Airplane* restrict plane,
 {
 	const bool thrust = controls->boost || keys->boost;
 	plane->speed = thrust ? AIRPLANE_BOOST_SPEED : AIRPLANE_MOVE_SPEED;
+
+	const Vector2 input = Vector2Scale(total_input(plane - planes),
+									   AIRPLANE_ROTATION_CONTROL_SENSITIVITY);
+
+	const Quaternion rotation = QuaternionFromEuler(0, input.x, input.y);
+
+	plane->direction =
+		QuaternionNormalize(QuaternionMultiply(plane->direction, rotation));
 }
