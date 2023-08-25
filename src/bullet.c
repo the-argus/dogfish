@@ -339,7 +339,7 @@ void bullet_move_and_collide_with(
 	physics_batch_collide_and_move(
 		&bullet_data_aabb_options, other_aabb, &bullet_data_position_options,
 		other_position, &bullet_data_direction_options, other_direction,
-		&bullet_data_speed_options, other_speed, NULL, NULL, handler);
+		&bullet_data_speed_options, other_speed, handler);
 }
 
 static void bullet_despawn_old()

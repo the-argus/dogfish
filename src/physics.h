@@ -48,14 +48,6 @@ typedef struct
 	uint8_t stride;
 } Vector3BatchOptions;
 
-/// options describing a pool of bytes (often bools)
-typedef struct
-{
-	uint8_t* first;
-	uint16_t count;
-	uint8_t stride;
-} ByteBatchOptions;
-
 /// options describing a pool of quaternions
 typedef struct
 {
@@ -101,8 +93,6 @@ void physics_batch_collide(const AABBBatchOptions* restrict batch1,
 						   const AABBBatchOptions* restrict batch2,
 						   const Vector3BatchOptions* restrict position_batch1,
 						   const Vector3BatchOptions* restrict position_batch2,
-						   const ByteBatchOptions* restrict disabled_batch1,
-						   const ByteBatchOptions* restrict disabled_batch2,
 						   CollisionHandler handler);
 
 /// Provides a simple optimization over physics_batch_collide where you also
@@ -118,9 +108,7 @@ void physics_batch_collide_and_move(
 	const QuaternionBatchOptions* restrict direction_batch1,
 	const QuaternionBatchOptions* restrict direction_batch2,
 	const FloatBatchOptions* restrict speed_batch1,
-	const FloatBatchOptions* restrict speed_batch2,
-	const ByteBatchOptions* restrict disabled_batch1,
-	const ByteBatchOptions* restrict disabled_batch2, CollisionHandler handler);
+	const FloatBatchOptions* restrict speed_batch2, CollisionHandler handler);
 
 /// Separating Axis Theorem implementation
 bool physics_sat(const Vector3* restrict axis, float minA, float maxA,
