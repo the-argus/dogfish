@@ -196,12 +196,15 @@ void airplane_update(float delta_time)
 	for (uint8_t i = 0; i < NUM_PLANES; ++i) {
 		// all planes shoot in the same way
 		if (input->cursor[i].shoot || input->controller[i].shoot) {
+			const Vector3 camera_diff = Vector3Subtract(
+				cameras[i].camera.target, cameras[i].camera.position);
+			const Quaternion dir =
+				QuaternionFromVector3ToVector3((Vector3){1, 0, 0}, Vector3Normalize(camera_diff));
 			// bullet shoots in the direction you're moving...
 			BulletCreateOptions bullet_options = {
 				.bullet =
 					(Bullet){
-						.direction = QuaternionFromEuler(
-							0, cameras[i].angle.x + PI, cameras[i].angle.y),
+						.direction = dir,
 						.position = planes[i].position,
 					},
 				.source = (Source)i,
