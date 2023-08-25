@@ -12,6 +12,8 @@
 #define AIRPLANE_DEBUG_WIDTH 0.5
 #define AIRPLANE_DEBUG_LENGTH 2
 #define AIRPLANE_DEBUG_COLOR RED
+#define AIRPLANE_MOVE_SPEED 0.1f
+#define AIRPLANE_BOOST_SPEED 0.15f
 #define AIRPLANE_MASS 5.4
 #define INITIAL_AIRPLANE_POS_P1 5, 10, 0
 #define INITIAL_AIRPLANE_POS_P2 -5, 10, 0
@@ -63,10 +65,11 @@ static QuaternionBatchOptions airplane_data_direction_options;
 static FloatBatchOptions airplane_data_speed_options;
 static Light lights[MAX_LIGHTS] = {0};
 static const Vector4 ambientLight = {0.0f, 0.0f, 0.0f, 1.0f};
+static Matrix airplane_default_transform;
 
-static void airplane_update_velocity(const Airplane* plane,
-									 const Keystate* keys,
-									 const ControllerState* controls);
+static void airplane_update_velocity(Airplane* restrict plane,
+									 const Keystate* restrict keys,
+									 const ControllerState* restrict controls);
 static inline void airplane_update_p1(float delta_time);
 static inline void airplane_update_p2(float delta_time);
 
@@ -95,8 +98,8 @@ void airplane_init()
 					.z = AIRPLANE_DEBUG_LENGTH,
 				},
 			.position = (Vector3){0.0f, 0.0f, 0.0f},
-			.direction = QuaternionIdentity(),
-			.speed = 0,
+			.direction = QuaternionFromEuler(0, 90 * DEG2RAD, 0),
+			.speed = 0.1f,
 		};
 
 		models[i] = LoadModel(model_filename);
@@ -120,6 +123,9 @@ void airplane_init()
 
 	planes[0].position = (Vector3){INITIAL_AIRPLANE_POS_P1};
 	planes[1].position = (Vector3){INITIAL_AIRPLANE_POS_P2};
+
+	// rotate the model to be pointing along positive X
+	airplane_default_transform = MatrixRotateXYZ((Vector3){0, 90 * DEG2RAD, 0});
 
 	airplane_data_aabb_options = (AABBBatchOptions){
 		.count = NUM_PLANES,
@@ -168,10 +174,8 @@ airplane_on_collision(uint16_t bullet_handle, uint16_t airplane_handle,
 					  Contact* contact)
 {
 	UNUSED(contact);
-	static_assert(sizeof(bullet_handle) == sizeof(BulletHandle),
-				  "Pointer cast on the next line could cause bugs");
 	uint8_t player_who_fired =
-		bullet_get_source(*(BulletHandle*)&bullet_handle);
+		bullet_get_source((BulletHandle){.raw = bullet_handle});
 	TraceLog(LOG_INFO, "Player %d hit by bullet from player %d",
 			 airplane_handle + 1, player_who_fired);
 #ifndef NDEBUG
@@ -235,7 +239,8 @@ void airplane_draw()
 	for (uint8_t i = 0; i < NUM_PLANES; ++i) {
 		// model rotates toward where it is moving
 		models[i].transform = MatrixMultiply(
-			QuaternionToMatrix(planes[i].direction),
+			MatrixMultiply(airplane_default_transform,
+						   QuaternionToMatrix(planes[i].direction)),
 			MatrixScale(AIRPLANE_MODEL_SCALEFACTOR, AIRPLANE_MODEL_SCALEFACTOR,
 						AIRPLANE_MODEL_SCALEFACTOR));
 		DrawModel(models[i], planes[i].position, 1.0f, WHITE);
@@ -287,12 +292,10 @@ static inline void airplane_update_p1(float delta_time)
 
 static inline void airplane_update_p2(float delta_time) {}
 
-static void airplane_update_velocity(const Airplane* plane,
-									 const Keystate* keys,
-									 const ControllerState* controls)
+static void airplane_update_velocity(Airplane* restrict plane,
+									 const Keystate* restrict keys,
+									 const ControllerState* restrict controls)
 {
-	// Vector2 input = total_input(plane - planes);
-	// bool thrust = controls->boost || keys->boost;
-	// Vector3 movement =
-	// 	Vector3Scale(forward, thrust ? PLANE_BOOST_SPEED : PLANE_MOVE_SPEED);
+	const bool thrust = controls->boost || keys->boost;
+	plane->speed = thrust ? AIRPLANE_BOOST_SPEED : AIRPLANE_MOVE_SPEED;
 }

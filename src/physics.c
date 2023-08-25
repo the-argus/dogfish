@@ -11,8 +11,6 @@ void physics_batch_collide(const AABBBatchOptions* restrict batch1,
 						   const AABBBatchOptions* restrict batch2,
 						   const Vector3BatchOptions* restrict position_batch1,
 						   const Vector3BatchOptions* restrict position_batch2,
-						   const ByteBatchOptions* restrict disabled_batch1,
-						   const ByteBatchOptions* restrict disabled_batch2,
 						   CollisionHandler handler)
 {
 	bool batch1_same_aabb = batch1->count == 0;
@@ -21,15 +19,10 @@ void physics_batch_collide(const AABBBatchOptions* restrict batch1,
 	// please don't :(
 	assert(batch1 != batch2);
 	assert(position_batch1 != position_batch2);
-	assert(disabled_batch1 != disabled_batch2);
 	// either use the same size batches or use only one aabb definition for all
 	// bodies
 	assert(batch1_same_aabb || batch1->count == position_batch1->count);
 	assert(batch2_same_aabb || batch2->count == position_batch2->count);
-	assert(disabled_batch1 == NULL ||
-		   disabled_batch1->count == position_batch1->count);
-	assert(disabled_batch2 == NULL ||
-		   disabled_batch2->count == position_batch2->count);
 	assert(position_batch1->stride >= sizeof(Vector3));
 	assert(position_batch2->stride >= sizeof(Vector3));
 	assert(batch1_same_aabb || batch1->stride >= sizeof(AABB));
@@ -46,14 +39,6 @@ void physics_batch_collide(const AABBBatchOptions* restrict batch1,
 
 	// hot hot HOT loop
 	for (uint16_t outer = 0; outer < position_batch1->count; ++outer) {
-		// may be necessary to skip this body
-		if (disabled_batch1 != NULL) {
-			if (*(disabled_batch1->first +
-				  ((ptrdiff_t)outer * disabled_batch1->stride)) != 0) {
-				continue;
-			}
-		}
-
 		AABB* outer_aabb = NULL;
 
 		// TODO: this branch might be slowing things down. do profiling in
@@ -70,13 +55,6 @@ void physics_batch_collide(const AABBBatchOptions* restrict batch1,
 					   ((ptrdiff_t)outer * position_batch1->stride));
 
 		for (uint16_t inner = 0; inner < batch2->count; ++inner) {
-			// may be necessary to skip this body
-			if (disabled_batch2 != NULL) {
-				if (*(disabled_batch2->first +
-					  ((ptrdiff_t)inner * disabled_batch2->stride)) != 0) {
-					continue;
-				}
-			}
 			AABB* inner_aabb = NULL;
 
 			// TODO: this branch might be slowing things down. do profiling in
@@ -127,17 +105,9 @@ static void move(Vector3* restrict position, uint16_t index,
 	}
 
 	// TODO: profile this math
-	// *position = Vector3Add(
-	// 	*position, Vector3RotateByQuaternion((Vector3){0, 0, speed}, *dir));
 
 	Vector3 move_by = {speed, 0, 0};
-	// move_by =
-	// 	Vector3RotateByAxisAngle(move_by, (Vector3){0, 1, 0}, camera->angle.x);
 	move_by = Vector3RotateByQuaternion(move_by, *dir);
-
-	// right vector is the axis
-	// Vector3 axis = Vector3CrossProduct((Vector3){0, 1, 0}, move_by);
-	// move_by = Vector3RotateByAxisAngle(move_by, axis, camera->angle.y);
 	*position = Vector3Add(*position, move_by);
 }
 
@@ -149,9 +119,7 @@ void physics_batch_collide_and_move(
 	const QuaternionBatchOptions* restrict direction_batch1,
 	const QuaternionBatchOptions* restrict direction_batch2,
 	const FloatBatchOptions* restrict speed_batch1,
-	const FloatBatchOptions* restrict speed_batch2,
-	const ByteBatchOptions* restrict disabled_batch1,
-	const ByteBatchOptions* restrict disabled_batch2, CollisionHandler handler)
+	const FloatBatchOptions* restrict speed_batch2, CollisionHandler handler)
 {
 	const bool batch1_same_aabb = batch1->count == 0;
 	const bool batch2_same_aabb = batch2->count == 0;
@@ -163,8 +131,6 @@ void physics_batch_collide_and_move(
 	assert(position_batch1 != position_batch2);
 	assert(speed_batch1 != speed_batch2);
 	assert(direction_batch1 != direction_batch2);
-	assert((disabled_batch1 == NULL && disabled_batch2 == NULL) ||
-		   disabled_batch1 != disabled_batch2);
 	// either use the same size batches or use only one aabb definition for all
 	// bodies
 	assert(batch1_same_aabb || batch1->count == position_batch1->count);
@@ -173,10 +139,6 @@ void physics_batch_collide_and_move(
 	assert(batch2_same_aabb || batch2->count == direction_batch2->count);
 	assert(batch1_same_speed || batch1->count == speed_batch1->count);
 	assert(batch2_same_speed || batch2->count == speed_batch2->count);
-	assert(disabled_batch1 == NULL ||
-		   disabled_batch1->count == position_batch1->count);
-	assert(disabled_batch2 == NULL ||
-		   disabled_batch2->count == position_batch2->count);
 	assert(position_batch1->stride >= sizeof(Vector3));
 	assert(position_batch2->stride >= sizeof(Vector3));
 	assert(batch1_same_speed || speed_batch1->stride >= sizeof(float));
@@ -194,8 +156,6 @@ void physics_batch_collide_and_move(
 	assert(batch2_same_speed || speed_batch2->stride % sizeof(float) == 0);
 	assert(direction_batch1->stride % sizeof(float) == 0);
 	assert(direction_batch2->stride % sizeof(float) == 0);
-	assert(disabled_batch1 == NULL || disabled_batch1->stride != 0);
-	assert(disabled_batch2 == NULL || disabled_batch2->stride != 0);
 
 	Contact contact;
 
@@ -212,13 +172,6 @@ void physics_batch_collide_and_move(
 
 	// hot hot HOT loop
 	for (uint16_t outer = 0; outer < position_batch1->count; ++outer) {
-		// may be necessary to skip this body
-		if (disabled_batch1 != NULL) {
-			if (*(disabled_batch1->first +
-				  ((ptrdiff_t)outer * disabled_batch1->stride)) != 0) {
-				continue;
-			}
-		}
 		AABB* outer_aabb = NULL;
 
 		// TODO: this branch might be slowing things down. do profiling in
@@ -238,13 +191,6 @@ void physics_batch_collide_and_move(
 			 batch1_same_speed);
 
 		for (uint16_t inner = 0; inner < position_batch2->count; ++inner) {
-			// may be necessary to skip this body
-			if (disabled_batch2 != NULL) {
-				if (*(disabled_batch2->first +
-					  ((ptrdiff_t)inner * disabled_batch2->stride)) != 0) {
-					continue;
-				}
-			}
 			AABB* inner_aabb = NULL;
 
 			// TODO: this branch might be slowing things down. do profiling in
