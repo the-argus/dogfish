@@ -306,8 +306,8 @@ static void airplane_update_velocity(Airplane* restrict plane,
 	const Vector2 input = Vector2Scale(total_input(plane - planes),
 									   AIRPLANE_ROTATION_CONTROL_SENSITIVITY);
 
-	const Quaternion rotation = QuaternionFromEuler(0, input.x, input.y);
+    const Quaternion rot = QuaternionFromEuler(input.x, 0, input.y);
 
-	plane->direction =
-		QuaternionNormalize(QuaternionMultiply(plane->direction, rotation));
+	plane->direction = QuaternionNormalize(QuaternionMultiply(
+		plane->direction, rot));
 }
