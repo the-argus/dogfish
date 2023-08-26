@@ -108,7 +108,7 @@ Vector2 total_input(uint8_t player_index)
 	Vector2 raw = (Vector2){
 		.x = (float)key_horizontal_input(&input->keys[player_index]) +
 			 input->controller[player_index].joystick.x,
-		.y = (float)key_vertical_input(input->keys) +
+		.y = (float)key_vertical_input(&input->keys[player_index]) +
 			 input->controller[player_index].joystick.y,
 	};
 
