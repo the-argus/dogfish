@@ -35,15 +35,15 @@ void input_gather()
 	// collect keyboard information
 
 	// player 1 moves with WASD
-	input->keys[0].right = IsKeyDown(KEY_D);
-	input->keys[0].left = IsKeyDown(KEY_A);
+	input->keys[0].right = IsKeyDown(KEY_A);
+	input->keys[0].left = IsKeyDown(KEY_D);
 	input->keys[0].up = IsKeyDown(KEY_S);
 	input->keys[0].down = IsKeyDown(KEY_W);
 	input->keys[0].boost = IsKeyDown(KEY_SPACE);
 
 	// player 2 moves with arrow keys
-	input->keys[1].right = IsKeyDown(KEY_RIGHT);
-	input->keys[1].left = IsKeyDown(KEY_LEFT);
+	input->keys[1].right = IsKeyDown(KEY_LEFT);
+	input->keys[1].left = IsKeyDown(KEY_RIGHT);
 	input->keys[1].up = IsKeyDown(KEY_DOWN);
 	input->keys[1].down = IsKeyDown(KEY_UP);
 	input->keys[1].boost = IsKeyDown(KEY_ENTER);
