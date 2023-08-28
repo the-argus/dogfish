@@ -12,10 +12,12 @@
 #define AIRPLANE_DEBUG_WIDTH 0.5
 #define AIRPLANE_DEBUG_LENGTH 2
 #define AIRPLANE_DEBUG_COLOR RED
-#define AIRPLANE_MOVE_SPEED 0.1f
-#define AIRPLANE_BOOST_SPEED 0.15f
+#define AIRPLANE_MOVE_SPEED 0.2f
+#define AIRPLANE_BOOST_SPEED 0.3f
 #define AIRPLANE_MASS 5.4
 #define AIRPLANE_ROTATION_CONTROL_SENSITIVITY 0.01f
+#define AIRPLANE_PITCH_SENSITIVITY 1.0f
+#define AIRPLANE_ROLL_SENSITIVITY 4.0f
 #define INITIAL_AIRPLANE_POS_P1 5, 10, 0
 #define INITIAL_AIRPLANE_POS_P2 -5, 10, 0
 
@@ -306,8 +308,10 @@ static void airplane_update_velocity(Airplane* restrict plane,
 	const Vector2 input = Vector2Scale(total_input(plane - planes),
 									   AIRPLANE_ROTATION_CONTROL_SENSITIVITY);
 
-	const Quaternion rotation = QuaternionFromEuler(0, input.x, input.y);
+	const Quaternion rot =
+		QuaternionFromEuler(input.x * AIRPLANE_ROLL_SENSITIVITY, 0,
+							input.y * AIRPLANE_PITCH_SENSITIVITY);
 
 	plane->direction =
-		QuaternionNormalize(QuaternionMultiply(plane->direction, rotation));
+		QuaternionNormalize(QuaternionMultiply(plane->direction, rot));
 }
