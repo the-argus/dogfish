@@ -1,5 +1,5 @@
-#include "constants.h"
-#include "include/shorthand.h"
+#include "shorthand.h"
+#include "constants/general.h"
 #include <raylib.h>
 #include <raymath.h>
 #include <rlgl.h>

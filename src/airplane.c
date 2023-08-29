@@ -1,5 +1,6 @@
 #include "airplane.h"
 #include "bullet.h"
+#include "constants/general.h"
 #include "gamestate.h"
 #include "input.h"
 #include "physics.h"
@@ -41,7 +42,6 @@ typedef struct
 	Quaternion direction;
 } Airplane;
 
-#define NUM_PLANES 2
 static Airplane planes[NUM_PLANES];
 #define AIRPLANE_MODEL_SCALEFACTOR 0.1f
 static const char* model_filename = "assets/models/airplane.gltf";

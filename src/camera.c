@@ -1,5 +1,5 @@
 #include "camera.h"
-#include "constants.h"
+#include "constants/camera.h"
 #include <math.h>
 #include <raylib.h>
 #include <stdio.h>
