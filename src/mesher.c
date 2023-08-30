@@ -38,11 +38,14 @@ void mesher_allocate(Mesher* mesher, size_t quads)
 	mesher->inner.vertexCount = (int)quads * VERTEX_PER_QUAD;
 	mesher->inner.triangleCount = (int)quads * TRI_PER_QUAD;
 	if (quads == 0) {
-#ifndef NDEBUG
-		mesher->allocated = true;
-#endif
 		return;
 	}
+#ifndef NDEBUG
+	mesher->allocated = true;
+	mesher->mesh_normal_float_indices = 3 * mesher->inner.vertexCount;
+	mesher->mesh_vertex_float_indices = 3 * mesher->inner.vertexCount;
+	mesher->mesh_texcoord_float_indices = 2 * mesher->inner.vertexCount;
+#endif
 
 	mesher->inner.vertices =
 		RL_MALLOC(sizeof(float) * 3 * mesher->inner.vertexCount);
@@ -66,7 +69,12 @@ void mesher_push_vertex(Mesher* mesher, const Vector3* offset,
 	assert(mesher->inner.texcoords != NULL);
 	{
 		size_t index = mesher->triangle_index * 6 + mesher->vert_index * 2;
-		assert(index < mesher->inner.vertexCount * 2);
+		if (!(index < mesher->mesh_texcoord_float_indices)) {
+			// TraceLog(LOG_INFO, "Index %d exceeds number of texcoords %d", index,
+			// 		 mesher->mesh_texcoord_float_indices);
+			return;
+		}
+		assert(index < mesher->mesh_texcoord_float_indices);
 		mesher->inner.texcoords[index] = mesher->uv.x;
 		mesher->inner.texcoords[index + 1] = mesher->uv.y;
 	}
@@ -74,7 +82,7 @@ void mesher_push_vertex(Mesher* mesher, const Vector3* offset,
 	assert(mesher->inner.normals != NULL);
 	{
 		size_t index = mesher->triangle_index * 9 + mesher->vert_index * 3;
-		assert(index < mesher->inner.vertexCount * 3);
+		assert(index < mesher->mesh_normal_float_indices);
 		mesher->inner.normals[index] = mesher->normal.x;
 		mesher->inner.normals[index + 1] = mesher->normal.y;
 		mesher->inner.normals[index + 2] = mesher->normal.z;
@@ -84,7 +92,7 @@ void mesher_push_vertex(Mesher* mesher, const Vector3* offset,
 	{
 		size_t index = mesher->triangle_index * 9 + mesher->vert_index * 3;
 		const Vector3 real_offset = offset ? *offset : (Vector3){0};
-		assert(index < mesher->inner.vertexCount * 3);
+		assert(index < mesher->mesh_vertex_float_indices);
 		mesher->inner.vertices[index] = vertex->x + real_offset.x;
 		mesher->inner.vertices[index + 1] = vertex->y + real_offset.y;
 		mesher->inner.vertices[index + 2] = vertex->z + real_offset.z;

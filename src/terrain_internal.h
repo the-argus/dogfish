@@ -31,16 +31,46 @@ typedef int16_t voxel_index_signed_t;
 /// Number type used to describe the coordinates of the current chunk
 typedef int16_t chunk_index_t;
 
+typedef struct
+{
+	uint16_t index : 15;
+	uint16_t has_value : 1;
+} OptionalIndex;
+
+typedef struct
+{
+	chunk_index_t x;
+	chunk_index_t z;
+} ChunkCoords;
+
+typedef struct
+{
+	ChunkCoords position;
+	Mesh mesh;
+} Chunk;
+
+static_assert(sizeof(OptionalIndex) == sizeof(uint16_t),
+			  "OptionalIndex not optimized");
+
 /// In-memory mesh data for all terrain surrounding every player.
 /// Involves a lot of pointer indirection. Each mesh's vertices, indices, and
 /// texcoords are allocated on separate buffers.
-/// Always allocated to full capacity at game load time. "size" is only runtime
-/// because we may want to changet he number of players per game in the future?
+/// Always allocated to full capacity at game load time. "capacty" is only
+/// runtime because we may want to changet he number of players per game in the
+/// future?
 typedef struct
 {
-	size_t size;
-	Mesh chunks[0];
-} TerrainMeshes;
+	// amount allocated
+	size_t capacity;
+	// amount used (memory after this may be uninitialized)
+	size_t count;
+	// lookup table for indices (should only be necessary to look up in here
+	// when loading new chunks, probably on another thread. re-evaluate this
+	// solution if you have to touch this per-frame)
+	// 2D array, look up an (x,z) chunk by doing [x + (z *RENDER_DISTANCE)]
+	OptionalIndex* indices;
+	Chunk chunks[0];
+} TerrainData;
 
 /// A buffer of data determining the contents of a chunk. Used to store the
 /// generated state of the chunk before converting it to a mesh.
@@ -66,12 +96,6 @@ typedef struct
 	voxel_index_signed_t y;
 	voxel_index_signed_t z;
 } VoxelOffset;
-
-typedef struct
-{
-	chunk_index_t x;
-	chunk_index_t z;
-} ChunkCoords;
 
 typedef struct
 {

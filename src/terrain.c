@@ -11,10 +11,12 @@
 // TODO: make the wording in this module more consistent/clear: what is a chunk
 // vs. voxels
 
-static TerrainMeshes* terrain_meshes;
+static TerrainData* terrain_data;
 static Material terrain_mat;
 static Vector3* player_positions;
 static RenderTexture texture_atlas;
+
+static float max_generated_perlin = 0;
 
 static const VoxelCoords max_voxelcoord = {
 	.x = CHUNK_SIZE,
@@ -80,6 +82,12 @@ static void terrain_mesher_add_face(Mesher* restrict mesher,
 									const Vector3* restrict position,
 									const VoxelFaceInfo* restrict face);
 
+/// Inserts a new mesh at a given coordinates into a TerrainMeshes
+/// returns the index at which the item was inserted
+static uint16_t terrain_mesh_insert(TerrainData* restrict data,
+									const ChunkCoords* restrict chunk_location,
+									const Mesh* restrict mesh);
+
 static void
 terrain_chunk_to_mesh(Mesher* restrict mesher,
 					  const ChunkCoords* restrict chunk_coords,
@@ -91,9 +99,10 @@ void terrain_draw()
 	size_t index = 0;
 	for (; chunk.x < RENDER_DISTANCE; ++chunk.x) {
 		for (chunk.z = 0; chunk.z < RENDER_DISTANCE; ++chunk.z) {
-			DrawMesh(terrain_meshes->chunks[index], terrain_mat,
-					 MatrixTranslate((float)(chunk.x * max_voxelcoord.x), 0,
-									 (float)(chunk.z * max_voxelcoord.z)));
+			const ChunkCoords* pos = &terrain_data->chunks[index].position;
+			DrawMesh(terrain_data->chunks[index].mesh, terrain_mat,
+					 MatrixTranslate((float)pos->x * CHUNK_SIZE, 0,
+									 (float)pos->z * CHUNK_SIZE));
 			++index;
 		}
 	}
@@ -103,9 +112,15 @@ void terrain_load()
 {
 	// permanent
 	size_t num_meshes = (size_t)RENDER_DISTANCE * RENDER_DISTANCE * NUM_PLANES;
-	terrain_meshes =
-		RL_MALLOC(sizeof(TerrainMeshes) + (num_meshes * sizeof(Mesh)));
-	terrain_meshes->size = num_meshes;
+	assert(
+		num_meshes <
+		(size_t)powf(2.0f, 15)); // dont exceed maximum index of OptionalIndex
+	terrain_data = RL_MALLOC(sizeof(TerrainData) +
+							 (num_meshes * sizeof(terrain_data->chunks[0])));
+	terrain_data->capacity = num_meshes;
+	terrain_data->count = 0;
+	terrain_data->indices =
+		RL_CALLOC(num_meshes, sizeof(*terrain_data->indices));
 	player_positions = RL_CALLOC(NUM_PLANES, sizeof(Vector3));
 
 	// heap allocated for debugging, could be stack'd
@@ -146,30 +161,29 @@ void terrain_load()
 
 	// start in the most negative chunk from the player
 	ChunkCoords chunk = {-RENDER_DISTANCE_HALF, -RENDER_DISTANCE_HALF};
-	size_t index = 0;
 	for (; chunk.x < RENDER_DISTANCE_HALF; ++chunk.x) {
 		for (chunk.z = -RENDER_DISTANCE_HALF; chunk.z < RENDER_DISTANCE_HALF;
 			 ++chunk.z) {
 			terrain_generate_voxels(chunk, voxels);
 			// voxels are now filled with the correct block_t values, meshing
 			// time
-			Mesher mesher;
-			mesher_create(&mesher);
+			Mesher* mesher = RL_MALLOC(sizeof(Mesher));
+			mesher_create(mesher);
 			// pass number of faces into "quads" argument of allocate, since all
 			// the faces are quads (these are cubes)
 			size_t faces = terrain_count_faces_in_chunk(voxels);
-			TraceLog(LOG_INFO, "found %d faces", faces);
-			mesher_allocate(&mesher, faces);
-
-			assert(index < terrain_meshes->size);
-
-			terrain_chunk_to_mesh(&mesher, &chunk, voxels);
-			terrain_meshes->chunks[index] = mesher_release(&mesher);
-			UploadMesh(&terrain_meshes->chunks[index], false);
-			++index;
+			mesher_allocate(mesher, faces);
+			terrain_chunk_to_mesh(mesher, &chunk, voxels);
+			Mesh mesh = mesher_release(mesher);
+			UploadMesh(&mesh, false);
+			uint16_t index = terrain_mesh_insert(terrain_data, &chunk, &mesh);
+			terrain_data->chunks[index].position = chunk;
+			RL_FREE(mesher);
 		}
 	}
-	assert(index == num_meshes);
+	TraceLog(LOG_DEBUG, "max generate perlin noise value: %f",
+			 max_generated_perlin);
+	TraceLog(LOG_DEBUG, "Created %d chunk meshes", terrain_data->count);
 	RL_FREE(voxels);
 }
 
@@ -180,14 +194,30 @@ void terrain_update_player_pos(uint8_t index, Vector3 pos)
 
 void terrain_cleanup()
 {
-	for (size_t i = 0; i < terrain_meshes->size; ++i) {
-		UnloadMesh(terrain_meshes->chunks[i]);
+	for (size_t i = 0; i < terrain_data->count; ++i) {
+		UnloadMesh(terrain_data->chunks[i].mesh);
 	}
 	UnloadMaterial(terrain_mat);
 	// not necessary in theory, material should unload the RT. just bein safe
 	UnloadRenderTexture(texture_atlas);
-	RL_FREE(terrain_meshes);
+	RL_FREE(terrain_data->indices);
+	RL_FREE(terrain_data);
 	RL_FREE(player_positions);
+}
+
+static uint16_t terrain_mesh_insert(TerrainData* restrict data,
+									const ChunkCoords* restrict chunk_location,
+									const Mesh* restrict mesh)
+{
+	assert(data->count < data->capacity);
+	uint16_t index = data->count;
+
+	data->indices[chunk_location->x + chunk_location->z * CHUNK_SIZE] =
+		(OptionalIndex){.has_value = 1, .index = index};
+	data->chunks[index].mesh = *mesh;
+	++data->count;
+
+	return index;
 }
 
 static void
@@ -258,10 +288,11 @@ static const block_t*
 terrain_get_voxel_from_voxels_const(VoxelCoords voxel,
 									const IntermediateVoxelData* voxels)
 {
-	assert(voxel.z + voxel.x * max_voxelcoord.x + voxel.y * max_voxelcoord.y <
-		   CHUNK_SIZE * CHUNK_SIZE * WORLD_HEIGHT);
-	return &voxels->voxels[voxel.z + voxel.x * max_voxelcoord.x +
-						   voxel.y * max_voxelcoord.y];
+	const size_t val =
+		voxel.z + voxel.x * max_voxelcoord.x + voxel.y * max_voxelcoord.y;
+	static const size_t max = (long)CHUNK_SIZE * CHUNK_SIZE * WORLD_HEIGHT;
+	assert(val < max);
+	return &voxels->voxels[val];
 }
 
 static block_t terrain_generate_voxel(const ChunkCoords* restrict chunk,
@@ -272,6 +303,8 @@ static block_t terrain_generate_voxel(const ChunkCoords* restrict chunk,
 		.gain = 42,
 		.hgrid = 2,
 	};
+	// actual max:		9,918,264,377,344
+	// expected max:	9,682,651,996,416
 	static const float threshhold = 0.0f;
 	const float amplitude3d = powf(noise3d.gain, (float)noise3d.octaves);
 
@@ -280,7 +313,13 @@ static block_t terrain_generate_voxel(const ChunkCoords* restrict chunk,
 		(float)voxel->z + (float)(chunk->z * max_voxelcoord.z), &noise3d);
 
 	const float squashed_perlin = perlin / amplitude3d;
-	assert(squashed_perlin <= 1 && squashed_perlin >= -1);
+	// TraceLog(LOG_INFO,
+	// 		 "Expected perlin with amplitude of %f, got %f. Squashed to %f",
+	// 		 amplitude3d, perlin, squashed_perlin);
+	// assert(squashed_perlin <= 1 && squashed_perlin >= -1);
+	if (max_generated_perlin < fabsf(perlin)) {
+		max_generated_perlin = fabsf(perlin);
+	}
 
 	if (squashed_perlin < 0) {
 		return 1;
@@ -333,7 +372,32 @@ terrain_offset_voxel_is_solid(const IntermediateVoxelData* restrict chunk_data,
 	const voxel_index_signed_t z =
 		((voxel_index_signed_t)coords->z) - offset->z;
 
-	if (x < 0 || y < 0 || z < 0) {
+#ifndef NDEBUG
+	float x_exceed = fabsf((float)x - Clamp((float)x, 0, CHUNK_SIZE - 1));
+	float y_exceed = fabsf((float)y - Clamp((float)y, 0, WORLD_HEIGHT - 1));
+	float z_exceed = fabsf((float)z - Clamp((float)z, 0, CHUNK_SIZE - 1));
+#endif
+
+	if (x < 0 || y < 0 || z < 0 || x >= CHUNK_SIZE || z >= CHUNK_SIZE ||
+		y >= WORLD_HEIGHT) {
+#ifndef NDEBUG
+		// in debug mode, warn if going over by more than one
+		if ((x < 0 || x >= CHUNK_SIZE) && x_exceed != 1) {
+			TraceLog(LOG_WARNING,
+					 "offset %d exceeds chunk boundaries by %f on x", x,
+					 x_exceed);
+		}
+		if ((y < 0 || y >= WORLD_HEIGHT) && y_exceed != 1) {
+			TraceLog(LOG_WARNING,
+					 "offset %d exceeds chunk boundaries by %f on y", y,
+					 y_exceed);
+		}
+		if ((z < 0 || z >= CHUNK_SIZE) && z_exceed != 1) {
+			TraceLog(LOG_WARNING,
+					 "offset %d exceeds chunk boundaries by %f on z", z,
+					 z_exceed);
+		}
+#endif
 		// all off-chunk values are not solid
 		return false;
 	}

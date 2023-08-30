@@ -11,6 +11,9 @@ typedef struct
 	Vector3 normal;
 #ifndef NDEBUG
 	bool allocated;
+	size_t mesh_texcoord_float_indices;
+	size_t mesh_normal_float_indices;
+	size_t mesh_vertex_float_indices;
 #endif
 } Mesher;
 
