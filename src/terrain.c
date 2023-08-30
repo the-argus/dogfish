@@ -5,6 +5,7 @@
 #include "terrain.h"
 #include <math.h>
 #include <raymath.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 // TODO: make the wording in this module more consistent/clear: what is a chunk
@@ -89,7 +90,7 @@ void terrain_draw()
 	ChunkCoords chunk = {-RENDER_DISTANCE / 2, -RENDER_DISTANCE / 2};
 	size_t index = 0;
 	for (; chunk.x < RENDER_DISTANCE; ++chunk.x) {
-		for (; chunk.z < RENDER_DISTANCE; ++chunk.z) {
+		for (chunk.z = 0; chunk.z < RENDER_DISTANCE; ++chunk.z) {
 			DrawMesh(terrain_meshes->chunks[index], terrain_mat,
 					 MatrixTranslate((float)(chunk.x * max_voxelcoord.x), 0,
 									 (float)(chunk.z * max_voxelcoord.z)));
@@ -120,9 +121,9 @@ void terrain_load()
 	ClearBackground(GRAY);
 	EndTextureMode();
 	// store that texture into material
-	Material mat = LoadMaterialDefault();
-	mat.maps[0].color = WHITE;
-	mat.maps[0].texture = texture_atlas.texture;
+	terrain_mat = LoadMaterialDefault();
+	terrain_mat.maps[0].color = WHITE;
+	terrain_mat.maps[0].texture = texture_atlas.texture;
 
 	Shader shader = LoadShader("assets/materials/basic_lit.vert",
 							   "assets/materials/basic_lit.frag");
@@ -137,17 +138,18 @@ void terrain_load()
 							(Vector3){-2, -4, -3}, WHITE, shader);
 	lights[1] = CreateLight(LIGHT_DIRECTIONAL, Vector3Zero(),
 							(Vector3){2, 2, 5}, GRAY, shader);
-	mat.shader = shader;
+	terrain_mat.shader = shader;
 	// only one uv rect lookup option, which just shows the whole texture
 	static const Rectangle basic_uv_rect[] = {{0, 0, 1, 1}};
 	voxels->uv_rect_lookup = basic_uv_rect;
 	voxels->uv_rect_lookup_capacity = 1;
 
 	// start in the most negative chunk from the player
-	ChunkCoords chunk = {-RENDER_DISTANCE / 2, -RENDER_DISTANCE / 2};
+	ChunkCoords chunk = {-RENDER_DISTANCE_HALF, -RENDER_DISTANCE_HALF};
 	size_t index = 0;
-	for (; chunk.x < RENDER_DISTANCE; ++chunk.x) {
-		for (; chunk.z < RENDER_DISTANCE; ++chunk.z) {
+	for (; chunk.x < RENDER_DISTANCE_HALF; ++chunk.x) {
+		for (chunk.z = -RENDER_DISTANCE_HALF; chunk.z < RENDER_DISTANCE_HALF;
+			 ++chunk.z) {
 			terrain_generate_voxels(chunk, voxels);
 			// voxels are now filled with the correct block_t values, meshing
 			// time
@@ -155,16 +157,19 @@ void terrain_load()
 			mesher_create(&mesher);
 			// pass number of faces into "quads" argument of allocate, since all
 			// the faces are quads (these are cubes)
-			mesher_allocate(&mesher, terrain_count_faces_in_chunk(voxels));
+			size_t faces = terrain_count_faces_in_chunk(voxels);
+			TraceLog(LOG_INFO, "found %d faces", faces);
+			mesher_allocate(&mesher, faces);
 
 			assert(index < terrain_meshes->size);
 
 			terrain_chunk_to_mesh(&mesher, &chunk, voxels);
-			terrain_meshes->chunks[index] = mesher.inner;
+			terrain_meshes->chunks[index] = mesher_release(&mesher);
 			UploadMesh(&terrain_meshes->chunks[index], false);
 			++index;
 		}
 	}
+	assert(index == num_meshes);
 	RL_FREE(voxels);
 }
 
@@ -192,8 +197,8 @@ terrain_chunk_to_mesh(Mesher* restrict mesher,
 {
 	VoxelCoords iter = {0};
 	for (; iter.x < max_voxelcoord.x; ++iter.x) {
-		for (; iter.y < max_voxelcoord.y; ++iter.y) {
-			for (; iter.z < max_voxelcoord.z; ++iter.z) {
+		for (iter.y = 0; iter.y < max_voxelcoord.y; ++iter.y) {
+			for (iter.z = 0; iter.z < max_voxelcoord.z; ++iter.z) {
 				VoxelFaces faces = {
 					.south = terrain_offset_voxel_is_solid(
 						chunk_data, &iter, &all_neighbor_offsets[SOUTH]),
@@ -231,8 +236,8 @@ static void terrain_generate_voxels(ChunkCoords chunk_to_generate,
 	// while the memory is hot. Provided that doing this actually makes things
 	// faster, that is.
 	for (; iter.x < max_voxelcoord.x; ++iter.x) {
-		for (; iter.y < max_voxelcoord.y; ++iter.y) {
-			for (; iter.z < max_voxelcoord.z; ++iter.z) {
+		for (iter.y = 0; iter.y < max_voxelcoord.y; ++iter.y) {
+			for (iter.z = 0; iter.z < max_voxelcoord.z; ++iter.z) {
 				*terrain_get_voxel_from_voxels(iter, voxels) =
 					terrain_generate_voxel(&chunk_to_generate, &iter);
 			}
@@ -290,8 +295,8 @@ static size_t terrain_count_faces_in_chunk(const IntermediateVoxelData* voxels)
 	static const size_t number_of_offsets =
 		sizeof(all_neighbor_offsets) / sizeof(VoxelOffset);
 	for (; iter.x < max_voxelcoord.x; ++iter.x) {
-		for (; iter.y < max_voxelcoord.y; ++iter.y) {
-			for (; iter.z < max_voxelcoord.z; ++iter.z) {
+		for (iter.y = 0; iter.y < max_voxelcoord.y; ++iter.y) {
+			for (iter.z = 0; iter.z < max_voxelcoord.z; ++iter.z) {
 				const block_t* voxel =
 					terrain_get_voxel_from_voxels_const(iter, voxels);
 

@@ -60,6 +60,8 @@ int main(void)
 	bullet_cleanup();
 	airplane_cleanup();
 	render_pipeline_cleanup();
+	skybox_cleanup();
+	terrain_cleanup();
 	CloseWindow();
 
 	return 0;

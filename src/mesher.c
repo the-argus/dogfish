@@ -26,7 +26,9 @@ void mesher_create(Mesher* mesher)
 	mesher->inner.tangents = NULL;
 	mesher->inner.indices = NULL;
 	mesher->inner.texcoords2 = NULL;
+#ifndef NDEBUG
 	mesher->allocated = false;
+#endif
 }
 
 /// Allocates the vertex, normal, and texcoord buffers for a mesher.
@@ -35,6 +37,12 @@ void mesher_allocate(Mesher* mesher, size_t quads)
 	assert(!mesher->allocated);
 	mesher->inner.vertexCount = (int)quads * VERTEX_PER_QUAD;
 	mesher->inner.triangleCount = (int)quads * TRI_PER_QUAD;
+	if (quads == 0) {
+#ifndef NDEBUG
+		mesher->allocated = true;
+#endif
+		return;
+	}
 
 	mesher->inner.vertices =
 		RL_MALLOC(sizeof(float) * 3 * mesher->inner.vertexCount);
@@ -52,9 +60,13 @@ void mesher_allocate(Mesher* mesher, size_t quads)
 void mesher_push_vertex(Mesher* mesher, const Vector3* offset,
 						const Vector3* vertex)
 {
+	if (mesher->inner.vertexCount == 0) {
+		return;
+	}
 	assert(mesher->inner.texcoords != NULL);
 	{
 		size_t index = mesher->triangle_index * 6 + mesher->vert_index * 2;
+		assert(index < mesher->inner.vertexCount * 2);
 		mesher->inner.texcoords[index] = mesher->uv.x;
 		mesher->inner.texcoords[index + 1] = mesher->uv.y;
 	}
@@ -62,6 +74,7 @@ void mesher_push_vertex(Mesher* mesher, const Vector3* offset,
 	assert(mesher->inner.normals != NULL);
 	{
 		size_t index = mesher->triangle_index * 9 + mesher->vert_index * 3;
+		assert(index < mesher->inner.vertexCount * 3);
 		mesher->inner.normals[index] = mesher->normal.x;
 		mesher->inner.normals[index + 1] = mesher->normal.y;
 		mesher->inner.normals[index + 2] = mesher->normal.z;
@@ -71,6 +84,7 @@ void mesher_push_vertex(Mesher* mesher, const Vector3* offset,
 	{
 		size_t index = mesher->triangle_index * 9 + mesher->vert_index * 3;
 		const Vector3 real_offset = offset ? *offset : (Vector3){0};
+		assert(index < mesher->inner.vertexCount * 3);
 		mesher->inner.vertices[index] = vertex->x + real_offset.x;
 		mesher->inner.vertices[index + 1] = vertex->y + real_offset.y;
 		mesher->inner.vertices[index + 2] = vertex->z + real_offset.z;
@@ -81,4 +95,11 @@ void mesher_push_vertex(Mesher* mesher, const Vector3* offset,
 		++mesher->triangle_index;
 		mesher->vert_index = 0;
 	}
+}
+
+Mesh mesher_release(Mesher* mesher)
+{
+	const Mesh result = mesher->inner;
+	mesher_create(mesher);
+	return result;
 }

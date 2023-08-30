@@ -23,3 +23,6 @@ void mesher_allocate(Mesher* mesher, size_t quads);
 /// Add a vertex to the mesh
 void mesher_push_vertex(Mesher* mesher, const Vector3* offset,
 						const Vector3* vertex);
+
+/// Returns the mesh and resets the mesher. Needs reallocation after this
+Mesh mesher_release(Mesher* mesher);

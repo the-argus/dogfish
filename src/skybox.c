@@ -114,6 +114,8 @@ void skybox_load()
 #undef SKYBOX_SIZE
 }
 
+void skybox_cleanup() { UnloadModel(skybox); }
+
 // Generate cubemap texture from HDR texture
 static TextureCubemap GenTextureCubemap(Shader shader, Texture2D panorama,
 										int size, int format)
