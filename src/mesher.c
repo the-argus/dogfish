@@ -26,6 +26,8 @@ void mesher_create(Mesher* mesher)
 	mesher->inner.tangents = NULL;
 	mesher->inner.indices = NULL;
 	mesher->inner.texcoords2 = NULL;
+	mesher->inner.vboId = 0;
+	mesher->inner.vaoId = 0;
 #ifndef NDEBUG
 	mesher->allocated = false;
 #endif

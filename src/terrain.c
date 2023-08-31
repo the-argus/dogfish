@@ -96,15 +96,11 @@ terrain_chunk_to_mesh(Mesher* restrict mesher,
 void terrain_draw()
 {
 	ChunkCoords chunk = {-RENDER_DISTANCE / 2, -RENDER_DISTANCE / 2};
-	size_t index = 0;
-	for (; chunk.x < RENDER_DISTANCE; ++chunk.x) {
-		for (chunk.z = 0; chunk.z < RENDER_DISTANCE; ++chunk.z) {
-			const ChunkCoords* pos = &terrain_data->chunks[index].position;
-			DrawMesh(terrain_data->chunks[index].mesh, terrain_mat,
-					 MatrixTranslate((float)pos->x * CHUNK_SIZE, 0,
-									 (float)pos->z * CHUNK_SIZE));
-			++index;
-		}
+	for (size_t i = 0; i < terrain_data->count; ++i) {
+		const ChunkCoords* pos = &terrain_data->chunks[i].position;
+		DrawMesh(terrain_data->chunks[i].mesh, terrain_mat,
+				 MatrixTranslate((float)pos->x * CHUNK_SIZE, 0,
+								 (float)pos->z * CHUNK_SIZE));
 	}
 }
 
@@ -119,8 +115,6 @@ void terrain_load()
 							 (num_meshes * sizeof(terrain_data->chunks[0])));
 	terrain_data->capacity = num_meshes;
 	terrain_data->count = 0;
-	terrain_data->indices =
-		RL_CALLOC(num_meshes, sizeof(*terrain_data->indices));
 	player_positions = RL_CALLOC(NUM_PLANES, sizeof(Vector3));
 
 	// heap allocated for debugging, could be stack'd
@@ -200,7 +194,6 @@ void terrain_cleanup()
 	UnloadMaterial(terrain_mat);
 	// not necessary in theory, material should unload the RT. just bein safe
 	UnloadRenderTexture(texture_atlas);
-	RL_FREE(terrain_data->indices);
 	RL_FREE(terrain_data);
 	RL_FREE(player_positions);
 }
@@ -212,9 +205,8 @@ static uint16_t terrain_mesh_insert(TerrainData* restrict data,
 	assert(data->count < data->capacity);
 	uint16_t index = data->count;
 
-	data->indices[chunk_location->x + chunk_location->z * CHUNK_SIZE] =
-		(OptionalIndex){.has_value = 1, .index = index};
 	data->chunks[index].mesh = *mesh;
+	data->chunks[index].position = *chunk_location;
 	++data->count;
 
 	return index;

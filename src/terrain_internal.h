@@ -7,8 +7,8 @@
 
 /// This number squared is how many chunks will be stored in memory and rendered
 /// at once.
-#define RENDER_DISTANCE 16
-#define RENDER_DISTANCE_HALF 8
+#define RENDER_DISTANCE 2
+#define RENDER_DISTANCE_HALF 1
 static_assert((RENDER_DISTANCE % 2) == 0, "Render distance not divisible by 2");
 static_assert(
 	RENDER_DISTANCE == 2 * RENDER_DISTANCE_HALF,
@@ -33,12 +33,6 @@ typedef int16_t chunk_index_t;
 
 typedef struct
 {
-	uint16_t index : 15;
-	uint16_t has_value : 1;
-} OptionalIndex;
-
-typedef struct
-{
 	chunk_index_t x;
 	chunk_index_t z;
 } ChunkCoords;
@@ -48,9 +42,6 @@ typedef struct
 	ChunkCoords position;
 	Mesh mesh;
 } Chunk;
-
-static_assert(sizeof(OptionalIndex) == sizeof(uint16_t),
-			  "OptionalIndex not optimized");
 
 /// In-memory mesh data for all terrain surrounding every player.
 /// Involves a lot of pointer indirection. Each mesh's vertices, indices, and
@@ -64,11 +55,6 @@ typedef struct
 	size_t capacity;
 	// amount used (memory after this may be uninitialized)
 	size_t count;
-	// lookup table for indices (should only be necessary to look up in here
-	// when loading new chunks, probably on another thread. re-evaluate this
-	// solution if you have to touch this per-frame)
-	// 2D array, look up an (x,z) chunk by doing [x + (z *RENDER_DISTANCE)]
-	OptionalIndex* indices;
 	Chunk chunks[0];
 } TerrainData;
 
