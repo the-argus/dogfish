@@ -112,9 +112,20 @@ void skybox_load()
 		UnloadImage(img);
 	}
 #undef SKYBOX_SIZE
+
+	// prevent the shader used to render the cubemap from leaking
+	// TODO: this is not done in the official example, so there's a memory leak
+	// there. make a PR to raylib
+	UnloadShader(shdrCubemap);
 }
 
-void skybox_cleanup() { UnloadModel(skybox); }
+void skybox_cleanup()
+{
+	// raylib does not free material shaders because it expects those to be
+	// shared by multiple materials. explicitly free here
+	UnloadShader(skybox.materials[0].shader);
+	UnloadModel(skybox);
+}
 
 // Generate cubemap texture from HDR texture
 static TextureCubemap GenTextureCubemap(Shader shader, Texture2D panorama,

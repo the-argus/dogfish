@@ -84,7 +84,6 @@ void bullet_init()
 	// debug mesh with no normal information
 	bullet_mesh = GenMeshCube(BULLET_PHYSICS_WIDTH, BULLET_PHYSICS_WIDTH,
 							  BULLET_PHYSICS_LENGTH);
-	bullet_material = LoadMaterialDefault();
 	bullet_shader = LoadShader("assets/materials/bullet.vert",
 							   "assets/materials/instanced.frag");
 
@@ -103,8 +102,8 @@ void bullet_init()
 
 void bullet_cleanup()
 {
-	UnloadMesh(bullet_mesh);
 	UnloadMaterial(bullet_material); // will also clean up shader
+	UnloadMesh(bullet_mesh);
 	RL_FREE(bullet_data->sources);
 	RL_FREE(bullet_data->create_times);
 	RL_FREE(bullet_data);
