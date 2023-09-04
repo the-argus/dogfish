@@ -10,13 +10,7 @@ const debug_flags = [_][]const u8{
 };
 var chosen_flags: ?[]const []const u8 = null;
 
-const common = @import("./build/common.zig");
-const include = common.include;
-const link = common.link;
-const includePrefixFlag = common.includePrefixFlag;
-
-const cdb = @import("./build/compile_commands.zig");
-const makeCdb = cdb.makeCdb;
+const zcc = @import("compile_commands");
 
 const c_sources = [_][]const u8{
     "src/airplane.c",
@@ -113,16 +107,27 @@ pub fn build(b: *std.Build) !void {
     }
 
     // compile commands step
-    cdb.registerCompileSteps(targets);
+    zcc.createStep(b, "cdb", try targets.toOwnedSlice());
+}
 
-    var step = try b.allocator.create(std.Build.Step);
-    step.* = std.Build.Step.init(.{
-        .id = .custom,
-        .name = "cdb_file",
-        .makeFn = makeCdb,
-        .owner = b,
-    });
+fn link(
+    targets: std.ArrayList(*std.Build.CompileStep),
+    lib: []const u8,
+) !void {
+    for (targets.items) |target| {
+        target.linkSystemLibrary(lib);
+    }
+}
 
-    const cdb_step = b.step("cdb", "Create compile_commands.json");
-    cdb_step.dependOn(step);
+fn include(
+    targets: std.ArrayList(*std.Build.CompileStep),
+    path: []const u8,
+) !void {
+    for (targets.items) |target| {
+        target.addIncludePath(std.Build.LazyPath{ .path = path });
+    }
+}
+
+fn includePrefixFlag(ally: std.mem.Allocator, path: []const u8) ![]const u8 {
+    return try std.fmt.allocPrint(ally, "-I{s}/include", .{path});
 }
