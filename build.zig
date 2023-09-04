@@ -38,6 +38,17 @@ const c_sources = [_][]const u8{
     "src/quicksort.c",
 };
 
+const Library = struct {
+    // name in build.zig
+    remote_name: []const u8,
+    // the name given to this library in its build.zig. usually in addStaticLibrary
+    artifact_name: []const u8,
+};
+
+const libraries = [_]Library{
+    .{ .remote_name = "raylib", .artifact_name = "raylib" },
+};
+
 pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const mode = b.standardOptimizeOption(.{});
@@ -45,44 +56,36 @@ pub fn build(b: *std.Build) !void {
     // keep track of any targets we create
     var targets = std.ArrayList(*std.Build.CompileStep).init(b.allocator);
 
-    // create executable
-    var exe: ?*std.Build.CompileStep = null;
-
-    const libraries = try common.getLibraries(b);
-    var library_compile_steps = std.ArrayList(*std.Build.CompileStep).init(b.allocator);
-    for (libraries) |library| {
-        if (library.buildFn) |fun| {
-            const compilestep = try fun(b, target, mode);
-            try library_compile_steps.append(compilestep);
-            // get compile_commands.json for the lib
-            try targets.append(compilestep);
-        }
-    }
-
-    exe = b.addExecutable(.{
+    const exe = b.addExecutable(.{
         .name = app_name,
         .optimize = mode,
         .target = target,
     });
-    try targets.append(exe.?);
+    try targets.append(exe);
 
     chosen_flags = if (mode == .Debug) &debug_flags else &release_flags;
 
     var flags = std.ArrayList([]const u8).init(b.allocator);
     try flags.appendSlice(chosen_flags.?);
-    for (libraries) |library| {
-        try flags.appendSlice(&library.allFlags());
-    }
 
     // this adds intellisense for any headers which are not present in
     // the source of dependencies, but are built and installed
     try flags.append(try includePrefixFlag(b.allocator, b.install_prefix));
 
-    exe.?.addCSourceFiles(&c_sources, try flags.toOwnedSlice());
+    exe.addCSourceFiles(&c_sources, try flags.toOwnedSlice());
 
-    // always link libc
     for (targets.items) |t| {
+        // always link libc
         t.linkLibC();
+
+        // link libraries from build.zig.zon
+        for (libraries) |library| {
+            const dep = b.dependency(library.remote_name, .{
+                .target = target,
+                .optimize = mode,
+            });
+            t.linkLibrary(dep.artifact(library.artifact_name));
+        }
     }
 
     // links and includes which are shared across platforms
@@ -100,7 +103,7 @@ pub fn build(b: *std.Build) !void {
         else => {},
     }
 
-    const run_cmd = b.addRunArtifact(exe.?);
+    const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());
     if (b.args) |args| {
         run_cmd.addArgs(args);
@@ -108,14 +111,6 @@ pub fn build(b: *std.Build) !void {
 
     const run_step = b.step("run", "Run the app");
     run_step.dependOn(&run_cmd.step);
-
-    // executable needs to depend on the libraries
-    if (exe) |cstep| {
-        for (library_compile_steps.items) |lib_cstep| {
-            cstep.step.dependOn(&lib_cstep.step);
-            cstep.linkLibrary(lib_cstep);
-        }
-    }
 
     for (targets.items) |t| {
         b.installArtifact(t);

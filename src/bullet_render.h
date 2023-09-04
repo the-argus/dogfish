@@ -1,10 +1,14 @@
 #pragma once
 #include "bullet_internal.h"
-#include "config.h"
 #include <raylib.h>
 #include <raymath.h>
 #include <rlgl.h>
 #include <stdlib.h>
+
+// updated 09/03/23. really should come from raylib's
+// config.h but im redifining it here due to packaging issues
+#define MAX_MATERIAL_MAPS 12 
+							 
 
 // NOTE: raylib defines shader locs up to 25. allows for a max of 32
 #define BULLET_SHADER_LOC_VELOCITY 26
