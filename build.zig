@@ -13,11 +13,7 @@ var chosen_flags: ?[]const []const u8 = null;
 const common = @import("./build/common.zig");
 const include = common.include;
 const link = common.link;
-const linkFlag = common.linkFlag;
-const includeFlag = common.includeFlag;
-const linkPrefixFlag = common.linkPrefixFlag;
 const includePrefixFlag = common.includePrefixFlag;
-const optionalPrefixToLibrary = common.optionalPrefixToLibrary;
 
 const cdb = @import("./build/compile_commands.zig");
 const makeCdb = cdb.makeCdb;
