@@ -13,10 +13,30 @@ const CompileCommandEntry = struct {
     output: []const u8,
 };
 
-const CompileCommandError = error{UnregisteredCompileSteps};
-
 pub fn registerCompileSteps(input_steps: std.ArrayList(*std.Build.CompileStep)) void {
     compile_steps = input_steps;
+}
+
+/// Find all the header installation directories for a step.
+/// returns an owned arraylist
+fn extractHeaderDirsFromStep(allocator: std.mem.Allocator, step: *std.Build.CompileStep) std.ArrayList([]const u8) {
+    var dirs = std.ArrayList([]const u8).init(allocator);
+    for (step.installed_headers.items) |header_step| {
+        if (header_step.id == .install_file) {
+            const install_file = header_step.cast(std.Build.InstallFileStep) orelse @panic("Programmer error generating compile_commands.json");
+            // path to specific file being installed
+            const file = install_file.dest_builder.getInstallPath(
+                install_file.dir,
+                install_file.dest_rel_path,
+            );
+            // just add the directory of that file. often creates duplicates
+            dirs.append(if (std.fs.path.dirname(file)) |dirname| dirname else {
+                std.log.warn("Unable to get directory name for installed header file {s} ", .{file});
+                continue;
+            }) catch @panic("OOM");
+        }
+    }
+    return dirs;
 }
 
 // NOTE: some of the CSourceFiles pointed at by the elements of the returned
@@ -26,11 +46,12 @@ fn getCSources(b: *std.Build, allocator: std.mem.Allocator) ![]*CSourceFiles {
 
     var index: u32 = 0;
 
+    // list may be appended to during the loop, so use a while
     while (index < compile_steps.?.items.len) {
         const step = compile_steps.?.items[index];
 
-        // no deinit / memory leak
         var shared_flags = std.ArrayList([]const u8).init(allocator);
+        defer shared_flags.deinit();
 
         // catch all the system libraries being linked, make flags out of them
         for (step.link_objects.items) |link_object| {
@@ -50,7 +71,12 @@ fn getCSources(b: *std.Build, allocator: std.mem.Allocator) ![]*CSourceFiles {
         // do the same for include directories
         for (step.include_dirs.items) |include_dir| {
             switch (include_dir) {
-                .other_step => |other_step| try compile_steps.?.append(other_step),
+                .other_step => |other_step| {
+                    const arraylist_header_dirs = extractHeaderDirsFromStep(allocator, other_step);
+                    for (arraylist_header_dirs.items) |header_dir| {
+                        try shared_flags.append(try common.includeFlag(allocator, header_dir));
+                    }
+                },
                 .path => |path| try shared_flags.append(try common.includeFlag(allocator, path.getPath(b))),
                 .path_system => |path| try shared_flags.append(try common.includeFlag(allocator, path.getPath(b))),
                 // TODO: support this
@@ -110,8 +136,7 @@ fn getCSources(b: *std.Build, allocator: std.mem.Allocator) ![]*CSourceFiles {
 
 pub fn makeCdb(step: *std.Build.Step, prog_node: *std.Progress.Node) anyerror!void {
     if (compile_steps == null) {
-        std.log.err("No compile steps registered. Call registerCompileSteps before creating the makeCdb step.", .{});
-        return CompileCommandError.UnregisteredCompileSteps;
+        @panic("No compile steps registered. Call registerCompileSteps before creating the makeCdb step.");
     }
     _ = prog_node;
     var allocator = step.owner.allocator;
@@ -131,13 +156,13 @@ pub fn makeCdb(step: *std.Build.Step, prog_node: *std.Progress.Node) anyerror!vo
     for (c_sources) |c_source_file_set| {
         const flags = c_source_file_set.flags;
         for (c_source_file_set.files) |c_file| {
-            const file_str = try std.fs.path.join(allocator, &[_][]const u8{ cwd_string, c_file });
-            const output_str = try std.fmt.allocPrint(allocator, "{s}.o", .{file_str});
+            const file_str = std.fs.path.join(allocator, &[_][]const u8{ cwd_string, c_file }) catch @panic("OOM");
+            const output_str = std.fmt.allocPrint(allocator, "{s}.o", .{file_str}) catch @panic("OOM");
 
             var arguments = std.ArrayList([]const u8).init(allocator);
             try arguments.append("clang"); // pretend this is clang compiling
             try arguments.append(c_file);
-            try arguments.appendSlice(&.{ "-o", try std.fmt.allocPrint(allocator, "{s}.o", .{c_file}) });
+            try arguments.appendSlice(&.{ "-o", std.fmt.allocPrint(allocator, "{s}.o", .{c_file}) catch @panic("OOM") });
             try arguments.appendSlice(flags);
 
             // add host native include dirs and libs
