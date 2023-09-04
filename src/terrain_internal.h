@@ -7,8 +7,8 @@
 
 /// This number squared is how many chunks will be stored in memory and rendered
 /// at once.
-#define RENDER_DISTANCE 2
-#define RENDER_DISTANCE_HALF 1
+#define RENDER_DISTANCE 4
+#define RENDER_DISTANCE_HALF 2
 static_assert((RENDER_DISTANCE % 2) == 0, "Render distance not divisible by 2");
 static_assert(
 	RENDER_DISTANCE == 2 * RENDER_DISTANCE_HALF,

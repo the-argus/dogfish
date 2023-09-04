@@ -16,8 +16,6 @@ static Material terrain_mat;
 static Vector3* player_positions;
 static RenderTexture texture_atlas;
 
-static float max_generated_perlin = 0;
-
 static const VoxelCoords max_voxelcoord = {
 	.x = CHUNK_SIZE,
 	.y = WORLD_HEIGHT,
@@ -84,23 +82,23 @@ static void terrain_mesher_add_face(Mesher* restrict mesher,
 
 /// Inserts a new mesh at a given coordinates into a TerrainMeshes
 /// returns the index at which the item was inserted
-static uint16_t terrain_mesh_insert(TerrainData* restrict data,
-									const ChunkCoords* restrict chunk_location,
-									const Mesh* restrict mesh);
+static void terrain_mesh_insert(TerrainData* restrict data,
+								const ChunkCoords* restrict chunk_location,
+								const Mesh* restrict mesh);
 
 static void
 terrain_chunk_to_mesh(Mesher* restrict mesher,
 					  const ChunkCoords* restrict chunk_coords,
 					  const IntermediateVoxelData* restrict chunk_data);
 
+static bool terrain_voxel_is_solid(block_t type);
+
 void terrain_draw()
 {
-	ChunkCoords chunk = {-RENDER_DISTANCE / 2, -RENDER_DISTANCE / 2};
 	for (size_t i = 0; i < terrain_data->count; ++i) {
 		const ChunkCoords* pos = &terrain_data->chunks[i].position;
 		DrawMesh(terrain_data->chunks[i].mesh, terrain_mat,
-				 MatrixTranslate((float)pos->x * CHUNK_SIZE, 0,
-								 (float)pos->z * CHUNK_SIZE));
+				 MatrixTranslate((float)pos->x, 0, (float)pos->z));
 	}
 }
 
@@ -108,9 +106,6 @@ void terrain_load()
 {
 	// permanent
 	size_t num_meshes = (size_t)RENDER_DISTANCE * RENDER_DISTANCE * NUM_PLANES;
-	assert(
-		num_meshes <
-		(size_t)powf(2.0f, 15)); // dont exceed maximum index of OptionalIndex
 	terrain_data = RL_MALLOC(sizeof(TerrainData) +
 							 (num_meshes * sizeof(terrain_data->chunks[0])));
 	terrain_data->capacity = num_meshes;
@@ -154,29 +149,29 @@ void terrain_load()
 	voxels->uv_rect_lookup_capacity = 1;
 
 	// start in the most negative chunk from the player
-	ChunkCoords chunk = {-RENDER_DISTANCE_HALF, -RENDER_DISTANCE_HALF};
-	for (; chunk.x < RENDER_DISTANCE_HALF; ++chunk.x) {
-		for (chunk.z = -RENDER_DISTANCE_HALF; chunk.z < RENDER_DISTANCE_HALF;
-			 ++chunk.z) {
-			terrain_generate_voxels(chunk, voxels);
+	ChunkCoords chunk_location = {-RENDER_DISTANCE_HALF, -RENDER_DISTANCE_HALF};
+	for (; chunk_location.x < RENDER_DISTANCE_HALF; ++chunk_location.x) {
+		for (chunk_location.z = -RENDER_DISTANCE_HALF;
+			 chunk_location.z < RENDER_DISTANCE_HALF; ++chunk_location.z) {
+			terrain_generate_voxels(chunk_location, voxels);
 			// voxels are now filled with the correct block_t values, meshing
 			// time
+			// TODO: make this stack allocated, at least in release mode
 			Mesher* mesher = RL_MALLOC(sizeof(Mesher));
 			mesher_create(mesher);
 			// pass number of faces into "quads" argument of allocate, since all
 			// the faces are quads (these are cubes)
 			size_t faces = terrain_count_faces_in_chunk(voxels);
 			mesher_allocate(mesher, faces);
-			terrain_chunk_to_mesh(mesher, &chunk, voxels);
+			terrain_chunk_to_mesh(mesher, &chunk_location, voxels);
 			Mesh mesh = mesher_release(mesher);
 			UploadMesh(&mesh, false);
-			uint16_t index = terrain_mesh_insert(terrain_data, &chunk, &mesh);
-			terrain_data->chunks[index].position = chunk;
+			// mesh has been modified to contain handles from the opengl context
+			// now copy it into our data structure for rendering
+			terrain_mesh_insert(terrain_data, &chunk_location, &mesh);
 			RL_FREE(mesher);
 		}
 	}
-	TraceLog(LOG_DEBUG, "max generate perlin noise value: %f",
-			 max_generated_perlin);
 	TraceLog(LOG_DEBUG, "Created %d chunk meshes", terrain_data->count);
 	RL_FREE(voxels);
 }
@@ -198,9 +193,9 @@ void terrain_cleanup()
 	RL_FREE(player_positions);
 }
 
-static uint16_t terrain_mesh_insert(TerrainData* restrict data,
-									const ChunkCoords* restrict chunk_location,
-									const Mesh* restrict mesh)
+static void terrain_mesh_insert(TerrainData* restrict data,
+								const ChunkCoords* restrict chunk_location,
+								const Mesh* restrict mesh)
 {
 	assert(data->count < data->capacity);
 	uint16_t index = data->count;
@@ -208,8 +203,6 @@ static uint16_t terrain_mesh_insert(TerrainData* restrict data,
 	data->chunks[index].mesh = *mesh;
 	data->chunks[index].position = *chunk_location;
 	++data->count;
-
-	return index;
 }
 
 static void
@@ -218,21 +211,26 @@ terrain_chunk_to_mesh(Mesher* restrict mesher,
 					  const IntermediateVoxelData* restrict chunk_data)
 {
 	VoxelCoords iter = {0};
-	for (; iter.x < max_voxelcoord.x; ++iter.x) {
+	for (iter.x = 0; iter.x < max_voxelcoord.x; ++iter.x) {
 		for (iter.y = 0; iter.y < max_voxelcoord.y; ++iter.y) {
 			for (iter.z = 0; iter.z < max_voxelcoord.z; ++iter.z) {
+				if (*terrain_get_voxel_from_voxels_const(iter, chunk_data) ==
+					0) {
+					// empty
+					continue;
+				}
 				VoxelFaces faces = {
-					.south = terrain_offset_voxel_is_solid(
+					.south = !terrain_offset_voxel_is_solid(
 						chunk_data, &iter, &all_neighbor_offsets[SOUTH]),
-					.north = terrain_offset_voxel_is_solid(
+					.north = !terrain_offset_voxel_is_solid(
 						chunk_data, &iter, &all_neighbor_offsets[NORTH]),
-					.west = terrain_offset_voxel_is_solid(
+					.west = !terrain_offset_voxel_is_solid(
 						chunk_data, &iter, &all_neighbor_offsets[WEST]),
-					.east = terrain_offset_voxel_is_solid(
+					.east = !terrain_offset_voxel_is_solid(
 						chunk_data, &iter, &all_neighbor_offsets[EAST]),
-					.up = terrain_offset_voxel_is_solid(
+					.up = !terrain_offset_voxel_is_solid(
 						chunk_data, &iter, &all_neighbor_offsets[UP]),
-					.down = terrain_offset_voxel_is_solid(
+					.down = !terrain_offset_voxel_is_solid(
 						chunk_data, &iter, &all_neighbor_offsets[DOWN]),
 				};
 
@@ -309,9 +307,6 @@ static block_t terrain_generate_voxel(const ChunkCoords* restrict chunk,
 	// 		 "Expected perlin with amplitude of %f, got %f. Squashed to %f",
 	// 		 amplitude3d, perlin, squashed_perlin);
 	// assert(squashed_perlin <= 1 && squashed_perlin >= -1);
-	if (max_generated_perlin < fabsf(perlin)) {
-		max_generated_perlin = fabsf(perlin);
-	}
 
 	if (squashed_perlin < 0) {
 		return 1;
@@ -331,7 +326,7 @@ static size_t terrain_count_faces_in_chunk(const IntermediateVoxelData* voxels)
 				const block_t* voxel =
 					terrain_get_voxel_from_voxels_const(iter, voxels);
 
-				if (*voxel == 0) {
+				if (!terrain_voxel_is_solid(*voxel)) {
 					// empty
 					continue;
 				}
@@ -340,7 +335,7 @@ static size_t terrain_count_faces_in_chunk(const IntermediateVoxelData* voxels)
 				for (uint8_t i = 0; i < number_of_offsets; ++i) {
 					// if the neighbor isn't solid, that means the  face is
 					// exposed and needs to be rendered
-					if (terrain_offset_voxel_is_solid(
+					if (!terrain_offset_voxel_is_solid(
 							voxels, &iter, &all_neighbor_offsets[i])) {
 						++count;
 					}
@@ -396,8 +391,10 @@ terrain_offset_voxel_is_solid(const IntermediateVoxelData* restrict chunk_data,
 
 	const block_t voxel = *terrain_get_voxel_from_voxels_const(
 		(VoxelCoords){x, y, z}, chunk_data);
-	return voxel == 0;
+	return terrain_voxel_is_solid(voxel);
 }
+
+static bool terrain_voxel_is_solid(block_t type) { return type != 0; }
 
 static void terrain_mesher_add_face(Mesher* restrict mesher,
 									const Vector3* restrict position,

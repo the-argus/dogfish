@@ -66,14 +66,18 @@ void mesher_push_vertex(Mesher* mesher, const Vector3* offset,
 						const Vector3* vertex)
 {
 	if (mesher->inner.vertexCount == 0) {
+		TraceLog(LOG_WARNING,
+				 "Attempted to add vertex to mesh with no vertices allocated.");
 		return;
 	}
 	assert(mesher->inner.texcoords != NULL);
 	{
 		size_t index = mesher->triangle_index * 6 + mesher->vert_index * 2;
+		// TODO: make the asserts vs. returns consistent between this and the
+		// normals and vertices
 		if (!(index < mesher->mesh_texcoord_float_indices)) {
-			// TraceLog(LOG_INFO, "Index %d exceeds number of texcoords %d", index,
-			// 		 mesher->mesh_texcoord_float_indices);
+			// TraceLog(LOG_INFO, "Index %d exceeds number of texcoords %d",
+			// index, 		 mesher->mesh_texcoord_float_indices);
 			return;
 		}
 		assert(index < mesher->mesh_texcoord_float_indices);

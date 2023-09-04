@@ -1,6 +1,7 @@
 #include "airplane.h"
 #include "bullet.h"
 #include "constants/general.h"
+#include "debug.h"
 #include "gamestate.h"
 #include "input.h"
 #include "physics.h"
@@ -253,12 +254,13 @@ void airplane_draw()
 	}
 }
 
+// #define DEBUG_CAMERA
 static inline void airplane_update_p1(float delta_time)
 {
 	// get the first camera
 	FullCamera* camera = &gamestate_get_cameras_mutable()[0];
 #ifdef DEBUG_CAMERA
-	UseDebugCameraController(camera[0]);
+	UseDebugCameraController(&camera[0].camera);
 #else
 	// set the camera to be at the location of the plane
 	Vector2 cursor_delta = total_cursor(0);
