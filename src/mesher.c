@@ -43,7 +43,6 @@ void mesher_allocate(Mesher* mesher, size_t quads)
 		return;
 	}
 #ifndef NDEBUG
-	mesher->allocated = true;
 	mesher->mesh_normal_float_indices = 3 * mesher->inner.vertexCount;
 	mesher->mesh_vertex_float_indices = 3 * mesher->inner.vertexCount;
 	mesher->mesh_texcoord_float_indices = 2 * mesher->inner.vertexCount;

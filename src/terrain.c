@@ -22,13 +22,18 @@ static const VoxelCoords max_voxelcoord = {
 	.z = CHUNK_SIZE,
 };
 
-#define SOUTH 0
-#define NORTH 1
-#define WEST 2
-#define EAST 3
-#define UP 4
-#define DOWN 5
-static const VoxelOffset all_neighbor_offsets[] = {
+enum Sides : uint8_t
+{
+	SOUTH = 0,
+	NORTH,
+	WEST,
+	EAST,
+	UP,
+	DOWN,
+	NUM_SIDES
+};
+
+static const VoxelOffset all_neighbor_offsets[NUM_SIDES] = {
 	(VoxelOffset){.x = 0, .y = 0, .z = 1},
 	(VoxelOffset){.x = 0, .y = 0, .z = -1},
 	(VoxelOffset){.x = 1, .y = 0, .z = 0},
@@ -289,9 +294,9 @@ static block_t terrain_generate_voxel(const ChunkCoords* restrict chunk,
 									  const VoxelCoords* restrict voxel)
 {
 	static const NoiseOptions noise3d = {
-		.octaves = 8,
-		.gain = 42,
-		.hgrid = 2,
+		.octaves = 4,
+		.gain = 1,
+		.hgrid = 200,
 	};
 	// actual max:		9,918,264,377,344
 	// expected max:	9,682,651,996,416
@@ -353,11 +358,11 @@ terrain_offset_voxel_is_solid(const IntermediateVoxelData* restrict chunk_data,
 							  const VoxelOffset* restrict offset)
 {
 	const voxel_index_signed_t x =
-		((voxel_index_signed_t)coords->x) - offset->x;
+		((voxel_index_signed_t)coords->x) + offset->x;
 	const voxel_index_signed_t y =
-		((voxel_index_signed_t)coords->y) - offset->y;
+		((voxel_index_signed_t)coords->y) + offset->y;
 	const voxel_index_signed_t z =
-		((voxel_index_signed_t)coords->z) - offset->z;
+		((voxel_index_signed_t)coords->z) + offset->z;
 
 #ifndef NDEBUG
 	float x_exceed = fabsf((float)x - Clamp((float)x, 0, CHUNK_SIZE - 1));
@@ -401,7 +406,7 @@ static void terrain_mesher_add_face(Mesher* restrict mesher,
 									const VoxelFaceInfo* restrict face)
 {
 	mesher->normal = face->normal;
-	for (uint8_t i = 0; i < 6; ++i) {
+	for (uint8_t i = 0; i < NUM_SIDES; ++i) {
 		mesher->uv = face->vertex_infos[i].uv;
 		mesher_push_vertex(mesher, &face->vertex_infos[i].offset, position);
 	}
