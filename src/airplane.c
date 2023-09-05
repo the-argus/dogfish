@@ -219,21 +219,10 @@ void airplane_update(float delta_time)
 		// also update the plane's velocity
 		airplane_update_velocity(&planes[i], &input->keys[i],
 								 &input->controller[i]);
-
-		// player-specific changes
-		switch (i) {
-		case 0:
-			airplane_update_p1(delta_time);
-			break;
-		case 1:
-			airplane_update_p2(delta_time);
-			break;
-		default:
-			TraceLog(LOG_ERROR, "huh? %d", i);
-			threadutils_exit(EXIT_FAILURE);
-			break;
-		}
 	}
+	// player-specific changes
+	airplane_update_p1(delta_time);
+	airplane_update_p2(delta_time);
 
 	bullet_move_and_collide_with(
 		&airplane_data_aabb_options, &airplane_data_position_options,
