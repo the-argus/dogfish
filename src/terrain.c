@@ -38,7 +38,7 @@ typedef struct
 	Chunk* out_chunk;
 } GenerationArgs;
 
-#define NUM_THREADS 8
+#define NUM_THREADS 1
 
 static TerrainData* terrain_data;
 static Material terrain_mat;
