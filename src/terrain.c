@@ -23,8 +23,8 @@ void terrain_draw()
 	for (size_t i = 0; i < terrain_data->count; ++i) {
 		const ChunkCoords* pos = &terrain_data->chunks[i].position;
 		DrawMesh(terrain_data->chunks[i].mesh, terrain_mat,
-				 MatrixTranslate((float)pos->x * (0.8f / CHUNK_SIZE), 0,
-								 (float)pos->z * (0.8f / CHUNK_SIZE)));
+				 MatrixTranslate((float)pos->x * (1.0f / CHUNK_SIZE), 0,
+								 (float)pos->z * (1.0f / CHUNK_SIZE)));
 	}
 }
 
