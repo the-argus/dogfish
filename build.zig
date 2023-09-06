@@ -26,6 +26,7 @@ const c_sources = [_][]const u8{
     "src/quicksort.c",
     "src/terrain.c",
     "src/terrain_internal.c",
+    "src/terrain_voxel_data.c",
     "src/mesher.c",
 };
 

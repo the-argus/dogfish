@@ -1,5 +1,6 @@
 #pragma once
 #include "constants/general.h"
+#include "mesher.h"
 #include <assert.h>
 #include <raylib.h>
 #include <stdint.h>
@@ -58,18 +59,6 @@ typedef struct
 	Chunk chunks[0];
 } TerrainData;
 
-/// A buffer of data determining the contents of a chunk. Used to store the
-/// generated state of the chunk before converting it to a mesh.
-typedef struct
-{
-	ChunkCoords coords;
-	block_t voxels[CHUNK_SIZE * CHUNK_SIZE * WORLD_HEIGHT];
-	/// UV Rect for the texture of a given block_t, on a texture sampler stored
-	/// somewhere else
-	const Rectangle* uv_rect_lookup;
-	size_t uv_rect_lookup_capacity;
-} IntermediateVoxelData;
-
 typedef struct
 {
 	voxel_index_t x;
@@ -104,6 +93,47 @@ typedef struct
 	VertexInfo vertex_infos[VOXEL_FACE_INFO_NUM_VERTICES];
 	Vector3 normal;
 } VoxelFaceInfo;
+
+enum Sides : uint8_t
+{
+	SOUTH = 0,
+	NORTH,
+	WEST,
+	EAST,
+	UP,
+	DOWN,
+	NUM_SIDES
+};
+
+/// Typedef used to record a single bit per face of a voxel. Useful for storing
+/// information about what sides of a voxel are visible.
+typedef struct
+{
+	uint8_t south : 1;
+	uint8_t north : 1;
+	uint8_t west : 1;
+	uint8_t east : 1;
+	uint8_t up : 1;
+	uint8_t down : 1;
+} VoxelFaces;
+
+// get the block_t for a single voxel given its coordinates
+block_t terrain_generate_voxel(ChunkCoords chunk, VoxelCoords voxel);
+void terrain_add_voxel_to_mesher(Mesher* restrict mesher, VoxelCoords coords,
+								 ChunkCoords chunk_coords, VoxelFaces faces,
+								 const Rectangle* restrict uv_rect_lookup,
+								 block_t voxel);
+
+void terrain_mesher_add_face(Mesher* restrict mesher,
+							 const Vector3* restrict position,
+							 const VoxelFaceInfo* restrict face);
+
+/// Inserts a new mesh at a given coordinates into a TerrainMeshes
+/// returns the index at which the item was inserted
+void terrain_mesh_insert(TerrainData* restrict data, ChunkCoords chunk_location,
+						 const Mesh* restrict mesh);
+
+bool terrain_voxel_is_solid(block_t type);
 
 float perlin_3d(float x, float y, float z);
 float perlin_2d(float x, float y);
