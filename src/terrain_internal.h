@@ -8,8 +8,8 @@
 
 /// This number squared is how many chunks will be stored in memory and rendered
 /// at once.
-#define RENDER_DISTANCE 4
-#define RENDER_DISTANCE_HALF 2
+#define RENDER_DISTANCE 16
+#define RENDER_DISTANCE_HALF 8
 static_assert((RENDER_DISTANCE % 2) == 0, "Render distance not divisible by 2");
 static_assert(
 	RENDER_DISTANCE == 2 * RENDER_DISTANCE_HALF,
@@ -40,9 +40,18 @@ typedef struct
 
 typedef struct
 {
+	/// Number of players who have this chunk in their render distance
+	uint8_t loaders;
 	ChunkCoords position;
 	Mesh mesh;
 } Chunk;
+
+typedef struct
+{
+	size_t capacity;
+	size_t count;
+	size_t indices[0];
+} AvailableIndicesStack;
 
 /// In-memory mesh data for all terrain surrounding every player.
 /// Involves a lot of pointer indirection. Each mesh's vertices, indices, and
@@ -56,6 +65,7 @@ typedef struct
 	size_t capacity;
 	// amount used (memory after this may be uninitialized)
 	size_t count;
+	AvailableIndicesStack* available_indices;
 	Chunk chunks[0];
 } TerrainData;
 
@@ -117,6 +127,12 @@ typedef struct
 	uint8_t down : 1;
 } VoxelFaces;
 
+typedef struct
+{
+	size_t size;
+	size_t indices[RENDER_DISTANCE * RENDER_DISTANCE * NUM_PLANES];
+} UnneededChunkList;
+
 // get the block_t for a single voxel given its coordinates
 block_t terrain_generate_voxel(ChunkCoords chunk, VoxelCoords voxel);
 void terrain_add_voxel_to_mesher(Mesher* restrict mesher, VoxelCoords coords,
@@ -128,10 +144,17 @@ void terrain_mesher_add_face(Mesher* restrict mesher,
 							 const Vector3* restrict position,
 							 const VoxelFaceInfo* restrict face);
 
-/// Inserts a new mesh at a given coordinates into a TerrainMeshes
+/// Inserts a new chunk into the terrain data
 /// returns the index at which the item was inserted
-void terrain_mesh_insert(TerrainData* restrict data, ChunkCoords chunk_location,
-						 const Mesh* restrict mesh);
+size_t terrain_mesh_insert(TerrainData* restrict data, const Chunk* new_chunk);
+
+/// Add some indices to the internal queue of available chunk indices
+void terrain_data_mark_indices_free(TerrainData* restrict data,
+									const UnneededChunkList* restrict unneeded);
+
+/// Remove all chunks with no loaders, making the buffer of chunks contiguous
+/// again.
+void terrain_data_normalize(TerrainData* data);
 
 bool terrain_voxel_is_solid(block_t type);
 

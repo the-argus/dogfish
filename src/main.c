@@ -77,6 +77,7 @@ void update()
 
 	bullet_update();
 	airplane_update(GetFrameTime());
+	terrain_update();
 }
 
 /// Draw the in-game objects to a consistently sized rendertexture.

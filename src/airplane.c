@@ -6,6 +6,7 @@
 #include "input.h"
 #include "physics.h"
 #include "shorthand.h"
+#include "terrain.h"
 #include "threadutils.h"
 #include <raymath.h>
 #define RLIGHTS_IMPLEMENTATION
@@ -219,6 +220,8 @@ void airplane_update(float delta_time)
 		// also update the plane's velocity
 		airplane_update_velocity(&planes[i], &input->keys[i],
 								 &input->controller[i]);
+
+		// terrain_update_player_pos(i, planes[i].position);
 	}
 	// player-specific changes
 	airplane_update_p1(delta_time);

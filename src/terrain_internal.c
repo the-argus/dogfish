@@ -1,4 +1,5 @@
 #include "terrain_internal.h"
+#include "quicksort.h"
 #include "threadutils.h"
 #include <FastNoiseLite.h>
 
@@ -60,15 +61,75 @@ VoxelCoords terrain_add_offset_to_voxel_coord(VoxelCoords coords,
 	return coords;
 }
 
-void terrain_mesh_insert(TerrainData* restrict data, ChunkCoords chunk_location,
-						 const Mesh* restrict mesh)
+size_t terrain_mesh_insert(TerrainData* restrict data, const Chunk* new_chunk)
 {
-	assert(data->count < data->capacity);
-	uint16_t index = data->count;
+	assert(data->count <= data->capacity);
+	size_t index = data->count;
 
-	data->chunks[index].mesh = *mesh;
-	data->chunks[index].position = chunk_location;
-	++data->count;
+	// only add to the end if there are no available spots
+	if (data->available_indices->count == 0) {
+		// preemptively add to the count of data
+		++data->count;
+	} else {
+		index = data->available_indices
+					->indices[data->available_indices->count - 1];
+		--data->available_indices->count;
+	}
+	data->chunks[index] = *new_chunk;
+	return index;
+}
+
+void terrain_data_mark_indices_free(TerrainData* restrict data,
+									const UnneededChunkList* restrict unneeded)
+{
+	// append all of the unneededs to available indices
+	for (size_t i = 0; i < unneeded->size; ++i) {
+		data->available_indices->indices[data->available_indices->count] =
+			unneeded->indices[i];
+		++data->available_indices->count;
+		assert(data->available_indices->count <=
+			   data->available_indices->capacity);
+	}
+}
+
+void terrain_data_normalize(TerrainData* data)
+{
+	if (data->available_indices->count == 0) {
+		return;
+	}
+
+	// remove in order
+	quicksort_inplace_size_t(&data->available_indices->indices[0],
+							 data->available_indices->count, sizeof(size_t));
+
+	// the largest available index should not be greater than the number of
+	// chunks
+	assert(
+		data->available_indices->indices[data->available_indices->count - 1] <
+		data->count);
+	assert(data->available_indices->count <= data->count);
+
+#ifndef NDEBUG
+	for (size_t i = 0; i < data->available_indices->count; ++i) {
+		assert(data->chunks[data->available_indices->indices[i]].loaders == 0);
+	}
+#endif
+
+	for (int i = (int)data->available_indices->count - 1; i >= 0; --i) {
+		// starting with the largest available index
+		size_t available = data->available_indices->indices[i];
+		if (available == data->count - 1) {
+			// the last item in the array of chunks needs to be removed
+			--data->count;
+			continue;
+		}
+		// otherwise, we can move this one
+		data->chunks[available] = data->chunks[data->count - 1];
+		--data->count;
+	}
+
+	// all indices should be removed
+	data->available_indices->count = 0;
 }
 
 block_t terrain_generate_voxel(ChunkCoords chunk, VoxelCoords voxel)
