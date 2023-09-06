@@ -11,5 +11,9 @@
             .url = "https://github.com/the-argus/zig-compile-commands/archive/090f6ca767de238f7eae4e13f91ecc7a299153c4.tar.gz",
             .hash = "1220ad678342c3191edebd10df1a883b7a71e245d4ee91da26b7cf6b30e4ee8fb78d",
         },
+		.fast_noise = .{
+			.url = "https://github.com/the-argus/FastNoiseLite-zig/archive/571cf6ffebfaf88df4616be96adefbc69ffe4651.tar.gz",
+			.hash = "122035d48fc11ef582e68cc43b16d7ac2b01303f3658df23c9458b52a996658731b5",
+		},
     }
 }

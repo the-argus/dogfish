@@ -109,6 +109,7 @@ void terrain_draw()
 
 void terrain_load()
 {
+	init_noise();
 	// permanent
 	size_t num_meshes = (size_t)RENDER_DISTANCE * RENDER_DISTANCE * NUM_PLANES;
 	terrain_data = RL_MALLOC(sizeof(TerrainData) +
@@ -293,27 +294,15 @@ terrain_get_voxel_from_voxels_const(VoxelCoords voxel,
 static block_t terrain_generate_voxel(const ChunkCoords* restrict chunk,
 									  const VoxelCoords* restrict voxel)
 {
-	static const NoiseOptions noise3d = {
-		.octaves = 4,
-		.gain = 1,
-		.hgrid = 200,
-	};
-	// actual max:		9,918,264,377,344
-	// expected max:	9,682,651,996,416
-	static const float threshhold = 0.0f;
-	const float amplitude3d = powf(noise3d.gain, (float)noise3d.octaves);
-
 	const float perlin = perlin_3d(
 		(float)voxel->x + (float)(chunk->x * max_voxelcoord.x), (float)voxel->y,
-		(float)voxel->z + (float)(chunk->z * max_voxelcoord.z), &noise3d);
-
-	const float squashed_perlin = perlin / amplitude3d;
+		(float)voxel->z + (float)(chunk->z * max_voxelcoord.z));
 	// TraceLog(LOG_INFO,
 	// 		 "Expected perlin with amplitude of %f, got %f. Squashed to %f",
 	// 		 amplitude3d, perlin, squashed_perlin);
 	// assert(squashed_perlin <= 1 && squashed_perlin >= -1);
 
-	if (squashed_perlin < 0) {
+	if (perlin < 0) {
 		return 1;
 	}
 	return 0;

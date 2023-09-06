@@ -1,64 +1,29 @@
 #include "terrain_internal.h"
+#include <FastNoiseLite.h>
 
-float perlin_3d(float x, float y, float z, const NoiseOptions* options)
+static fnl_state terrain_noise_perlin_main;
+
+float perlin_3d(float x, float y, float z)
 {
-	float total = 0.0f;
-	float frequency = 1.0f / (float)options->hgrid;
-	float amplitude = options->gain;
-	float lacunarity = 2.0; // basically frequency multiplier
-
-	for (size_t i = 0; i < options->octaves; i++) {
-		total +=
-			noise_3d(x * frequency, y * frequency, z * frequency) * amplitude;
-		frequency *= lacunarity;
-		amplitude *= options->gain;
-	}
-
-	return total;
+	float gen = fnlGetNoise3D(&terrain_noise_perlin_main, x, y, z);
+	const float amplitude3d = powf(terrain_noise_perlin_main.gain,
+								   (float)terrain_noise_perlin_main.octaves);
+	// squash generated noise to be roughly between 0 and 1
+	float squashed = gen / amplitude3d;
+	return squashed;
 }
 
-float perlin_2d(float x, float y, const NoiseOptions* options)
+float perlin_2d(float x, float y)
 {
-	float total = 0.0f;
-	float frequency = 1.0f / (float)options->hgrid;
-	float amplitude = options->gain;
-	float lacunarity = 2.0f; // basically frequency multiplier
-
-	for (size_t i = 0; i < options->octaves; i++) {
-		total += noise_2d(x * frequency, y * frequency) * amplitude;
-		frequency *= lacunarity;
-		amplitude *= options->gain;
-	}
-
-	return total;
+	return fnlGetNoise2D(&terrain_noise_perlin_main, x, y);
 }
 
-float noise_3d(float x, float y, float z)
+void init_noise()
 {
-	int n = 0;
-
-	n = x + (y * 57);
-	float nf = *((float*)&n);
-	nf *= 373 * z;
-	n = *(int*)&nf;
-	n = ((*(uint32_t*)&n) << 13) ^ n;
-	return (float)(1.0 - ((((*(uint32_t*)&n) *
-								((*(uint32_t*)&n) * (*(uint32_t*)&n) * 15731) +
-							789221) +
-						   1376312589) &
-						  0x7fffffff) /
-							 1073741824.0);
-}
-
-float noise_2d(float x, float y)
-{
-	int n;
-
-	n = x + (y * 57);
-	n = (n << 13) ^ n;
-	return (float)(1.0 - ((n * ((n * n * 15731) + 789221) + 1376312589) &
-						  0x7fffffff) /
-							 1073741824.0);
+	terrain_noise_perlin_main = fnlCreateState();
+	terrain_noise_perlin_main.octaves = 8;
+	terrain_noise_perlin_main.noise_type = FNL_NOISE_PERLIN;
+	terrain_noise_perlin_main.lacunarity = 2;
 }
 
 VoxelCoords

@@ -96,36 +96,10 @@ typedef struct
 	Vector3 normal;
 } VoxelFaceInfo;
 
-typedef struct
-{
-	float gain;
-	uint32_t octaves;
-	uint32_t hgrid;
-} NoiseOptions;
+float perlin_3d(float x, float y, float z);
+float perlin_2d(float x, float y);
 
-/// Retrieve a value of perlin noise in 3d.
-/// Amplitude of output is equal to gain^octaves.
-///
-/// Adapted from code found here:
-/// https://stackoverflow.com/questions/16569660/2d-perlin-noise-in-c
-///
-/// @param x: x coord
-/// @param y: y coord
-/// @param z: z coord
-/// @param gain: constant by which noise is scaled each octave.
-/// @param octaves: number of noise iterations. increasing this drastically
-/// increases the amplitude of the final noise.
-/// @param hgrid: the inverse of the initial frequency. Must be non-zero.
-/// smaller hgrid means the smallest noise will be more detailed, and... TODO:
-/// figure out what hgrid actually does besides that lol
-float perlin_3d(float x, float y, float z, const NoiseOptions* options);
-float perlin_2d(float x, float y, const NoiseOptions* options);
-
-/// Generate a random value given three integers (intended to be coordinates)
-/// Also adapted from
-/// https://stackoverflow.com/questions/16569660/2d-perlin-noise-in-c
-float noise_3d(float x, float y, float z);
-float noise_2d(float x, float y);
+void init_noise();
 
 /// Add a voxel offset to a voxel coordinate. If the offset is large, negative,
 /// and causes integer overflow, then an assert will be thrown *in debug mode

@@ -38,6 +38,7 @@ const Library = struct {
 
 const libraries = [_]Library{
     .{ .remote_name = "raylib", .artifact_name = "raylib" },
+    .{ .remote_name = "fast_noise", .artifact_name = "FastNoiseLite" },
 };
 
 pub fn build(b: *std.Build) !void {
