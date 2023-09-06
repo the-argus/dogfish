@@ -1,4 +1,5 @@
 #include "terrain_internal.h"
+#include "threadutils.h"
 #include <FastNoiseLite.h>
 
 static fnl_state terrain_noise_perlin_main;
@@ -26,16 +27,29 @@ void init_noise()
 	terrain_noise_perlin_main.lacunarity = 2;
 }
 
-VoxelCoords
-terrain_add_offset_to_voxel_coord(const VoxelCoords* restrict coords,
-								  const VoxelOffset* restrict offset)
+VoxelCoords terrain_add_offset_to_voxel_coord(VoxelCoords coords,
+											  const VoxelOffset offset)
 {
-	assert(((voxel_index_signed_t)coords->x) + offset->x >= 0);
-	assert(((voxel_index_signed_t)coords->y) + offset->y >= 0);
-	assert(((voxel_index_signed_t)coords->z) + offset->z >= 0);
-	return (VoxelCoords){
-		.x = coords->x + offset->x,
-		.y = coords->y + offset->y,
-		.z = coords->z + offset->z,
-	};
+	switch (offset.axis) {
+	case AXIS_X:
+		coords.x += offset.negative ? -1 : 1;
+		break;
+	case AXIS_Y:
+		coords.y += offset.negative ? -1 : 1;
+		break;
+	case AXIS_Z:
+		coords.z += offset.negative ? -1 : 1;
+		break;
+	default:
+		TraceLog(LOG_WARNING, "invalid voxel offset axis");
+#ifndef NDEBUG
+		threadutils_exit(EXIT_FAILURE);
+#endif
+	}
+
+	assert(coords.x >= 0 && coords.x < CHUNK_SIZE);
+	assert(coords.y >= 0 && coords.y < WORLD_HEIGHT);
+	assert(coords.y >= 0 && coords.z < CHUNK_SIZE);
+
+	return coords;
 }

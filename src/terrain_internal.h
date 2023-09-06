@@ -62,6 +62,7 @@ typedef struct
 /// generated state of the chunk before converting it to a mesh.
 typedef struct
 {
+	ChunkCoords coords;
 	block_t voxels[CHUNK_SIZE * CHUNK_SIZE * WORLD_HEIGHT];
 	/// UV Rect for the texture of a given block_t, on a texture sampler stored
 	/// somewhere else
@@ -76,11 +77,19 @@ typedef struct
 	voxel_index_t z;
 } VoxelCoords;
 
+typedef enum : uint8_t
+{
+	AXIS_X,
+	AXIS_Y,
+	AXIS_Z,
+	AXIS_MAX,
+} Axis;
+
+/// A description of a one-block difference from another block
 typedef struct
 {
-	voxel_index_signed_t x;
-	voxel_index_signed_t y;
-	voxel_index_signed_t z;
+	Axis axis;
+	bool negative;
 } VoxelOffset;
 
 typedef struct
@@ -104,6 +113,5 @@ void init_noise();
 /// Add a voxel offset to a voxel coordinate. If the offset is large, negative,
 /// and causes integer overflow, then an assert will be thrown *in debug mode
 /// only*.
-VoxelCoords
-terrain_add_offset_to_voxel_coord(const VoxelCoords* restrict coords,
-								  const VoxelOffset* restrict offset);
+VoxelCoords terrain_add_offset_to_voxel_coord(VoxelCoords coords,
+											  VoxelOffset offset);

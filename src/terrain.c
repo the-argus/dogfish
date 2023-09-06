@@ -3,6 +3,7 @@
 #include "mesher.h"
 #include "rlights.h"
 #include "terrain.h"
+#include "threadutils.h"
 #include <math.h>
 #include <raymath.h>
 #include <stdio.h>
@@ -33,13 +34,13 @@ enum Sides : uint8_t
 	NUM_SIDES
 };
 
-static const VoxelOffset all_neighbor_offsets[NUM_SIDES] = {
-	(VoxelOffset){.x = 0, .y = 0, .z = 1},
-	(VoxelOffset){.x = 0, .y = 0, .z = -1},
-	(VoxelOffset){.x = 1, .y = 0, .z = 0},
-	(VoxelOffset){.x = -1, .y = 0, .z = 0},
-	(VoxelOffset){.x = 0, .y = 1, .z = 0},
-	(VoxelOffset){.x = 0, .y = -1, .z = 0},
+static const VoxelOffset all_offsets[NUM_SIDES] = {
+	(VoxelOffset){.axis = AXIS_Z, .negative = false},
+	(VoxelOffset){.axis = AXIS_Z, .negative = true},
+	(VoxelOffset){.axis = AXIS_X, .negative = false},
+	(VoxelOffset){.axis = AXIS_X, .negative = true},
+	(VoxelOffset){.axis = AXIS_Y, .negative = false},
+	(VoxelOffset){.axis = AXIS_Y, .negative = true},
 };
 
 /// Typedef used to record a single bit per face of a voxel. Useful for storing
@@ -63,23 +64,19 @@ static const block_t*
 terrain_get_voxel_from_voxels_const(VoxelCoords voxel,
 									const IntermediateVoxelData* voxels);
 // fill voxels with block_ts based on perlin noise values
-static void terrain_generate_voxels(ChunkCoords chunk_to_generate,
-									IntermediateVoxelData* voxels);
+static void terrain_generate_voxels(IntermediateVoxelData* voxels);
 // get the block_t for a single voxel given its coordinates
-static block_t terrain_generate_voxel(const ChunkCoords* restrict chunk,
-									  const VoxelCoords* restrict voxel);
+static block_t terrain_generate_voxel(ChunkCoords chunk, VoxelCoords voxel);
 static size_t terrain_count_faces_in_chunk(const IntermediateVoxelData* voxels);
-static void
-terrain_add_voxel_to_mesher(Mesher* mesher, const VoxelCoords* coords,
-							const ChunkCoords* chunk_coords, VoxelFaces faces,
-							const Rectangle* uv_rect_lookup, block_t voxel);
+static void terrain_add_voxel_to_mesher(
+	Mesher* restrict mesher, VoxelCoords coords, ChunkCoords chunk_coords,
+	VoxelFaces faces, const Rectangle* restrict uv_rect_lookup, block_t voxel);
 /// Check if a voxel at `offset` voxels away from `coords` is solid or not. If
 /// Overflow past the end of the chunk occurs, then the block is considered not
 /// solid.
 static bool
-terrain_offset_voxel_is_solid(const IntermediateVoxelData* restrict chunk_data,
-							  const VoxelCoords* restrict coords,
-							  const VoxelOffset* restrict offset);
+terrain_offset_voxel_is_solid(const IntermediateVoxelData* chunk_data,
+							  VoxelCoords coords, VoxelOffset offset);
 
 static void terrain_mesher_add_face(Mesher* restrict mesher,
 									const Vector3* restrict position,
@@ -88,12 +85,11 @@ static void terrain_mesher_add_face(Mesher* restrict mesher,
 /// Inserts a new mesh at a given coordinates into a TerrainMeshes
 /// returns the index at which the item was inserted
 static void terrain_mesh_insert(TerrainData* restrict data,
-								const ChunkCoords* restrict chunk_location,
+								ChunkCoords chunk_location,
 								const Mesh* restrict mesh);
 
 static void
-terrain_chunk_to_mesh(Mesher* restrict mesher,
-					  const ChunkCoords* restrict chunk_coords,
+terrain_chunk_to_mesh(Mesher* restrict mesher, ChunkCoords chunk_coords,
 					  const IntermediateVoxelData* restrict chunk_data);
 
 static bool terrain_voxel_is_solid(block_t type);
@@ -160,7 +156,8 @@ void terrain_load()
 	for (; chunk_location.x < RENDER_DISTANCE_HALF; ++chunk_location.x) {
 		for (chunk_location.z = -RENDER_DISTANCE_HALF;
 			 chunk_location.z < RENDER_DISTANCE_HALF; ++chunk_location.z) {
-			terrain_generate_voxels(chunk_location, voxels);
+			voxels->coords = chunk_location;
+			terrain_generate_voxels(voxels);
 			// voxels are now filled with the correct block_t values, meshing
 			// time
 			// TODO: make this stack allocated, at least in release mode
@@ -170,12 +167,12 @@ void terrain_load()
 			// the faces are quads (these are cubes)
 			size_t faces = terrain_count_faces_in_chunk(voxels);
 			mesher_allocate(mesher, faces);
-			terrain_chunk_to_mesh(mesher, &chunk_location, voxels);
+			terrain_chunk_to_mesh(mesher, chunk_location, voxels);
 			Mesh mesh = mesher_release(mesher);
 			UploadMesh(&mesh, false);
 			// mesh has been modified to contain handles from the opengl context
 			// now copy it into our data structure for rendering
-			terrain_mesh_insert(terrain_data, &chunk_location, &mesh);
+			terrain_mesh_insert(terrain_data, chunk_location, &mesh);
 			RL_FREE(mesher);
 		}
 	}
@@ -201,20 +198,19 @@ void terrain_cleanup()
 }
 
 static void terrain_mesh_insert(TerrainData* restrict data,
-								const ChunkCoords* restrict chunk_location,
+								ChunkCoords chunk_location,
 								const Mesh* restrict mesh)
 {
 	assert(data->count < data->capacity);
 	uint16_t index = data->count;
 
 	data->chunks[index].mesh = *mesh;
-	data->chunks[index].position = *chunk_location;
+	data->chunks[index].position = chunk_location;
 	++data->count;
 }
 
 static void
-terrain_chunk_to_mesh(Mesher* restrict mesher,
-					  const ChunkCoords* restrict chunk_coords,
+terrain_chunk_to_mesh(Mesher* restrict mesher, ChunkCoords chunk_coords,
 					  const IntermediateVoxelData* restrict chunk_data)
 {
 	VoxelCoords iter = {0};
@@ -227,32 +223,31 @@ terrain_chunk_to_mesh(Mesher* restrict mesher,
 					continue;
 				}
 				VoxelFaces faces = {
-					.south = !terrain_offset_voxel_is_solid(
-						chunk_data, &iter, &all_neighbor_offsets[SOUTH]),
-					.north = !terrain_offset_voxel_is_solid(
-						chunk_data, &iter, &all_neighbor_offsets[NORTH]),
-					.west = !terrain_offset_voxel_is_solid(
-						chunk_data, &iter, &all_neighbor_offsets[WEST]),
-					.east = !terrain_offset_voxel_is_solid(
-						chunk_data, &iter, &all_neighbor_offsets[EAST]),
-					.up = !terrain_offset_voxel_is_solid(
-						chunk_data, &iter, &all_neighbor_offsets[UP]),
-					.down = !terrain_offset_voxel_is_solid(
-						chunk_data, &iter, &all_neighbor_offsets[DOWN]),
+					.south = !terrain_offset_voxel_is_solid(chunk_data, iter,
+															all_offsets[SOUTH]),
+					.north = !terrain_offset_voxel_is_solid(chunk_data, iter,
+															all_offsets[NORTH]),
+					.west = !terrain_offset_voxel_is_solid(chunk_data, iter,
+														   all_offsets[WEST]),
+					.east = !terrain_offset_voxel_is_solid(chunk_data, iter,
+														   all_offsets[EAST]),
+					.up = !terrain_offset_voxel_is_solid(chunk_data, iter,
+														 all_offsets[UP]),
+					.down = !terrain_offset_voxel_is_solid(chunk_data, iter,
+														   all_offsets[DOWN]),
 				};
 
 				block_t voxel =
 					*terrain_get_voxel_from_voxels_const(iter, chunk_data);
 
-				terrain_add_voxel_to_mesher(mesher, &iter, chunk_coords, faces,
+				terrain_add_voxel_to_mesher(mesher, iter, chunk_coords, faces,
 											chunk_data->uv_rect_lookup, voxel);
 			}
 		}
 	}
 }
 
-static void terrain_generate_voxels(ChunkCoords chunk_to_generate,
-									IntermediateVoxelData* voxels)
+static void terrain_generate_voxels(IntermediateVoxelData* voxels)
 {
 	VoxelCoords iter = {0};
 	// TODO: this loop over voxels appears both here and in
@@ -266,7 +261,7 @@ static void terrain_generate_voxels(ChunkCoords chunk_to_generate,
 		for (iter.y = 0; iter.y < max_voxelcoord.y; ++iter.y) {
 			for (iter.z = 0; iter.z < max_voxelcoord.z; ++iter.z) {
 				*terrain_get_voxel_from_voxels(iter, voxels) =
-					terrain_generate_voxel(&chunk_to_generate, &iter);
+					terrain_generate_voxel(voxels->coords, iter);
 			}
 		}
 	}
@@ -292,12 +287,11 @@ terrain_get_voxel_from_voxels_const(VoxelCoords voxel,
 	return &voxels->voxels[val];
 }
 
-static block_t terrain_generate_voxel(const ChunkCoords* restrict chunk,
-									  const VoxelCoords* restrict voxel)
+static block_t terrain_generate_voxel(ChunkCoords chunk, VoxelCoords voxel)
 {
 	const float perlin = perlin_3d(
-		(float)voxel->x + (float)(chunk->x * max_voxelcoord.x), (float)voxel->y,
-		(float)voxel->z + (float)(chunk->z * max_voxelcoord.z));
+		(float)voxel.x + (float)(chunk.x * max_voxelcoord.x), (float)voxel.y,
+		(float)voxel.z + (float)(chunk.z * max_voxelcoord.z));
 	// TraceLog(LOG_INFO,
 	// 		 "Expected perlin with amplitude of %f, got %f. Squashed to %f",
 	// 		 amplitude3d, perlin, squashed_perlin);
@@ -313,8 +307,6 @@ static size_t terrain_count_faces_in_chunk(const IntermediateVoxelData* voxels)
 {
 	size_t count = 0;
 	VoxelCoords iter = {0};
-	static const size_t number_of_offsets =
-		sizeof(all_neighbor_offsets) / sizeof(VoxelOffset);
 	for (; iter.x < max_voxelcoord.x; ++iter.x) {
 		for (iter.y = 0; iter.y < max_voxelcoord.y; ++iter.y) {
 			for (iter.z = 0; iter.z < max_voxelcoord.z; ++iter.z) {
@@ -327,11 +319,11 @@ static size_t terrain_count_faces_in_chunk(const IntermediateVoxelData* voxels)
 				}
 
 				// otherwise we need to count the number of solid neighbors
-				for (uint8_t i = 0; i < number_of_offsets; ++i) {
+				for (uint8_t i = 0; i < NUM_SIDES; ++i) {
 					// if the neighbor isn't solid, that means the  face is
 					// exposed and needs to be rendered
-					if (!terrain_offset_voxel_is_solid(
-							voxels, &iter, &all_neighbor_offsets[i])) {
+					if (!terrain_offset_voxel_is_solid(voxels, iter,
+													   all_offsets[i])) {
 						++count;
 					}
 				}
@@ -343,49 +335,73 @@ static size_t terrain_count_faces_in_chunk(const IntermediateVoxelData* voxels)
 }
 
 static bool
-terrain_offset_voxel_is_solid(const IntermediateVoxelData* restrict chunk_data,
-							  const VoxelCoords* restrict coords,
-							  const VoxelOffset* restrict offset)
+terrain_offset_voxel_is_solid(const IntermediateVoxelData* chunk_data,
+							  VoxelCoords coords, VoxelOffset offset)
 {
-	const voxel_index_signed_t x =
-		((voxel_index_signed_t)coords->x) + offset->x;
-	const voxel_index_signed_t y =
-		((voxel_index_signed_t)coords->y) + offset->y;
-	const voxel_index_signed_t z =
-		((voxel_index_signed_t)coords->z) + offset->z;
+	VoxelCoords offset_coords = coords;
+	ChunkCoords overflow_chunk = chunk_data->coords;
 
+	switch (offset.axis) {
+	case AXIS_X:
+		if (offset.negative && coords.x == 0) {
+			// overflow to negative x
+			--overflow_chunk.x;
+			offset_coords.x = max_voxelcoord.x - 1;
+		} else if (!offset.negative && coords.x == max_voxelcoord.x - 1) {
+			// overflow to positive x
+			++overflow_chunk.x;
+			offset_coords.x = 0;
+		} else {
+			// usual case, just move to an adjacent voxel
+			offset_coords.x += offset.negative ? -1 : 1;
+		}
+		break;
+	case AXIS_Y:
+		// ALL off-chunk y values are considered solid, to avoid generating
+		// faces at the top and bottom of the world
+		if ((offset.negative && coords.y == 0) ||
+			(!offset.negative && coords.y == max_voxelcoord.y - 1)) {
+			return true;
+		} else {
+			offset_coords.y += offset.negative ? -1 : 1;
+		}
+		break;
+	case AXIS_Z:
+		if (offset.negative && coords.z == 0) {
+			--overflow_chunk.z;
+			offset_coords.z = max_voxelcoord.z - 1;
+		} else if (!offset.negative && coords.z == max_voxelcoord.z - 1) {
+			++overflow_chunk.z;
+			offset_coords.z = 0;
+		} else {
+			offset_coords.z += offset.negative ? -1 : 1;
+		}
+		break;
+	default:
+		TraceLog(LOG_WARNING, "invalid voxel offset axis");
 #ifndef NDEBUG
-	float x_exceed = fabsf((float)x - Clamp((float)x, 0, CHUNK_SIZE - 1));
-	float y_exceed = fabsf((float)y - Clamp((float)y, 0, WORLD_HEIGHT - 1));
-	float z_exceed = fabsf((float)z - Clamp((float)z, 0, CHUNK_SIZE - 1));
+		threadutils_exit(EXIT_FAILURE);
 #endif
-
-	if (x < 0 || y < 0 || z < 0 || x >= CHUNK_SIZE || z >= CHUNK_SIZE ||
-		y >= WORLD_HEIGHT) {
-#ifndef NDEBUG
-		// in debug mode, warn if going over by more than one
-		if ((x < 0 || x >= CHUNK_SIZE) && x_exceed != 1) {
-			TraceLog(LOG_WARNING,
-					 "offset %d exceeds chunk boundaries by %f on x", x,
-					 x_exceed);
-		}
-		if ((y < 0 || y >= WORLD_HEIGHT) && y_exceed != 1) {
-			TraceLog(LOG_WARNING,
-					 "offset %d exceeds chunk boundaries by %f on y", y,
-					 y_exceed);
-		}
-		if ((z < 0 || z >= CHUNK_SIZE) && z_exceed != 1) {
-			TraceLog(LOG_WARNING,
-					 "offset %d exceeds chunk boundaries by %f on z", z,
-					 z_exceed);
-		}
-#endif
-		// all off-chunk values are not solid
-		return false;
+		break;
 	}
 
-	const block_t voxel = *terrain_get_voxel_from_voxels_const(
-		(VoxelCoords){x, y, z}, chunk_data);
+	if (overflow_chunk.x != chunk_data->coords.x ||
+		overflow_chunk.z != chunk_data->coords.z) {
+		// assert that we actually didnt overflow
+		assert(offset_coords.x >= 0 && offset_coords.x < max_voxelcoord.x);
+		assert(offset_coords.y >= 0 && offset_coords.y < max_voxelcoord.y);
+		assert(offset_coords.z >= 0 && offset_coords.z < max_voxelcoord.z);
+
+		// if we did overflow, we need to generate the value of the other
+		// chunk's blocks because we don't know it (this function only recieves
+		// the current chunk's data)
+		const block_t voxel =
+			terrain_generate_voxel(overflow_chunk, offset_coords);
+		return terrain_voxel_is_solid(voxel);
+	}
+
+	const block_t voxel =
+		*terrain_get_voxel_from_voxels_const(offset_coords, chunk_data);
 	return terrain_voxel_is_solid(voxel);
 }
 
@@ -402,18 +418,17 @@ static void terrain_mesher_add_face(Mesher* restrict mesher,
 	}
 }
 
-static void
-terrain_add_voxel_to_mesher(Mesher* mesher, const VoxelCoords* coords,
-							const ChunkCoords* chunk_coords, VoxelFaces faces,
-							const Rectangle* uv_rect_lookup, block_t voxel)
+static void terrain_add_voxel_to_mesher(
+	Mesher* restrict mesher, VoxelCoords coords, ChunkCoords chunk_coords,
+	VoxelFaces faces, const Rectangle* restrict uv_rect_lookup, block_t voxel)
 {
 	const Rectangle* uv_rect = &uv_rect_lookup[voxel];
 	const Vector3 rl_coords = (Vector3){
-		(float)((voxel_index_signed_t)coords->x +
-				(chunk_coords->x * max_voxelcoord.x)),
-		(float)coords->y,
-		(float)((voxel_index_signed_t)coords->z +
-				(chunk_coords->z * max_voxelcoord.z)),
+		(float)((voxel_index_signed_t)coords.x +
+				(chunk_coords.x * max_voxelcoord.x)),
+		(float)coords.y,
+		(float)((voxel_index_signed_t)coords.z +
+				(chunk_coords.z * max_voxelcoord.z)),
 	};
 
 	// z-
