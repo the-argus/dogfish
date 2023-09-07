@@ -152,11 +152,12 @@ terrain_voxel_data_get_offset_is_solid(const IntermediateVoxelData* chunk_data,
 		}
 		break;
 	case AXIS_Y:
-		// ALL off-chunk y values are considered solid, to avoid generating
-		// faces at the top and bottom of the world
-		if ((offset.negative && coords.y == 0) ||
-			(!offset.negative && coords.y == max_voxelcoord.y - 1)) {
+		// if overflowing off the top, generate a face, otherwise don't. so that
+		// players looking down on the terrain always have faces to see
+		if (offset.negative && coords.y == 0) {
 			return true;
+		} else if ((!offset.negative && coords.y == max_voxelcoord.y - 1)) {
+			return false;
 		} else {
 			offset_coords.y += offset.negative ? -1 : 1;
 		}

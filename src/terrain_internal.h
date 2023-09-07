@@ -8,8 +8,8 @@
 
 /// This number squared is how many chunks will be stored in memory and rendered
 /// at once.
-#define RENDER_DISTANCE 16
-#define RENDER_DISTANCE_HALF 8
+#define RENDER_DISTANCE 8
+#define RENDER_DISTANCE_HALF 4
 static_assert((RENDER_DISTANCE % 2) == 0, "Render distance not divisible by 2");
 static_assert(
 	RENDER_DISTANCE == 2 * RENDER_DISTANCE_HALF,
@@ -157,9 +157,6 @@ void terrain_data_mark_indices_free(TerrainData* restrict data,
 void terrain_data_normalize(TerrainData* data);
 
 bool terrain_voxel_is_solid(block_t type);
-
-float perlin_3d(float x, float y, float z);
-float perlin_2d(float x, float y);
 
 void init_noise();
 
