@@ -63,6 +63,10 @@ VoxelCoords terrain_add_offset_to_voxel_coord(VoxelCoords coords,
 
 size_t terrain_mesh_insert(TerrainData* restrict data, const Chunk* new_chunk)
 {
+	if (!(data->count <= data->capacity)) {
+		TraceLog(LOG_INFO, "data count %d and available indices %d",
+				 data->count, data->available_indices->count);
+	}
 	assert(data->count <= data->capacity);
 	size_t index = data->count;
 

@@ -49,7 +49,8 @@ void terrain_load()
 {
 	init_noise();
 	// permanent
-	size_t num_meshes = (size_t)RENDER_DISTANCE * RENDER_DISTANCE * NUM_PLANES;
+	size_t num_meshes =
+		(size_t)(RENDER_DISTANCE + 1) * RENDER_DISTANCE * NUM_PLANES;
 	terrain_data = RL_MALLOC(sizeof(TerrainData) +
 							 (num_meshes * sizeof(terrain_data->chunks[0])));
 	for (size_t i = 0; i < num_meshes; ++i) {
@@ -170,16 +171,26 @@ static void terrain_update_chunks()
 	// for each plane, add 1 to nearby chunks or load them if they don't exist.
 	for (uint8_t plane_index = 0; plane_index < NUM_PLANES; ++plane_index) {
 		size_t chunks_added = 0;
-		ChunkCoords chunk_location = {
+		ChunkCoords player_location = {
 			.x = (chunk_index_t)(player_positions[plane_index].coords.x /
 								 CHUNK_SIZE),
 			.z = (chunk_index_t)(player_positions[plane_index].coords.z /
 								 CHUNK_SIZE),
 		};
-		uint8_t thread_index = 0;
-		for (; chunk_location.x < RENDER_DISTANCE_HALF; ++chunk_location.x) {
-			for (chunk_location.z = -RENDER_DISTANCE_HALF;
-				 chunk_location.z < RENDER_DISTANCE_HALF; ++chunk_location.z) {
+		ChunkCoords chunk_location;
+
+		// annoyingly complex looking for loop to go through all the chunk
+		// coordinates that the player wants to load
+		for (chunk_location.x =
+				 (chunk_index_t)(player_location.x - RENDER_DISTANCE_HALF);
+			 chunk_location.x <
+			 (chunk_index_t)(player_location.x + RENDER_DISTANCE_HALF);
+			 ++chunk_location.x) {
+			for (chunk_location.z =
+					 (chunk_index_t)(player_location.z - RENDER_DISTANCE_HALF);
+				 chunk_location.z <
+				 (chunk_index_t)(player_location.z + RENDER_DISTANCE_HALF);
+				 ++chunk_location.z) {
 
 				// if the chunk is already loaded, just add to its loaders count
 				bool loaded = false;
