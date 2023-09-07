@@ -6,7 +6,6 @@
 #include "terrain_voxel_data.h"
 #include "threadutils.h"
 #include <math.h>
-#include <pthread.h>
 #include <raymath.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,38 +24,16 @@ typedef struct
 	Vector3 coords;
 } PlayerPosition;
 
-typedef struct
-{
-	bool working;
-	pthread_t pthread;
-} LoaderThread;
-
-typedef struct
-{
-	ChunkCoords chunk_coords;
-	uint8_t thread_index;
-	Chunk* out_chunk;
-} GenerationArgs;
-
-#define NUM_THREADS 1
-
 static TerrainData* terrain_data;
 static Material terrain_mat;
 static PlayerPosition* player_positions;
 static RenderTexture texture_atlas;
-static LoaderThread* threads;
-static IntermediateVoxelData* threaded_voxel_data;
-static GenerationArgs* generation_jobs;
+static IntermediateVoxelData* voxel_data;
 
-static void terrain_generate_mesh_for_chunk(GenerationArgs* args);
+static void terrain_generate_mesh_for_chunk(ChunkCoords chunk_coords,
+											Chunk* out_chunk);
 
 static void terrain_update_chunks();
-
-static void* terrain_generate_mesh_for_chunk_thread_wrapper(void* args);
-
-static void terrain_start_generation_job(ChunkCoords chunk_coords,
-										 uint8_t thread_index,
-										 Chunk* out_chunk);
 
 void terrain_draw()
 {
@@ -86,11 +63,7 @@ void terrain_load()
 	terrain_data->available_indices->count = 0;
 	terrain_data->available_indices->capacity = num_meshes;
 	player_positions = RL_CALLOC(NUM_PLANES, sizeof(PlayerPosition));
-
-	// heap allocated for debugging, could be statically allocated
-	threads = RL_CALLOC(NUM_THREADS, sizeof(LoaderThread));
-	threaded_voxel_data = RL_CALLOC(NUM_THREADS, sizeof(IntermediateVoxelData));
-	generation_jobs = RL_CALLOC(NUM_THREADS, sizeof(GenerationArgs));
+	voxel_data = RL_CALLOC(1, sizeof(IntermediateVoxelData));
 
 	// set up texture atlas and UV rects
 	// first draw textures into atlas
@@ -122,10 +95,8 @@ void terrain_load()
 	terrain_mat.shader = shader;
 	// only one uv rect lookup option, which just shows the whole texture
 	static const Rectangle basic_uv_rect[] = {{0, 0, 1, 1}};
-	for (uint8_t i = 0; i < NUM_THREADS; ++i) {
-		threaded_voxel_data[i].uv_rect_lookup = basic_uv_rect;
-		threaded_voxel_data[i].uv_rect_lookup_capacity = 1;
-	}
+	voxel_data->uv_rect_lookup = basic_uv_rect;
+	voxel_data->uv_rect_lookup_capacity = 1;
 
 	// consider all player positions to be "dirty": ie chunks need to be loaded
 	for (uint8_t i = 0; i < NUM_PLANES; ++i) {
@@ -170,8 +141,7 @@ void terrain_cleanup()
 	RL_FREE(terrain_data->available_indices);
 	RL_FREE(terrain_data);
 	RL_FREE(player_positions);
-	RL_FREE(threads);
-	RL_FREE(threaded_voxel_data);
+	RL_FREE(voxel_data);
 }
 
 void terrain_update() { terrain_update_chunks(); }
@@ -250,7 +220,6 @@ static void terrain_update_chunks()
 
 	// now start a bunch of threads, each generating chunks into this queue.
 	// when out of threads, wait on the next one. when all thre
-	Chunk insertion_queue[NUM_THREADS];
 	size_t chunks_added = 0;
 	ChunkCoords chunk_location = {-RENDER_DISTANCE_HALF, -RENDER_DISTANCE_HALF};
 	uint8_t thread_index = 0;
@@ -279,38 +248,9 @@ static void terrain_update_chunks()
 				continue;
 			}
 
-			if (threads[thread_index].working) {
-				// this thread was already doing something, we just have to wait
-				pthread_join(threads[thread_index].pthread, NULL);
-				threads[thread_index].working = false;
-				// which means it has something to submit
-				size_t inserted_index = terrain_mesh_insert(
-					terrain_data, &insertion_queue[thread_index]);
-				chunks_added++;
-			}
-
-			Chunk* chunk_to_generate = &insertion_queue[thread_index];
-			chunk_to_generate->loaders = 1;
-			// offload actual chunk generation to other thread
-			terrain_start_generation_job(chunk_location, thread_index,
-										 chunk_to_generate);
-
-			// move on to the next thread
-			++thread_index;
-			thread_index %= NUM_THREADS;
-		}
-	}
-
-	// join all threads
-	for (uint8_t i = 0; i < NUM_THREADS; ++i) {
-		if (threads[i].working) {
-			// this thread was already doing something, we just have to wait
-			pthread_join(threads[i].pthread, NULL);
-			threads[i].working = false;
-			// which means it has something to submit
-			size_t inserted_index =
-				terrain_mesh_insert(terrain_data, &insertion_queue[i]);
-			chunks_added++;
+			Chunk out;
+			terrain_generate_mesh_for_chunk(chunk_location, &out);
+			terrain_mesh_insert(terrain_data, &out);
 		}
 	}
 
@@ -322,42 +262,20 @@ static void terrain_update_chunks()
 	TraceLog(LOG_DEBUG, "Created %d chunk meshes", terrain_data->count);
 }
 
-static void terrain_start_generation_job(ChunkCoords chunk_coords,
-										 uint8_t thread_index, Chunk* out_chunk)
+static void terrain_generate_mesh_for_chunk(ChunkCoords chunk_coords,
+											Chunk* out_chunk)
 {
-	threads[thread_index].working = true;
-	generation_jobs[thread_index].chunk_coords = chunk_coords;
-	generation_jobs[thread_index].thread_index = thread_index;
-	generation_jobs[thread_index].out_chunk = out_chunk;
-	pthread_create(&threads[thread_index].pthread, NULL,
-				   terrain_generate_mesh_for_chunk_thread_wrapper,
-				   &generation_jobs[thread_index]);
-}
-
-static void* terrain_generate_mesh_for_chunk_thread_wrapper(void* args)
-{
-	GenerationArgs* realargs = args;
-	terrain_generate_mesh_for_chunk(realargs);
-	return NULL;
-}
-
-// TODO: implement pooling in mesher_allocate so that we dont have every thread
-// allocating and then immediately deallocating large buffers of vertex data
-static void terrain_generate_mesh_for_chunk(GenerationArgs* args)
-{
-	IntermediateVoxelData* voxel_buffer =
-		&threaded_voxel_data[args->thread_index];
-	voxel_buffer->coords = args->chunk_coords;
-	terrain_voxel_data_generate(voxel_buffer);
+	voxel_data->coords = chunk_coords;
+	terrain_voxel_data_generate(voxel_data);
 	// voxels are now filled with the correct block_t values, meshing
 	// time
 	Mesher mesher;
 	mesher_create(&mesher);
 	// pass number of faces into "quads" argument of allocate, since all
 	// the faces are quads (these are cubes)
-	size_t faces = terrain_voxel_data_get_face_count(voxel_buffer);
+	size_t faces = terrain_voxel_data_get_face_count(voxel_data);
 	mesher_allocate(&mesher, faces);
-	terrain_voxel_data_populate_mesher(voxel_buffer, &mesher);
+	terrain_voxel_data_populate_mesher(voxel_data, &mesher);
 	Mesh mesh = mesher_release(&mesher);
 	UploadMesh(&mesh, false);
 
@@ -374,6 +292,6 @@ static void terrain_generate_mesh_for_chunk(GenerationArgs* args)
 
 	// mesh has been modified to contain handles from the opengl context
 	// send it to the output
-	args->out_chunk->position = args->chunk_coords;
-	args->out_chunk->mesh = mesh;
+	out_chunk->position = chunk_coords;
+	out_chunk->mesh = mesh;
 }
