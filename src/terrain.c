@@ -151,28 +151,62 @@ void terrain_update() { terrain_update_chunks(); }
 /// wait for all the loading jobs to finish before terrain_update completes.
 static void terrain_update_chunks()
 {
-	typedef struct
+	// check if we have any dirty positions before doing unloading/loading
 	{
-		uint8_t size;
-		uint8_t indices[NUM_PLANES];
-	} DirtyList;
-
-	// create list of planes which need updates
-	DirtyList dirty_planes;
-	dirty_planes.size = 0;
-	for (uint8_t i = 0; i < NUM_PLANES; ++i) {
-		if (player_positions[i].dirty) {
-			dirty_planes.indices[dirty_planes.size] = i;
-			++dirty_planes.size;
+		size_t total_dirty = 0;
+		for (size_t i = 0; i < NUM_PLANES; ++i) {
+			total_dirty += player_positions[i].dirty;
+		}
+		if (total_dirty == 0) {
+			return;
 		}
 	}
 
-	if (dirty_planes.size == 0) {
-		return;
+	// mark all chunks as having 0 loaders. so by default they will be unloaded
+	for (size_t i = 0; i < terrain_data->count; ++i) {
+		terrain_data->chunks[i].loaders = 0;
 	}
 
-	// planes have moved, some chunks need to be reloaded. first, establish what
-	// chunks we need
+	// for each plane, add 1 to nearby chunks or load them if they don't exist.
+	for (uint8_t plane_index = 0; plane_index < NUM_PLANES; ++plane_index) {
+		size_t chunks_added = 0;
+		ChunkCoords chunk_location = {
+			.x = (chunk_index_t)(player_positions[plane_index].coords.x /
+								 CHUNK_SIZE),
+			.z = (chunk_index_t)(player_positions[plane_index].coords.z /
+								 CHUNK_SIZE),
+		};
+		uint8_t thread_index = 0;
+		for (; chunk_location.x < RENDER_DISTANCE_HALF; ++chunk_location.x) {
+			for (chunk_location.z = -RENDER_DISTANCE_HALF;
+				 chunk_location.z < RENDER_DISTANCE_HALF; ++chunk_location.z) {
+
+				// if the chunk is already loaded, just add to its loaders count
+				bool loaded = false;
+				for (size_t i = 0; i < terrain_data->count; ++i) {
+					ChunkCoords iter = terrain_data->chunks[i].position;
+					if (iter.x == chunk_location.x &&
+						iter.z == chunk_location.z) {
+						loaded = true;
+						terrain_data->chunks[i].loaders += 1;
+						break;
+					}
+				}
+
+				if (loaded) {
+					continue;
+				}
+
+				Chunk out;
+				terrain_generate_mesh_for_chunk(chunk_location, &out);
+				terrain_mesh_insert(terrain_data, &out);
+				++chunks_added;
+			}
+		}
+		TraceLog(LOG_INFO, "added %d chunks", chunks_added);
+
+		player_positions[plane_index].dirty = false;
+	}
 
 	// this list could potentially grow to maximum size (if we teleport both
 	// planes far apart). however usually it is very small, RENDER_DISTANCE in
@@ -182,79 +216,16 @@ static void terrain_update_chunks()
 	// multiple chunk boundaries before we notice.
 	static UnneededChunkList unneeded;
 	unneeded.size = 0;
-
-	for (uint8_t plane_index = 0; plane_index < dirty_planes.size;
-		 ++plane_index) {
-		uint8_t actual_index = dirty_planes.indices[plane_index];
-		// for this plane, loop through all chunks and mark unneeded ones.
-		for (size_t i = 0; i < terrain_data->count; ++i) {
-			Chunk* chunk = &terrain_data->chunks[i];
-			uint32_t xdiff =
-				abs((int32_t)chunk->position.x -
-					(int32_t)(player_positions[actual_index].coords.x /
-							  CHUNK_SIZE));
-			uint32_t zdiff =
-				abs((int32_t)chunk->position.z -
-					(int32_t)(player_positions[actual_index].coords.z /
-							  CHUNK_SIZE));
-			if (xdiff > RENDER_DISTANCE_HALF || zdiff > RENDER_DISTANCE_HALF) {
-				assert(chunk->loaders > 0);
-				chunk->loaders -= 1;
-				if (chunk->loaders == 0) {
-					unneeded.indices[unneeded.size] = i;
-					++unneeded.size;
-					assert(unneeded.size <= sizeof(unneeded.indices) /
-												sizeof(unneeded.indices[0]));
-				}
-			}
+	for (size_t i = 0; i < terrain_data->count; ++i) {
+		if (terrain_data->chunks[i].loaders == 0) {
+			unneeded.indices[unneeded.size] = i;
+			++unneeded.size;
 		}
-
-		player_positions[actual_index].dirty = false;
 	}
 
 	TraceLog(LOG_INFO, "removing %d chunks", unneeded.size);
 
-	// mark these indices as available for overwrite within the terrain_data
-	// pool
 	terrain_data_mark_indices_free(terrain_data, &unneeded);
-
-	// now start a bunch of threads, each generating chunks into this queue.
-	// when out of threads, wait on the next one. when all thre
-	size_t chunks_added = 0;
-	ChunkCoords chunk_location = {-RENDER_DISTANCE_HALF, -RENDER_DISTANCE_HALF};
-	uint8_t thread_index = 0;
-	for (; chunk_location.x < RENDER_DISTANCE_HALF; ++chunk_location.x) {
-		for (chunk_location.z = -RENDER_DISTANCE_HALF;
-			 chunk_location.z < RENDER_DISTANCE_HALF; ++chunk_location.z) {
-
-			// if the chunk is already loaded, just add to its loaders count
-			bool loaded = false;
-			for (size_t i = 0; i < terrain_data->count; ++i) {
-				ChunkCoords iter = terrain_data->chunks[i].position;
-				if (iter.x == chunk_location.x && iter.z == chunk_location.z) {
-					loaded = true;
-					if (terrain_data->chunks[i].loaders == 0) {
-						TraceLog(LOG_WARNING,
-								 "Re-loading chunk that seems to have been "
-								 "unloaded this frame. Were there chunks left "
-								 "over from last frame?");
-					}
-					terrain_data->chunks[i].loaders += 1;
-					break;
-				}
-			}
-
-			if (loaded) {
-				continue;
-			}
-
-			Chunk out;
-			terrain_generate_mesh_for_chunk(chunk_location, &out);
-			terrain_mesh_insert(terrain_data, &out);
-		}
-	}
-
-	TraceLog(LOG_INFO, "added %d chunks", chunks_added);
 
 	terrain_data_normalize(terrain_data);
 	assert(terrain_data->available_indices->count == 0);
