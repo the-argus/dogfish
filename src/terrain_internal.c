@@ -183,6 +183,7 @@ size_t terrain_mesh_insert(TerrainData* restrict data, const Chunk* new_chunk)
 		index = data->available_indices
 					->indices[data->available_indices->count - 1];
 		--data->available_indices->count;
+		UnloadMesh(data->chunks[index].mesh);
 	}
 	data->chunks[index] = *new_chunk;
 	return index;
@@ -233,6 +234,7 @@ void terrain_data_normalize(TerrainData* data)
 			continue;
 		}
 		// otherwise, we can move this one
+		UnloadMesh(data->chunks[available].mesh);
 		data->chunks[available] = data->chunks[data->count - 1];
 		--data->count;
 	}
