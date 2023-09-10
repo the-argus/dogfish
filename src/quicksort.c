@@ -66,6 +66,8 @@
 QUICKSORT_PRIVATE_DEF(float);
 // NOLINTNEXTLINE
 QUICKSORT_PRIVATE_DEF(uint16_t);
+// NOLINTNEXTLINE
+QUICKSORT_PRIVATE_DEF(size_t);
 
 void quicksort_inplace_float(float* target, uint16_t nmemb, uint8_t stride)
 {
@@ -81,4 +83,12 @@ void quicksort_inplace_uint16(uint16_t* target, uint16_t nmemb, uint8_t stride)
 		return;
 	}
 	quicksort_private_inplace_uint16_t(target, stride, 0, nmemb - 1);
+}
+
+void quicksort_inplace_size_t(size_t* target, uint16_t nmemb, uint8_t stride)
+{
+	if (nmemb == 0) {
+		return;
+	}
+	quicksort_private_inplace_size_t(target, stride, 0, nmemb - 1);
 }

@@ -4,8 +4,6 @@ const app_name = "dogfish";
 
 const release_flags = [_][]const u8{ "-std=c11", "-DNDEBUG", "-DRELEASE" };
 const debug_flags = [_][]const u8{
-    // TODO: remove this, noise_3d function relies on UB
-    "-fno-sanitize=undefined",
     "-std=c11",
 };
 var chosen_flags: ?[]const []const u8 = null;
@@ -26,6 +24,10 @@ const c_sources = [_][]const u8{
     "src/skybox.c",
     "src/threadutils.c",
     "src/quicksort.c",
+    "src/terrain.c",
+    "src/terrain_internal.c",
+    "src/terrain_voxel_data.c",
+    "src/mesher.c",
 };
 
 const Library = struct {
@@ -37,6 +39,7 @@ const Library = struct {
 
 const libraries = [_]Library{
     .{ .remote_name = "raylib", .artifact_name = "raylib" },
+    .{ .remote_name = "fast_noise", .artifact_name = "FastNoiseLite" },
 };
 
 pub fn build(b: *std.Build) !void {

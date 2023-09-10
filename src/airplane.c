@@ -1,9 +1,12 @@
 #include "airplane.h"
 #include "bullet.h"
+#include "constants/general.h"
+#include "debug.h"
 #include "gamestate.h"
 #include "input.h"
 #include "physics.h"
 #include "shorthand.h"
+#include "terrain.h"
 #include "threadutils.h"
 #include <raymath.h>
 #define RLIGHTS_IMPLEMENTATION
@@ -41,7 +44,6 @@ typedef struct
 	Quaternion direction;
 } Airplane;
 
-#define NUM_PLANES 2
 static Airplane planes[NUM_PLANES];
 #define AIRPLANE_MODEL_SCALEFACTOR 0.1f
 static const char* model_filename = "assets/models/airplane.gltf";
@@ -218,6 +220,8 @@ void airplane_update(float delta_time)
 		// also update the plane's velocity
 		airplane_update_velocity(&planes[i], &input->keys[i],
 								 &input->controller[i]);
+
+		terrain_update_player_pos(i, planes[i].position);
 	}
 	// player-specific changes
 	airplane_update_p1(delta_time);
@@ -242,12 +246,13 @@ void airplane_draw()
 	}
 }
 
+// #define DEBUG_CAMERA
 static inline void airplane_update_p1(float delta_time)
 {
 	// get the first camera
 	FullCamera* camera = &gamestate_get_cameras_mutable()[0];
 #ifdef DEBUG_CAMERA
-	UseDebugCameraController(camera[0]);
+	UseDebugCameraController(&camera[0].camera);
 #else
 	// set the camera to be at the location of the plane
 	Vector2 cursor_delta = total_cursor(0);

@@ -1,5 +1,5 @@
 #include "input.h"
-#include "constants.h"
+#include "constants/screen.h"
 #include "gamestate.h"
 #include <assert.h>
 #include <raylib.h>

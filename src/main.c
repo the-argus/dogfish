@@ -1,10 +1,11 @@
 #include "airplane.h"
 #include "bullet.h"
-#include "constants.h"
+#include "constants/screen.h"
 #include "gamestate.h"
 #include "input.h"
 #include "render_pipeline.h"
 #include "skybox.h"
+#include "terrain.h"
 #include "threadutils.h"
 
 // use a function pointer for the update loop so that we can change it
@@ -29,6 +30,7 @@ int main(void)
 	bullet_init();
 	airplane_init();
 	skybox_load();
+	terrain_load();
 
 	// set the update function to run once without doing anything
 	update_function = defer_update_once;
@@ -58,6 +60,8 @@ int main(void)
 	bullet_cleanup();
 	airplane_cleanup();
 	render_pipeline_cleanup();
+	skybox_cleanup();
+	terrain_cleanup();
 	CloseWindow();
 
 	return 0;
@@ -73,12 +77,14 @@ void update()
 
 	bullet_update();
 	airplane_update(GetFrameTime());
+	terrain_update();
 }
 
 /// Draw the in-game objects to a consistently sized rendertexture.
 void main_draw()
 {
 	skybox_draw();
+	terrain_draw();
 	bullet_draw();
 	airplane_draw();
 
