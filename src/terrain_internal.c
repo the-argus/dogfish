@@ -410,6 +410,19 @@ static float terrain_interp_transform(const InterpPoints* points, float input)
 	assert(diff_input >= 0);
 	assert(diff_input <= diff_total);
 
+	static const float handle_length = 0.1f;
+
+	const Vector2 right_slope =
+		right == &points->interp_points[points->point_count - 1]
+			? Vector2Zero()
+			: Vector2Normalize((Vector2){.x = right->x - (right + 1)->x,
+										 .y = right->y - (right + 1)->y});
+	const Vector2 left_slope =
+		left == points->interp_points
+			? Vector2Zero()
+			: Vector2Normalize((Vector2){.x = left->x - (left - 1)->x,
+										 .y = left->y - (left - 1)->y});
+
 	const float lerp = Lerp(left->y, right->y, diff_input / diff_total);
 	// re-map value to -1, 1 before returning
 	const float unmapped = (lerp - 0.5f) * 2;
