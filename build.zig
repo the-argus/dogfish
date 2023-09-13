@@ -27,6 +27,7 @@ const c_sources = [_][]const u8{
     "src/terrain.c",
     "src/terrain_internal.c",
     "src/terrain_voxel_data.c",
+    "src/terrain_render.c",
     "src/mesher.c",
 };
 
@@ -78,6 +79,26 @@ pub fn build(b: *std.Build) !void {
                 .optimize = mode,
             });
             t.linkLibrary(dep.artifact(library.artifact_name));
+
+            // special raylib case because we want to get some of its internal
+            // headers
+            if (std.mem.eql(u8, library.artifact_name, "raylib")) {
+                const raylib_internal_includes = zcc.extractIncludeDirsFromCompileStep(b, dep.artifact(library.artifact_name));
+
+                // HACK: we know src/external/glfw is included... so just recognize that and include "src" for us
+                for (raylib_internal_includes) |internal_include| {
+                    var include_iter = internal_include;
+
+                    // traverse upwards until we find the raylib "src" dir
+                    for (0..10) |_| {
+                        include_iter = std.fs.path.dirname(include_iter) orelse break;
+                        if (std.mem.eql(u8, std.fs.path.basename(include_iter), "src")) {
+                            t.addIncludePath(.{ .path = include_iter });
+                            break;
+                        }
+                    }
+                }
+            }
         }
     }
 

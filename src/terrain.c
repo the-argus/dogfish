@@ -3,6 +3,7 @@
 #include "mesher.h"
 #include "rlights.h"
 #include "terrain.h"
+#include "terrain_render.h"
 #include "terrain_voxel_data.h"
 #include "threadutils.h"
 #include <math.h>
@@ -259,7 +260,7 @@ static void terrain_generate_mesh_for_chunk(ChunkCoords chunk_coords,
 	mesher_allocate(&mesher, faces);
 	terrain_voxel_data_populate_mesher(voxel_data, &mesher);
 	Mesh mesh = mesher_release(&mesher);
-	UploadMesh(&mesh, false);
+	UploadTerrainMesh(&mesh, false);
 
 	// mesh is now on the GPU, go ahead and free the cpu parts
 	RL_FREE(mesh.vertices);
