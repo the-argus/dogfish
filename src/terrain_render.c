@@ -7,22 +7,27 @@
 
 #define MAX_MESH_VERTEX_BUFFERS 7 // Maximum vertex buffers (VBO) per mesh
 
-unsigned int rlLoadVertexBufferCustom(const void* buffer, int size,
-									  bool dynamic)
+void replaceVertexBuffer(const void* buffer, int size, bool dynamic,
+						 unsigned int id)
 {
-	unsigned int id = 0;
-
 #if defined(GRAPHICS_API_OPENGL_33) || defined(GRAPHICS_API_OPENGL_ES2)
-	glGenBuffers(1, &id);
 	glBindBuffer(GL_ARRAY_BUFFER, id);
 	glBufferData(GL_ARRAY_BUFFER, size, buffer,
 				 dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
 #endif
-
-	return id;
 }
+
+void terrain_render_clear_mesh(Mesh* mesh)
+{
+	assert(mesh->vboId);
+	for (uint8_t i = 0; i < MAX_MESH_VERTEX_BUFFERS; ++i) {
+		mesh->vboId[i] = 0;
+	}
+	mesh->vaoId = 0;
+}
+
 // Upload vertex data into a VAO (if supported) and VBO
-void UploadTerrainMesh(Mesh* mesh, bool dynamic)
+void UploadTerrainMesh(Mesh* mesh, const Mesh* existing_mesh, bool dynamic)
 {
 	if (mesh->vaoId > 0) {
 		// Check if mesh has already been loaded in GPU
@@ -37,7 +42,7 @@ void UploadTerrainMesh(Mesh* mesh, bool dynamic)
 	mesh->vaoId = 0; // Vertex Array Object
 
 #if defined(GRAPHICS_API_OPENGL_33) || defined(GRAPHICS_API_OPENGL_ES2)
-	mesh->vaoId = rlLoadVertexArray();
+	mesh->vaoId = existing_mesh ? existing_mesh->vaoId : rlLoadVertexArray();
 	rlEnableVertexArray(mesh->vaoId);
 
 	// NOTE: Vertex attributes must be uploaded considering default locations
@@ -50,14 +55,30 @@ void UploadTerrainMesh(Mesh* mesh, bool dynamic)
 	assert(mesh->animVertices == NULL);
 
 	// Enable vertex attributes: position (shader-location = 0)
-	mesh->vboId[0] = rlLoadVertexBufferCustom(
-		mesh->vertices, mesh->vertexCount * 3 * sizeof(float), dynamic);
+	if (!existing_mesh) {
+		mesh->vboId[0] = rlLoadVertexBuffer(
+			mesh->vertices, mesh->vertexCount * 3 * sizeof(float), dynamic);
+	} else {
+		assert(existing_mesh->vboId[0] != 0);
+		replaceVertexBuffer(mesh->vertices,
+							mesh->vertexCount * 3 * sizeof(float), dynamic,
+							existing_mesh->vboId[0]);
+		mesh->vboId[0] = existing_mesh->vboId[0];
+	}
 	rlSetVertexAttribute(0, 3, RL_FLOAT, 0, 0, 0);
 	rlEnableVertexAttribute(0);
 
 	// Enable vertex attributes: texcoords (shader-location = 1)
-	mesh->vboId[1] = rlLoadVertexBufferCustom(
-		mesh->texcoords, mesh->vertexCount * 2 * sizeof(float), dynamic);
+	if (!existing_mesh) {
+		mesh->vboId[1] = rlLoadVertexBuffer(
+			mesh->texcoords, mesh->vertexCount * 2 * sizeof(float), dynamic);
+	} else {
+		assert(existing_mesh->vboId[1] != 0);
+		replaceVertexBuffer(mesh->texcoords,
+							mesh->vertexCount * 2 * sizeof(float), dynamic,
+							existing_mesh->vboId[1]);
+		mesh->vboId[1] = existing_mesh->vboId[1];
+	}
 	rlSetVertexAttribute(1, 2, RL_FLOAT, 0, 0, 0);
 	rlEnableVertexAttribute(1);
 
@@ -69,8 +90,15 @@ void UploadTerrainMesh(Mesh* mesh, bool dynamic)
 		// Enable vertex attributes: normals (shader-location = 2)
 		void* normals =
 			mesh->animNormals != NULL ? mesh->animNormals : mesh->normals;
-		mesh->vboId[2] = rlLoadVertexBufferCustom(
-			normals, mesh->vertexCount * 3 * sizeof(float), dynamic);
+		if (!existing_mesh) {
+			mesh->vboId[2] = rlLoadVertexBuffer(
+				normals, mesh->vertexCount * 3 * sizeof(float), dynamic);
+		} else {
+			assert(existing_mesh->vboId[2] != 0);
+			replaceVertexBuffer(normals, mesh->vertexCount * 3 * sizeof(float),
+								dynamic, existing_mesh->vboId[2]);
+			mesh->vboId[2] = existing_mesh->vboId[2];
+		}
 		rlSetVertexAttribute(2, 3, RL_FLOAT, 0, 0, 0);
 		rlEnableVertexAttribute(2);
 	}

@@ -221,7 +221,7 @@ void airplane_update(float delta_time)
 		airplane_update_velocity(&planes[i], &input->keys[i],
 								 &input->controller[i]);
 
-		// terrain_update_player_pos(i, planes[i].position);
+		terrain_update_player_pos(i, planes[i].position);
 	}
 	// player-specific changes
 	airplane_update_p1(delta_time);
