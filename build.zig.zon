@@ -8,8 +8,8 @@
             .hash = "12203a237a96a5f37713979a57a201b4ec93f8a56e571f8584cfeb72156e4ccc14fa",
         },
         .compile_commands = .{
-            .url = "https://github.com/the-argus/zig-compile-commands/archive/090f6ca767de238f7eae4e13f91ecc7a299153c4.tar.gz",
-            .hash = "1220ad678342c3191edebd10df1a883b7a71e245d4ee91da26b7cf6b30e4ee8fb78d",
+            .url = "https://github.com/the-argus/zig-compile-commands/archive/461bdb853b4cedc645966419d3c74236059618d4.tar.gz",
+            .hash = "12201f20b0cac6fcd14333b307ecf66a2cf699338c11bf661f1ef395d45a4f30a254",
         },
 		.fast_noise = .{
 			.url = "https://github.com/the-argus/FastNoiseLite-zig/archive/571cf6ffebfaf88df4616be96adefbc69ffe4651.tar.gz",

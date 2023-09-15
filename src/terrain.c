@@ -3,6 +3,7 @@
 #include "mesher.h"
 #include "rlights.h"
 #include "terrain.h"
+#include "terrain_render.h"
 #include "terrain_voxel_data.h"
 #include "threadutils.h"
 #include <math.h>
@@ -259,7 +260,27 @@ static void terrain_generate_mesh_for_chunk(ChunkCoords chunk_coords,
 	mesher_allocate(&mesher, faces);
 	terrain_voxel_data_populate_mesher(voxel_data, &mesher);
 	Mesh mesh = mesher_release(&mesher);
-	UploadMesh(&mesh, false);
+
+	{
+		Mesh* available_mesh = NULL;
+
+		// if there is a mesh available, just use its VAO and VBO etc
+		if (terrain_data->available_indices->count > 0) {
+			available_mesh =
+				&terrain_data
+					 ->chunks[terrain_data->available_indices->indices
+								  [terrain_data->available_indices->count - 1]]
+					 .mesh;
+		}
+
+		UploadTerrainMesh(&mesh, available_mesh, false);
+
+		// set the mesh's VAO and VBOs to 0 so they dont get cleared on unload
+		// (we are now using those handles)
+		if (available_mesh) {
+			terrain_render_clear_mesh(available_mesh);
+		}
+	}
 
 	// mesh is now on the GPU, go ahead and free the cpu parts
 	RL_FREE(mesh.vertices);
