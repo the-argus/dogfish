@@ -11,6 +11,7 @@ typedef struct
 	Vector3 normal;
 #ifndef NDEBUG
 	bool allocated;
+	bool optimized;
 	size_t mesh_texcoord_float_indices;
 	size_t mesh_normal_float_indices;
 	size_t mesh_vertex_float_indices;
@@ -29,3 +30,6 @@ void mesher_push_vertex(Mesher* mesher, const Vector3* offset,
 
 /// Returns the mesh and resets the mesher. Needs reallocation after this
 Mesh mesher_release(Mesher* mesher);
+
+/// Deduplicate vertices and actually use the index buffer
+void mesher_optimize_for_space(Mesher* mesher);

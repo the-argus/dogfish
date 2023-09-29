@@ -288,10 +288,10 @@ static void terrain_generate_mesh_for_chunk(ChunkCoords chunk_coords,
 	RL_FREE(mesh.normals);
 	assert(mesh.texcoords2 == NULL);
 	assert(mesh.colors == NULL);
-	assert(mesh.indices == NULL);
 	mesh.vertices = NULL;
 	mesh.normals = NULL;
 	mesh.texcoords = NULL;
+	mesh.indices = NULL;
 
 	// mesh has been modified to contain handles from the opengl context
 	// send it to the output

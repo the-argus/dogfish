@@ -1,5 +1,7 @@
 #include "mesher.h"
+#include "quicksort.h"
 #include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #define VERTEX_PER_QUAD 6
@@ -30,6 +32,7 @@ void mesher_create(Mesher* mesher)
 	mesher->inner.vaoId = 0;
 #ifndef NDEBUG
 	mesher->allocated = false;
+	mesher->optimized = false;
 #endif
 }
 
@@ -55,7 +58,12 @@ void mesher_allocate(Mesher* mesher, size_t quads)
 	mesher->inner.texcoords =
 		RL_MALLOC(sizeof(float) * 2 * mesher->inner.vertexCount);
 	mesher->inner.colors = NULL;
+	// allocate as many indices as there are vertices, then reduce the number
+	// of vertices later
+	mesher->inner.indices =
+		RL_MALLOC(sizeof(unsigned short) * mesher->inner.triangleCount * 3);
 #ifndef NDEBUG
+	mesher->optimized = false;
 	mesher->allocated = true;
 #endif
 }
@@ -114,5 +122,65 @@ Mesh mesher_release(Mesher* mesher)
 {
 	const Mesh result = mesher->inner;
 	mesher_create(mesher);
+	mesher_optimize_for_space(mesher);
+	assert(mesher->optimized); // all meshes should be optimized at time of
+							   // writing
 	return result;
+}
+
+static bool mesher_vertex_sorter(const float* greater, const float* lesser);
+static void mesher_vertex_swap_handler(void* user_data, quicksort_index_t left,
+									   quicksort_index_t right);
+
+static size_t sortcount = 0;
+
+void mesher_optimize_for_space(Mesher* mesher)
+{
+	sortcount = 0;
+	assert(!mesher->optimized);
+	assert(mesher->inner.vertexCount < 65536); // the maximum expressible by
+											   // quicksort_index_t
+	quicksort_inplace_generic_sort_handler_float(
+		mesher->inner.vertices, mesher->inner.triangleCount, sizeof(float) * 3,
+		mesher_vertex_swap_handler, mesher, mesher_vertex_sorter);
+
+	printf("sortcount: %zu\n", sortcount);
+
+	mesher->optimized = true;
+}
+
+static void mesher_vertex_swap_handler(void* user_data, quicksort_index_t left,
+									   quicksort_index_t right)
+{
+	Mesher* mesher = user_data;
+	sortcount++;
+	// swap texcoords also
+	{
+		Vector2* texcoord_left =
+			(Vector2*)&mesher->inner.texcoords[(ptrdiff_t)left * 2];
+		Vector2* texcoord_right =
+			(Vector2*)&mesher->inner.texcoords[(ptrdiff_t)right * 2];
+
+		Vector2 temp = *texcoord_left;
+		*texcoord_left = *texcoord_right;
+		*texcoord_right = temp;
+	}
+
+	// and normals
+	{
+		Vector3* normal_left =
+			(Vector3*)&mesher->inner.texcoords[(ptrdiff_t)left * 3];
+		Vector3* normal_right =
+			(Vector3*)&mesher->inner.texcoords[(ptrdiff_t)right * 3];
+
+		Vector3 temp = *normal_left;
+		*normal_left = *normal_right;
+		*normal_right = temp;
+	}
+}
+
+static bool mesher_vertex_sorter(const float* greater, const float* lesser)
+{
+	// sort by X value
+	return greater[0] > lesser[0];
 }
