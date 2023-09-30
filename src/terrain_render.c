@@ -49,6 +49,7 @@ void UploadTerrainMesh(Mesh* mesh, const Mesh* existing_mesh, bool dynamic)
 	// points and available vertex data
 
 	assert(mesh->normals != NULL);
+	assert(mesh->indices != NULL);
 	assert(mesh->colors == NULL);
 	assert(mesh->tangents == NULL);
 	assert(mesh->texcoords2 == NULL);
@@ -57,12 +58,13 @@ void UploadTerrainMesh(Mesh* mesh, const Mesh* existing_mesh, bool dynamic)
 	// Enable vertex attributes: position (shader-location = 0)
 	if (!existing_mesh) {
 		mesh->vboId[0] = rlLoadVertexBuffer(
-			mesh->vertices, mesh->vertexCount * 3 * sizeof(float), dynamic);
+			mesh->vertices, (int)((long)mesh->vertexCount * 3 * sizeof(float)),
+			dynamic);
 	} else {
 		assert(existing_mesh->vboId[0] != 0);
 		replaceVertexBuffer(mesh->vertices,
-							mesh->vertexCount * 3 * sizeof(float), dynamic,
-							existing_mesh->vboId[0]);
+							(int)((long)mesh->vertexCount * 3 * sizeof(float)),
+							dynamic, existing_mesh->vboId[0]);
 		mesh->vboId[0] = existing_mesh->vboId[0];
 	}
 	rlSetVertexAttribute(0, 3, RL_FLOAT, 0, 0, 0);
@@ -71,12 +73,13 @@ void UploadTerrainMesh(Mesh* mesh, const Mesh* existing_mesh, bool dynamic)
 	// Enable vertex attributes: texcoords (shader-location = 1)
 	if (!existing_mesh) {
 		mesh->vboId[1] = rlLoadVertexBuffer(
-			mesh->texcoords, mesh->vertexCount * 2 * sizeof(float), dynamic);
+			mesh->texcoords, (int)((long)mesh->vertexCount * 2 * sizeof(float)),
+			dynamic);
 	} else {
 		assert(existing_mesh->vboId[1] != 0);
 		replaceVertexBuffer(mesh->texcoords,
-							mesh->vertexCount * 2 * sizeof(float), dynamic,
-							existing_mesh->vboId[1]);
+							(int)((long)mesh->vertexCount * 2 * sizeof(float)),
+							dynamic, existing_mesh->vboId[1]);
 		mesh->vboId[1] = existing_mesh->vboId[1];
 	}
 	rlSetVertexAttribute(1, 2, RL_FLOAT, 0, 0, 0);
@@ -92,11 +95,13 @@ void UploadTerrainMesh(Mesh* mesh, const Mesh* existing_mesh, bool dynamic)
 			mesh->animNormals != NULL ? mesh->animNormals : mesh->normals;
 		if (!existing_mesh) {
 			mesh->vboId[2] = rlLoadVertexBuffer(
-				normals, mesh->vertexCount * 3 * sizeof(float), dynamic);
+				normals, (int)((long)mesh->vertexCount * 3 * sizeof(float)),
+				dynamic);
 		} else {
 			assert(existing_mesh->vboId[2] != 0);
-			replaceVertexBuffer(normals, mesh->vertexCount * 3 * sizeof(float),
-								dynamic, existing_mesh->vboId[2]);
+			replaceVertexBuffer(
+				normals, (int)((long)mesh->vertexCount * 3 * sizeof(float)),
+				dynamic, existing_mesh->vboId[2]);
 			mesh->vboId[2] = existing_mesh->vboId[2];
 		}
 		rlSetVertexAttribute(2, 3, RL_FLOAT, 0, 0, 0);
@@ -129,7 +134,8 @@ void UploadTerrainMesh(Mesh* mesh, const Mesh* existing_mesh, bool dynamic)
 
 	if (mesh->indices != NULL) {
 		mesh->vboId[6] = rlLoadVertexBufferElement(
-			mesh->indices, mesh->triangleCount * 3 * sizeof(unsigned short),
+			mesh->indices,
+			(int)((long)mesh->triangleCount * 3 * sizeof(unsigned short)),
 			dynamic);
 	}
 

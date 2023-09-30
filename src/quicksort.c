@@ -49,10 +49,12 @@
 			}                                                                 \
 		}                                                                     \
                                                                               \
-		/* swap pivot and right */                                            \
-		type* right = ARRAY_STRIDE(type, target, stride, right_iter);         \
-		*pivot = *right;                                                      \
-		*right = pivot_val;                                                   \
+		if (right_iter != left_max) {                                         \
+			/* swap pivot and right */                                        \
+			type* right = ARRAY_STRIDE(type, target, stride, right_iter);     \
+			*pivot = *right;                                                  \
+			*right = pivot_val;                                               \
+		}                                                                     \
                                                                               \
 		/* recurse */                                                         \
 		if (right_iter != 0) {                                                \
@@ -109,12 +111,14 @@
 			}                                                                  \
 		}                                                                      \
                                                                                \
-		/* swap pivot and right */                                             \
-		type* right = ARRAY_STRIDE(type, target, stride, right_iter);          \
-		*pivot = *right;                                                       \
-		*right = pivot_val;                                                    \
-		assert(left_max < right_iter);                                         \
-		handler(user_data, left_max, right_iter);                              \
+		if (right_iter != left_max) {                                          \
+			/* swap pivot and right */                                         \
+			type* right = ARRAY_STRIDE(type, target, stride, right_iter);      \
+			*pivot = *right;                                                   \
+			*right = pivot_val;                                                \
+			assert(left_max < right_iter);                                     \
+			handler(user_data, left_max, right_iter);                          \
+		}                                                                      \
                                                                                \
 		/* recurse */                                                          \
 		if (right_iter != 0) {                                                 \
@@ -171,12 +175,14 @@
 			}                                                                 \
 		}                                                                     \
                                                                               \
-		/* swap pivot and right */                                            \
-		type* right = ARRAY_STRIDE(type, target, stride, right_iter);         \
-		*pivot = *right;                                                      \
-		*right = pivot_val;                                                   \
-		assert(left_max < right_iter);                                        \
-		handler(user_data, left_max, right_iter);                             \
+		if (right_iter != left_max) {                                         \
+			/* swap pivot and right */                                        \
+			type* right = ARRAY_STRIDE(type, target, stride, right_iter);     \
+			*pivot = *right;                                                  \
+			*right = pivot_val;                                               \
+			assert(left_max < right_iter);                                    \
+			handler(user_data, left_max, right_iter);                         \
+		}                                                                     \
                                                                               \
 		/* recurse */                                                         \
 		if (right_iter != 0) {                                                \

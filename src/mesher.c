@@ -120,11 +120,11 @@ void mesher_push_vertex(Mesher* mesher, const Vector3* offset,
 
 Mesh mesher_release(Mesher* mesher)
 {
-	const Mesh result = mesher->inner;
-	mesher_create(mesher);
 	mesher_optimize_for_space(mesher);
 	assert(mesher->optimized); // all meshes should be optimized at time of
 							   // writing
+	const Mesh result = mesher->inner;
+	mesher_create(mesher);
 	return result;
 }
 
@@ -138,10 +138,11 @@ void mesher_optimize_for_space(Mesher* mesher)
 {
 	sortcount = 0;
 	assert(!mesher->optimized);
+	assert(mesher->inner.indices != NULL);
 	assert(mesher->inner.vertexCount < 65536); // the maximum expressible by
 											   // quicksort_index_t
 	quicksort_inplace_generic_sort_handler_float(
-		mesher->inner.vertices, mesher->inner.triangleCount, sizeof(float) * 3,
+		mesher->inner.vertices, mesher->inner.vertexCount, sizeof(float) * 3,
 		mesher_vertex_swap_handler, mesher, mesher_vertex_sorter);
 
 	printf("sortcount: %zu\n", sortcount);
@@ -156,6 +157,8 @@ static void mesher_vertex_swap_handler(void* user_data, quicksort_index_t left,
 	sortcount++;
 	// swap texcoords also
 	{
+		assert(left < mesher->inner.vertexCount);
+		assert(right < mesher->inner.vertexCount);
 		Vector2* texcoord_left =
 			(Vector2*)&mesher->inner.texcoords[(ptrdiff_t)left * 2];
 		Vector2* texcoord_right =
